@@ -16,8 +16,12 @@ create extension if not exists pg_net;
 -- cron.job es legible por cualquiera con acceso a la base: un secreto
 -- escrito en el `command` queda a la vista de todo el que la mire.
 -- ------------------------------------------------------------
+-- Borrar antes de crear: vault.create_secret falla si el nombre ya existe,
+-- y este archivo se re-ejecuta cada vez que se rota el secreto del worker.
+delete from vault.secrets where name in ('url_proyecto', 'worker_secreto');
+
 select vault.create_secret('https://tpfjeumrvdbciktmaaii.supabase.co', 'url_proyecto');
-select vault.create_secret('TU_WORKER_SECRETO',          'worker_secreto');
+select vault.create_secret('TU_WORKER_SECRETO',                        'worker_secreto');
 
 -- ------------------------------------------------------------
 -- Cada minuto: despierta al worker.

@@ -333,4 +333,19 @@ revoke execute on function sumar_consulta(uuid)              from public, anon, 
 revoke execute on function registrar_uso_demo(text,int,int)  from public, anon, authenticated;
 revoke execute on function limpiar_demo_usos()               from public, anon, authenticated;
 
+-- Y ahora hay que devolvérselo a quien sí las necesita.
+--
+-- El REVOKE de arriba no es inocuo: service_role no tiene concesión propia
+-- sobre estas funciones, la heredaba de PUBLIC. Sin este GRANT, el worker
+-- despierta cada minuto, no puede reclamar ni una tarea, y el descubrimiento
+-- no arranca nunca sin decir por qué.
+grant execute on function reclamar_tareas(int)             to service_role;
+grant execute on function cerrar_job_si_completo(uuid)     to service_role;
+grant execute on function sumar_consulta(uuid)             to service_role;
+grant execute on function registrar_uso_demo(text,int,int) to service_role;
+
+-- limpiar_demo_usos la llama pg_cron, que corre como postgres.
+grant execute on function limpiar_demo_usos() to postgres;
+
+-- La única pensada para el usuario. Comprueba el tenant por su cuenta.
 grant execute on function encolar_descubrimiento(uuid) to authenticated;
