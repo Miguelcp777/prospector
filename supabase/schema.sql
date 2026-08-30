@@ -224,12 +224,18 @@ from campaigns c
 left join leads l on l.campaign_id = c.id
 group by c.id;
 
+-- La vista consulta como quien la llama, no como su dueño. Sin security_invoker
+-- se ejecuta con los privilegios de postgres, que tiene BYPASSRLS: cualquiera
+-- con la anon key leería el resumen de campañas de todos los tenants.
+alter view v_resumen_campana set (security_invoker = on);
+
 -- ============================================================
 -- Scoring · SQL puro, recalculable en cualquier momento
 -- ============================================================
 create or replace function recalcular_scores(p_campaign uuid)
 returns void
 language sql
+set search_path = public
 as $$
   update leads l set score = least(100, greatest(0, (
       case s.prioridad when 'alta' then 45 when 'media' then 30 else 15 end
