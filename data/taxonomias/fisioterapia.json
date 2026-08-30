@@ -1,0 +1,62 @@
+{
+  "vertical": "fisioterapia",
+  "version": "0.1.0",
+  "estado": "semilla — pendiente de validación con un fisioterapeuta real",
+  "descripcion": "Segmentos de cliente potencial para una clínica de fisioterapia. Ancla la inferencia del LLM para que no invente segmentos irrelevantes.",
+  "segmentos": [
+    {
+      "id": "clubes_deportivos",
+      "nombre": "Clubes deportivos federados",
+      "motivo": "Necesitan servicio recurrente de recuperación de lesiones y convenios para plantilla y cantera.",
+      "queries": ["club de fútbol", "club de baloncesto", "club balonmano", "club atletismo"],
+      "prioridad": "alta"
+    },
+    {
+      "id": "gimnasios",
+      "nombre": "Gimnasios y centros fitness",
+      "motivo": "Volumen alto de usuarios con lesiones por sobrecarga; encaja acuerdo de derivación mutua.",
+      "queries": ["gimnasio", "centro fitness", "box crossfit", "centro entrenamiento personal"],
+      "prioridad": "alta"
+    },
+    {
+      "id": "asociaciones_deportivas",
+      "nombre": "Asociaciones y federaciones deportivas",
+      "motivo": "Acceso a muchos deportistas mediante un único interlocutor.",
+      "queries": ["asociación deportiva", "federación deportiva", "club running", "peña ciclista"],
+      "prioridad": "media"
+    },
+    {
+      "id": "residencias_mayores",
+      "nombre": "Residencias y centros de día",
+      "motivo": "Demanda estable de rehabilitación geriátrica y movilidad; contratos recurrentes.",
+      "queries": ["residencia de mayores", "centro de día mayores"],
+      "prioridad": "alta"
+    },
+    {
+      "id": "empresas_wellness",
+      "nombre": "Empresas con programas de bienestar",
+      "motivo": "Prevención de lesiones musculoesqueléticas en oficina y planta; presupuesto de RRHH.",
+      "queries": ["polígono industrial", "coworking", "empresa servicios"],
+      "prioridad": "media"
+    },
+    {
+      "id": "centros_educativos",
+      "nombre": "Centros educativos con deporte escolar",
+      "motivo": "Equipos escolares y convenios con familias.",
+      "queries": ["colegio", "instituto", "escuela deportiva"],
+      "prioridad": "baja"
+    },
+    {
+      "id": "clinicas_derivadoras",
+      "nombre": "Clínicas y consultas derivadoras",
+      "motivo": "Traumatología, podología y medicina deportiva derivan pacientes de forma natural.",
+      "queries": ["clínica traumatología", "podólogo", "medicina deportiva"],
+      "prioridad": "alta"
+    }
+  ],
+  "notas": [
+    "Las queries se combinan con la geografía y el radio de la campaña.",
+    "La prioridad alimenta el scoring inicial antes del enriquecimiento.",
+    "Al añadir verticales nuevas, mantener este mismo esquema."
+  ]
+}

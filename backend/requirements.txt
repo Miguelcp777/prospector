@@ -1,0 +1,11 @@
+# Worker de descubrimiento. No es una API: consume la tabla `jobs` de Supabase,
+# consulta Google Places y persiste leads. Auth, API REST y multi-tenancy los
+# resuelve Supabase — ver docs/decisiones/0001-supabase.md.
+
+supabase          # cliente de Postgres/PostgREST (el worker usa service_role)
+httpx             # llamadas a Google Places API
+pydantic-settings # carga y validación de configuración desde entorno
+tenacity          # reintentos con backoff frente a rate limits de Places
+python-dotenv     # .env en desarrollo local
+
+pytest            # tests

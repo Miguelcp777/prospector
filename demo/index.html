@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prospector · Mapa de clientes potenciales</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Archivo:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#10201C;
+  --paper:#E6EAE6;
+  --paper-deep:#D5DCD7;
+  --card:#F2F5F1;
+  --moss:#2F6B54;
+  --moss-deep:#1D4738;
+  --signal:#E8AE18;
+  --slate:#5C6B66;
+  --line:#B9C4BE;
+  --radius:3px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'Archivo',system-ui,sans-serif;
+  font-size:15px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  background-image:linear-gradient(var(--paper-deep) 1px,transparent 1px),linear-gradient(90deg,var(--paper-deep) 1px,transparent 1px);
+  background-size:64px 64px;
+  background-position:-1px -1px;
+}
+h1,h2,h3{font-family:'Bricolage Grotesque',sans-serif;margin:0;letter-spacing:-.02em;line-height:1.05}
+.mono{font-family:'IBM Plex Mono',monospace}
+button{font-family:inherit;font-size:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
+
+/* ---------- marco ---------- */
+.frame{max-width:1140px;margin:0 auto;padding:0 24px 96px}
+.topbar{
+  display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;
+  padding:20px 0 18px;border-bottom:1px solid var(--line);margin-bottom:36px;
+}
+.wordmark{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:19px;letter-spacing:-.03em}
+.wordmark span{color:var(--moss)}
+.demo-tag{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  border:1px solid var(--line);padding:3px 8px;color:var(--slate);border-radius:100px;
+}
+.steps{margin-left:auto;display:flex;gap:4px;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em}
+.step{color:var(--slate);text-transform:uppercase;padding:3px 0}
+.step.on{color:var(--ink);font-weight:600}
+.step.on::before{content:'';display:inline-block;width:5px;height:5px;background:var(--signal);border-radius:50%;margin-right:6px;vertical-align:middle}
+.step-sep{color:var(--line)}
+
+.view{display:none;animation:rise .45s ease both}
+.view.on{display:block}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--moss);margin-bottom:14px}
+.lede{color:var(--slate);max-width:56ch;margin:16px 0 0}
+
+/* ---------- vista 1 ---------- */
+.hero{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:start}
+.hero h1{font-size:clamp(38px,5.4vw,62px);font-weight:800}
+.hero h1 em{font-style:normal;color:var(--moss)}
+.orbit-still{width:100%;height:auto;margin-top:32px}
+.form{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:26px}
+.field{margin-bottom:18px}
+.field label{display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--slate);margin-bottom:6px}
+.field input,.field select,.field textarea{
+  width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius);
+  background:#fff;font-family:inherit;font-size:15px;color:var(--ink);
+}
+.field textarea{resize:vertical;min-height:86px;line-height:1.45}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.btn{
+  border:1px solid var(--moss-deep);background:var(--moss);color:#F2F5F1;
+  padding:12px 22px;border-radius:var(--radius);font-weight:600;letter-spacing:-.01em;
+  transition:background .15s ease,transform .1s ease;
+}
+.btn:hover{background:var(--moss-deep)}
+.btn:active{transform:translateY(1px)}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover{background:var(--card);border-color:var(--slate)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:26px}
+.hint{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--slate)}
+
+/* ---------- vista 2: mapa radial ---------- */
+.map-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;margin-bottom:8px}
+.map-wrap{display:grid;grid-template-columns:1.15fr .85fr;gap:40px;align-items:center;margin-top:24px}
+.radial{width:100%;height:auto}
+.node{opacity:0;animation:pop .5s cubic-bezier(.2,.9,.3,1.2) forwards}
+@keyframes pop{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:scale(1)}}
+.spoke{stroke:var(--line);stroke-width:1;opacity:0;animation:draw .5s ease forwards}
+@keyframes draw{to{opacity:1}}
+.node circle{cursor:pointer;transition:fill .18s ease,stroke .18s ease}
+.node text{font-family:'IBM Plex Mono',monospace;font-size:8.5px;fill:var(--slate);letter-spacing:.02em;pointer-events:none}
+.node.off circle{fill:var(--paper);stroke:var(--line)}
+.node.off text{fill:var(--line)}
+.core circle{fill:var(--ink)}
+.core text{font-family:'Bricolage Grotesque',sans-serif;font-size:10px;fill:var(--paper);font-weight:700}
+
+.seglist{display:flex;flex-direction:column;gap:8px}
+.seg{
+  display:flex;gap:12px;align-items:flex-start;text-align:left;width:100%;
+  background:var(--card);border:1px solid var(--line);border-left:3px solid var(--moss);
+  border-radius:var(--radius);padding:12px 14px;transition:border-color .15s ease,opacity .15s ease;
+}
+.seg:hover{border-color:var(--slate);border-left-color:var(--moss)}
+.seg.off{opacity:.5;border-left-color:var(--line)}
+.seg-check{
+  flex:0 0 16px;height:16px;margin-top:3px;border:1.5px solid var(--moss);border-radius:2px;
+  background:var(--moss);position:relative;
+}
+.seg.off .seg-check{background:transparent;border-color:var(--line)}
+.seg-check::after{content:'';position:absolute;left:4.5px;top:1px;width:4px;height:8px;border:solid var(--card);border-width:0 2px 2px 0;transform:rotate(45deg)}
+.seg.off .seg-check::after{display:none}
+.seg-name{font-weight:600;letter-spacing:-.01em}
+.seg-why{font-size:13px;color:var(--slate);line-height:1.4;margin-top:2px}
+.prio{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--slate);margin-left:auto;white-space:nowrap;padding-top:2px}
+.prio.alta{color:var(--moss);font-weight:600}
+
+/* ---------- barrido ---------- */
+.scan{text-align:center;padding:90px 0}
+.scan-ring{width:96px;height:96px;margin:0 auto 26px;border:2px solid var(--line);border-top-color:var(--moss);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.scan-log{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--slate);min-height:20px}
+
+/* ---------- vista 3: leads ---------- */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--radius);margin:26px 0 22px;overflow:hidden}
+.stat{background:var(--card);padding:16px 18px}
+.stat-n{font-family:'Bricolage Grotesque',sans-serif;font-size:30px;font-weight:800;letter-spacing:-.03em}
+.stat-l{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--slate);margin-top:2px}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.chip{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;
+  border:1px solid var(--line);background:transparent;color:var(--slate);
+  padding:6px 11px;border-radius:100px;transition:all .15s ease;
+}
+.chip:hover{border-color:var(--slate);color:var(--ink)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.leads-layout{display:grid;grid-template-columns:1fr 340px;gap:24px;align-items:start}
+.tbl{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.tbl th{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--slate);text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);font-weight:500;
+}
+.tbl td{padding:11px 14px;border-bottom:1px solid var(--paper-deep);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tbody tr{cursor:pointer;transition:background .12s ease}
+.tbl tbody tr:hover{background:#fff}
+.tbl tbody tr.sel{background:#fff;box-shadow:inset 3px 0 0 var(--signal)}
+.lead-name{font-weight:600;letter-spacing:-.01em}
+.lead-seg{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--slate)}
+.score{display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600}
+.bar{width:44px;height:4px;background:var(--paper-deep);border-radius:2px;overflow:hidden;flex:0 0 44px}
+.bar i{display:block;height:100%;background:var(--moss)}
+.bar i.mid{background:var(--signal)}
+.bar i.low{background:var(--line)}
+.state{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--slate)}
+.state.nuevo{color:var(--moss);font-weight:600}
+
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;position:sticky;top:20px}
+.panel-empty{color:var(--slate);font-size:14px;line-height:1.5}
+.panel h3{font-size:20px;font-weight:700;margin-bottom:4px}
+.panel .lead-seg{margin-bottom:16px;display:block}
+.kv{display:flex;justify-content:space-between;gap:14px;padding:8px 0;border-bottom:1px solid var(--paper-deep);font-size:13px}
+.kv:last-of-type{border-bottom:none}
+.kv dt{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--slate);flex:0 0 auto}
+.kv dd{margin:0;text-align:right;word-break:break-word}
+.msg{
+  margin-top:16px;background:#fff;border:1px solid var(--line);border-left:3px solid var(--signal);
+  border-radius:var(--radius);padding:14px;font-size:13.5px;line-height:1.55;white-space:pre-line;
+}
+.msg-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--slate);margin-bottom:8px}
+
+footer{border-top:1px solid var(--line);margin-top:64px;padding-top:20px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--slate);line-height:1.7}
+
+@media (max-width:900px){
+  .hero,.map-wrap,.leads-layout{grid-template-columns:1fr;gap:28px}
+  .radial{display:none}
+  .stats{grid-template-columns:1fr 1fr}
+  .panel{position:static}
+  .hide-sm{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  .node,.spoke{opacity:1}
+}
+</style>
+</head>
+<body>
+<div class="frame">
+
+<header class="topbar">
+  <div class="wordmark">Prospector<span>.</span></div>
+  <div class="demo-tag">Datos de demostración</div>
+  <nav class="steps" aria-label="Progreso">
+    <span class="step on" id="s1">Negocio</span><span class="step-sep">/</span>
+    <span class="step" id="s2">Segmentos</span><span class="step-sep">/</span>
+    <span class="step" id="s3">Leads</span>
+  </nav>
+</header>
+
+<!-- ============ 1 · NEGOCIO ============ -->
+<section class="view on" id="v1">
+  <div class="hero">
+    <div>
+      <p class="eyebrow">Prospección por segmentos adyacentes</p>
+      <h1>Tus clientes no están donde buscas.<br>Están <em>al lado</em>.</h1>
+      <p class="lede">Una clínica de fisioterapia no vende a "gente con dolor de espalda". Vende a clubes, gimnasios, residencias y traumatólogos que derivan. Describe el negocio y Prospector deduce a quién debería estar llamando.</p>
+      <svg class="orbit-still" viewBox="0 0 420 130" role="img" aria-label="Diagrama: un negocio en el centro conectado con siete segmentos de cliente">
+        <line x1="60" y1="65" x2="360" y2="65" stroke="#B9C4BE" stroke-width="1"/>
+        <circle cx="60" cy="65" r="15" fill="#10201C"/>
+        <text x="60" y="98" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#5C6B66">negocio</text>
+        <g fill="#2F6B54">
+          <circle cx="145" cy="65" r="8"/><circle cx="196" cy="65" r="6.5"/><circle cx="240" cy="65" r="8"/>
+          <circle cx="285" cy="65" r="5.5"/><circle cx="325" cy="65" r="7"/><circle cx="360" cy="65" r="9"/>
+        </g>
+        <text x="255" y="98" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#5C6B66">segmentos adyacentes</text>
+      </svg>
+    </div>
+
+    <div class="form">
+      <div class="field">
+        <label for="f-sector">Sector del negocio</label>
+        <select id="f-sector">
+          <option value="fisioterapia">Clínica de fisioterapia</option>
+          <option value="fisioterapia">Centro de nutrición (próximamente)</option>
+          <option value="fisioterapia">Asesoría laboral (próximamente)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="f-desc">Qué hace y a quién atiende</label>
+        <textarea id="f-desc">Clínica de fisioterapia y readaptación deportiva. Cuatro fisios, sala de recuperación funcional. Trabajamos mucho lesión deportiva y rehabilitación post-operatoria.</textarea>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="f-city">Ciudad base</label>
+          <input id="f-city" value="Valencia">
+        </div>
+        <div class="field">
+          <label for="f-radius">Radio</label>
+          <select id="f-radius">
+            <option>10 km</option><option selected>25 km</option><option>50 km</option>
+          </select>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn" id="go-infer">Inferir segmentos</button>
+        <span class="hint">≈ 8 s</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ barrido ============ -->
+<section class="view" id="vscan">
+  <div class="scan">
+    <div class="scan-ring"></div>
+    <p class="scan-log mono" id="scanlog">Leyendo la descripción del negocio…</p>
+  </div>
+</section>
+
+<!-- ============ 2 · SEGMENTOS ============ -->
+<section class="view" id="v2">
+  <div class="map-head">
+    <div>
+      <p class="eyebrow">Paso 2 · Revisa y ajusta</p>
+      <h2 style="font-size:clamp(28px,3.6vw,40px)">Siete segmentos adyacentes</h2>
+      <p class="lede">Deducidos del negocio y anclados a la taxonomía de la vertical. Descarta lo que no encaje: tú conoces tu mercado mejor que el modelo.</p>
+    </div>
+  </div>
+
+  <div class="map-wrap">
+    <svg class="radial" id="radial" viewBox="0 0 460 460" role="img" aria-label="Mapa radial de segmentos alrededor del negocio"></svg>
+    <div class="seglist" id="seglist"></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn" id="go-leads">Buscar leads en <span id="segcount">7</span> segmentos</button>
+    <button class="btn ghost" data-go="v1">Volver</button>
+    <span class="hint" id="est">≈ 340 consultas a Places · 25 km</span>
+  </div>
+</section>
+
+<!-- ============ barrido 2 ============ -->
+<section class="view" id="vscan2">
+  <div class="scan">
+    <div class="scan-ring"></div>
+    <p class="scan-log mono" id="scanlog2">Barriendo el radio de 25 km…</p>
+  </div>
+</section>
+
+<!-- ============ 3 · LEADS ============ -->
+<section class="view" id="v3">
+  <p class="eyebrow">Paso 3 · Resultados</p>
+  <h2 style="font-size:clamp(28px,3.6vw,40px)">Leads encontrados</h2>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-n" id="k1">0</div><div class="stat-l">Leads</div></div>
+    <div class="stat"><div class="stat-n" id="k2">0</div><div class="stat-l">Con email</div></div>
+    <div class="stat"><div class="stat-n" id="k3">0</div><div class="stat-l">Score alto</div></div>
+    <div class="stat"><div class="stat-n" id="k4">0</div><div class="stat-l">Segmentos</div></div>
+  </div>
+
+  <div class="filters" id="filters"></div>
+
+  <div class="leads-layout">
+    <table class="tbl">
+      <thead><tr>
+        <th>Lead</th><th class="hide-sm">Zona</th><th>Score</th><th class="hide-sm">Estado</th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+
+    <aside class="panel" id="panel">
+      <p class="panel-empty">Selecciona un lead para ver su ficha y el mensaje que Prospector prepararía.</p>
+    </aside>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn ghost" data-go="v2">Volver a segmentos</button>
+    <button class="btn ghost" data-go="v1">Empezar de nuevo</button>
+  </div>
+</section>
+
+<footer>
+  Demo estática · Todos los negocios, contactos y puntuaciones son inventados para esta demostración.<br>
+  Sin backend, sin llamadas a API, sin datos reales de terceros.
+</footer>
+</div>
+
+<script>
+/* ---------------- datos simulados ---------------- */
+const SEGMENTS = [
+  {id:'clubes', n:'Clubes deportivos federados', why:'Recuperación de lesiones para plantilla y cantera. Un convenio cubre decenas de deportistas.', prio:'alta', r:26},
+  {id:'gym', n:'Gimnasios y centros fitness', why:'Volumen alto de lesión por sobrecarga. Encaja acuerdo de derivación mutua.', prio:'alta', r:25},
+  {id:'clinicas', n:'Clínicas derivadoras', why:'Traumatología y podología derivan pacientes de forma natural tras el alta.', prio:'alta', r:24},
+  {id:'resid', n:'Residencias y centros de día', why:'Rehabilitación geriátrica con demanda estable y contrato recurrente.', prio:'alta', r:23},
+  {id:'asoc', n:'Asociaciones deportivas', why:'Muchos deportistas accesibles a través de un único interlocutor.', prio:'media', r:19},
+  {id:'empresas', n:'Empresas con plan de bienestar', why:'Prevención de lesión musculoesquelética en oficina y planta. Presupuesto de RRHH.', prio:'media', r:18},
+  {id:'edu', n:'Centros educativos con deporte escolar', why:'Equipos escolares y convenios con familias.', prio:'baja', r:14}
+];
+
+const LEADS = [
+  ['Club Deportivo Túria','clubes','Paterna',94,'contacto@ejemplo-cdturia.es','nuevo'],
+  ['Gimnasio Serranos Fitness','gym','Valencia · Ciutat Vella',91,'info@ejemplo-serranos.es','nuevo'],
+  ['Centro Traumatológico Mislata','clinicas','Mislata',89,'recepcion@ejemplo-ctm.es','nuevo'],
+  ['Residencia Els Horts','resid','Burjassot',87,'direccion@ejemplo-elshorts.es','contactado'],
+  ['Club Baloncesto Ribera','clubes','Alzira',85,'secretaria@ejemplo-cbribera.es','nuevo'],
+  ['Box CrossTrain Godella','gym','Godella',82,'hola@ejemplo-crosstrain.es','nuevo'],
+  ['Centro de Día La Ribera','resid','Torrent',80,'info@ejemplo-ladribera.es','nuevo'],
+  ['Podología Avanzada Camins','clinicas','Valencia · Camins al Grau',78,'cita@ejemplo-camins.es','respondido'],
+  ['Club Atletismo Vallbona','clubes','La Pobla de Vallbona',77,'atletismo@ejemplo-vallbona.es','nuevo'],
+  ['Wellness Corporate Ademuz','empresas','Paterna · Parque Tecnológico',74,'rrhh@ejemplo-wca.es','nuevo'],
+  ['Asociación Ciclista Camp de Túria','asoc','Llíria',72,'junta@ejemplo-acct.es','nuevo'],
+  ['Gimnasio Municipal Quart','gym','Quart de Poblet',70,'deportes@ejemplo-quart.es','nuevo'],
+  ['Club Balonmano Horta Nord','clubes','Massamagrell',68,'club@ejemplo-cbhn.es','descartado'],
+  ['Residencia Nova Llar','resid','Xirivella',66,'admin@ejemplo-novallar.es','nuevo'],
+  ['Escuela Deportiva Sant Marc','edu','Bétera',61,'ampa@ejemplo-santmarc.es','nuevo'],
+  ['Centro Fisio-Deporte Alboraia','clinicas','Alboraia',59,'','nuevo'],
+  ['Club Rugby Riu Sec','asoc','Riba-roja',57,'info@ejemplo-riusec.es','nuevo'],
+  ['Industrias Metálicas Vallbona','empresas','La Pobla de Vallbona',54,'personal@ejemplo-imv.es','nuevo'],
+  ['Colegio Verge del Carme','edu','Manises',48,'','nuevo'],
+  ['Peña Ciclista Els Pedals','asoc','Moncada',44,'','nuevo']
+];
+
+const SEGNAME = Object.fromEntries(SEGMENTS.map(s=>[s.id,s.n]));
+const state = {accepted:new Set(SEGMENTS.map(s=>s.id)), filter:'all', sel:null};
+
+/* ---------------- navegación ---------------- */
+const views = ['v1','vscan','v2','vscan2','v3'];
+function show(id){
+  views.forEach(v=>document.getElementById(v).classList.toggle('on', v===id));
+  const map = {v1:'s1', vscan:'s1', v2:'s2', vscan2:'s2', v3:'s3'};
+  ['s1','s2','s3'].forEach(s=>document.getElementById(s).classList.toggle('on', s===map[id]));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>show(b.dataset.go));
+
+function runScan(logEl, lines, done){
+  let i=0;
+  logEl.textContent = lines[0];
+  const t = setInterval(()=>{
+    i++;
+    if(i>=lines.length){clearInterval(t); done(); return;}
+    logEl.textContent = lines[i];
+  }, 950);
+}
+
+/* ---------------- paso 1 → 2 ---------------- */
+document.getElementById('go-infer').onclick = ()=>{
+  show('vscan');
+  runScan(document.getElementById('scanlog'), [
+    'Leyendo la descripción del negocio…',
+    'Cargando taxonomía · vertical fisioterapia…',
+    'Deduciendo segmentos adyacentes…',
+    'Ordenando por prioridad comercial…'
+  ], ()=>{ show('v2'); drawRadial(); });
+};
+
+/* ---------------- mapa radial ---------------- */
+function drawRadial(){
+  const svg = document.getElementById('radial');
+  const cx=230, cy=230, R=155;
+  let html = '';
+  SEGMENTS.forEach((s,i)=>{
+    const a = (-90 + i*(360/SEGMENTS.length)) * Math.PI/180;
+    const x = cx + R*Math.cos(a), y = cy + R*Math.sin(a);
+    const d = 0.35 + i*0.16;
+    html += `<line class="spoke" x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" style="animation-delay:${d}s"/>`;
+  });
+  html += `<g class="core node" style="animation-delay:.1s"><circle cx="${cx}" cy="${cy}" r="34"/>
+           <text x="${cx}" y="${cy-2}" text-anchor="middle">Clínica</text>
+           <text x="${cx}" y="${cy+11}" text-anchor="middle" font-size="7.5" font-weight="500">Valencia · 25 km</text></g>`;
+  SEGMENTS.forEach((s,i)=>{
+    const a = (-90 + i*(360/SEGMENTS.length)) * Math.PI/180;
+    const x = cx + R*Math.cos(a), y = cy + R*Math.sin(a);
+    const d = 0.45 + i*0.16;
+    const label = s.n.split(' ').slice(0,2).join(' ');
+    const ly = y > cy ? y + s.r + 14 : y - s.r - 8;
+    html += `<g class="node" data-seg="${s.id}" style="animation-delay:${d}s;transform-origin:${x}px ${y}px">
+      <circle cx="${x}" cy="${y}" r="${s.r}" fill="var(--moss)" stroke="var(--moss-deep)" stroke-width="1"/>
+      <text x="${x}" y="${ly}" text-anchor="middle">${label}</text></g>`;
+  });
+  svg.innerHTML = html;
+  svg.querySelectorAll('.node[data-seg]').forEach(g=>{
+    g.querySelector('circle').addEventListener('click', ()=>toggleSeg(g.dataset.seg));
+  });
+  renderSegs();
+}
+
+function renderSegs(){
+  const box = document.getElementById('seglist');
+  box.innerHTML = SEGMENTS.map(s=>`
+    <button class="seg ${state.accepted.has(s.id)?'':'off'}" data-seg="${s.id}"
+            aria-pressed="${state.accepted.has(s.id)}">
+      <span class="seg-check"></span>
+      <span>
+        <span class="seg-name">${s.n}</span>
+        <span class="seg-why">${s.why}</span>
+      </span>
+      <span class="prio ${s.prio}">${s.prio}</span>
+    </button>`).join('');
+  box.querySelectorAll('.seg').forEach(b=>b.onclick=()=>toggleSeg(b.dataset.seg));
+  syncSegs();
+}
+
+function toggleSeg(id){
+  state.accepted.has(id) ? state.accepted.delete(id) : state.accepted.add(id);
+  renderSegs();
+}
+
+function syncSegs(){
+  const n = state.accepted.size;
+  document.getElementById('segcount').textContent = n;
+  document.getElementById('go-leads').disabled = n===0;
+  document.getElementById('est').textContent = `≈ ${n*48} consultas a Places · 25 km`;
+  SEGMENTS.forEach(s=>{
+    const g = document.querySelector(`.node[data-seg="${s.id}"]`);
+    if(g) g.classList.toggle('off', !state.accepted.has(s.id));
+  });
+}
+
+/* ---------------- paso 2 → 3 ---------------- */
+document.getElementById('go-leads').onclick = ()=>{
+  show('vscan2');
+  runScan(document.getElementById('scanlog2'), [
+    'Barriendo el radio de 25 km…',
+    'Consultando entidades por segmento…',
+    'Eliminando duplicados…',
+    'Enriqueciendo web y contacto…',
+    'Puntuando por encaje…'
+  ], ()=>{ show('v3'); renderLeads(); });
+};
+
+/* ---------------- leads ---------------- */
+function visible(){
+  return LEADS
+    .filter(l=>state.accepted.has(l[1]))
+    .filter(l=>state.filter==='all' || l[1]===state.filter);
+}
+
+function renderLeads(){
+  const all = LEADS.filter(l=>state.accepted.has(l[1]));
+  document.getElementById('k1').textContent = all.length;
+  document.getElementById('k2').textContent = all.filter(l=>l[4]).length;
+  document.getElementById('k3').textContent = all.filter(l=>l[3]>=75).length;
+  document.getElementById('k4').textContent = state.accepted.size;
+
+  const segs = SEGMENTS.filter(s=>state.accepted.has(s.id));
+  document.getElementById('filters').innerHTML =
+    `<button class="chip ${state.filter==='all'?'on':''}" data-f="all">Todos · ${all.length}</button>` +
+    segs.map(s=>{
+      const c = all.filter(l=>l[1]===s.id).length;
+      return `<button class="chip ${state.filter===s.id?'on':''}" data-f="${s.id}">${s.n.split(' ')[0]} · ${c}</button>`;
+    }).join('');
+  document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{state.filter=c.dataset.f; renderLeads();});
+
+  document.getElementById('tbody').innerHTML = visible().map((l,i)=>{
+    const cls = l[3]>=75?'':(l[3]>=55?'mid':'low');
+    return `<tr data-i="${LEADS.indexOf(l)}" class="${state.sel===LEADS.indexOf(l)?'sel':''}">
+      <td><div class="lead-name">${l[0]}</div><div class="lead-seg">${SEGNAME[l[1]]}</div></td>
+      <td class="hide-sm lead-seg">${l[2]}</td>
+      <td><div class="score"><span class="bar"><i class="${cls}" style="width:${l[3]}%"></i></span>${l[3]}</div></td>
+      <td class="hide-sm"><span class="state ${l[5]}">${l[5]}</span></td>
+    </tr>`;
+  }).join('');
+  document.querySelectorAll('#tbody tr').forEach(r=>r.onclick=()=>{state.sel=+r.dataset.i; renderLeads(); renderPanel();});
+}
+
+function renderPanel(){
+  const l = LEADS[state.sel];
+  if(!l) return;
+  const first = l[0].split(' ').slice(0,2).join(' ');
+  const msg = {
+    clubes:`Vuestra plantilla pierde semanas cada temporada en lesiones que se recuperan más rápido con seguimiento continuo. Trabajamos con clubes de la comarca en convenio de readaptación: sesiones a precio cerrado para federados y valoración funcional de pretemporada.`,
+    gym:`Los socios que se lesionan entrenando suelen darse de baja. Ofrecemos a gimnasios un acuerdo de derivación: atendemos a vuestros socios en 48 h y os devolvemos el alta con pautas para el monitor.`,
+    clinicas:`Tras el alta quirúrgica el paciente necesita continuidad y muchas veces se pierde por el camino. Somos centro de readaptación con sala funcional y podemos asumir vuestras derivaciones con informe de seguimiento.`,
+    resid:`La movilidad es lo primero que se pierde y lo más caro de recuperar. Damos servicio de fisioterapia geriátrica in situ, con sesiones grupales de mantenimiento y valoración individual trimestral.`,
+    asoc:`Vuestros federados entrenan sin cobertura de recuperación. Proponemos tarifa de asociación con acceso directo a consulta y charla de prevención de lesiones para la temporada.`,
+    empresas:`Las bajas por dolor lumbar y cervical son el primer coste oculto de una plantilla de oficina. Montamos programas de prevención in company: valoración postural, pausas activas y consulta abierta.`,
+    edu:`Los equipos escolares se lesionan y las familias no saben a dónde ir. Ofrecemos convenio con el centro: atención preferente para alumnado y sesión formativa para el profesorado de educación física.`
+  }[l[1]];
+
+  document.getElementById('panel').innerHTML = `
+    <h3>${l[0]}</h3>
+    <span class="lead-seg">${SEGNAME[l[1]]}</span>
+    <dl>
+      <div class="kv"><dt>Zona</dt><dd>${l[2]}</dd></div>
+      <div class="kv"><dt>Score</dt><dd>${l[3]} / 100</dd></div>
+      <div class="kv"><dt>Contacto</dt><dd>${l[4] || '— sin email público —'}</dd></div>
+      <div class="kv"><dt>Estado</dt><dd>${l[5]}</dd></div>
+      <div class="kv"><dt>Fuente</dt><dd>Places · simulado</dd></div>
+    </dl>
+    <div class="msg">
+      <div class="msg-tag">Mensaje propuesto</div>Hola, ${first}:
+
+${msg}
+
+¿Os viene bien que os llame esta semana?
+    </div>`;
+}
+</script>
+</body>
+</html>

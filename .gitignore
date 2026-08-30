@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Entorno y secretos
+.env
+.env.local
+*.pem
+credentials*.json
+
+# Datos
+data/exports/
+*.db
+*.sqlite3
+
+# Sistema
+.DS_Store
+
+# Claude Code — overrides personales
+CLAUDE.local.md
+.claude/settings.local.json
