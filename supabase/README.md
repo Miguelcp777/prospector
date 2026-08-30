@@ -168,36 +168,37 @@ campaña, así que el límite se aplica solo, sin vigilarlo.
 `.mcp.json` en la raíz del repo declara el servidor MCP alojado de Supabase,
 acotado a este proyecto con `project_ref`.
 
-Autenticación por token personal, no por OAuth. El token se lee de una
-variable de entorno, así que **no está en el archivo** y este se puede
-commitear:
+Autenticación por OAuth: no hay ningún token en el archivo, y por eso se
+puede commitear.
 
 ```json
 { "mcpServers": { "supabase": {
     "type": "http",
-    "url": "https://mcp.supabase.com/mcp?project_ref=tpfjeumrvdbciktmaaii",
-    "headers": { "Authorization": "Bearer ${SUPABASE_ACCESS_TOKEN}" }
+    "url": "https://mcp.supabase.com/mcp?project_ref=tpfjeumrvdbciktmaaii"
 } } }
 ```
 
-Para ponerlo en marcha:
+Son **dos pasos, y el primero se olvida siempre**:
 
-1. Crea un Personal Access Token en supabase.com → Account → Access Tokens.
-2. Guárdalo como variable de usuario:
-   ```powershell
-   [Environment]::SetEnvironmentVariable('SUPABASE_ACCESS_TOKEN','sbp_...','User')
+1. **Aprobar el `.mcp.json`.** Un servidor de ámbito proyecto no se carga
+   hasta que lo apruebas una vez. Abre `claude` en esta carpeta y acepta.
+   ```bash
+   claude mcp get supabase   # ⏸ Pending approval → falta este paso
    ```
-3. Cierra y reabre la terminal — las variables solo se leen al arrancar el
-   proceso.
-4. Comprueba con `claude mcp get supabase`: `Project config` y `✓ Connected`.
+2. **Autenticar** (necesita Claude Code 2.1.186 o superior):
+   ```bash
+   claude mcp login supabase
+   ```
 
-Si `${SUPABASE_ACCESS_TOKEN}` no está definida, la configuración carga igual
-pero el servidor no autentica, y Claude Code avisa de la variable que falta.
+Comprobar: `claude mcp get supabase` debe decir `Project config` **y**
+`✓ Connected`.
 
-El OAuth es la otra vía y funciona en Claude Code 2.1.186 o superior con
-`claude mcp login supabase`. En versiones anteriores solo se puede desde el
-panel `/mcp`, y requiere haber aprobado antes el `.mcp.json` del proyecto
-(`claude mcp reset-project-choices` si quedó rechazado).
+Si en algún momento rechazaste el servidor, `claude mcp reset-project-choices`
+borra esa decisión y vuelve a preguntar.
+
+> Versiones anteriores a la 2.1.186 no tienen `claude mcp login` y muestran el
+> estado "pendiente de aprobación" como "needs authentication", lo que hace
+> perder un buen rato buscando un problema de credenciales que no existe.
 
 ### Está en modo escritura
 
