@@ -33,3 +33,6 @@ supabase/.temp/
 
 # Local Netlify folder
 .netlify
+
+# Vite / TypeScript — artefactos de build
+*.tsbuildinfo
