@@ -22,7 +22,7 @@ El 003 va más tarde: necesita que las funciones estén desplegadas.
 ### 3 · Secretos
 
 ```bash
-supabase link --project-ref TU_REF
+supabase link --project-ref tpfjeumrvdbciktmaaii
 
 supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
 supabase secrets set GOOGLE_PLACES_API_KEY=...
@@ -58,8 +58,9 @@ que las protege no es el token:
 
 ### 5 · Arrancar el cron
 
-Edita `003_cron.sql` y sustituye `TU_REF` y `TU_WORKER_SECRETO`. Ejecútalo en
-el SQL Editor. A partir de ahí el worker se despierta solo cada minuto.
+Edita `003_cron.sql` y sustituye `TU_WORKER_SECRETO` por el mismo valor que le
+diste al secreto en el paso 3. Ejecútalo en el SQL Editor. A partir de ahí el
+worker se despierta solo cada minuto.
 
 ### 6 · Crear el primer tenant a mano
 
@@ -78,7 +79,7 @@ values ('UUID_DE_AUTH_USERS', 'UUID_DEL_TENANT', 'tu@email.com', 'propietario');
 ## Probar la inferencia
 
 ```bash
-curl -X POST https://TU_REF.supabase.co/functions/v1/infer-segments \
+curl -X POST https://tpfjeumrvdbciktmaaii.supabase.co/functions/v1/infer-segments \
   -H "Authorization: Bearer TU_TOKEN_DE_USUARIO" \
   -H "Content-Type: application/json" \
   -d '{"descripcion":"Clínica de fisioterapia y readaptación deportiva, cuatro fisios, mucha lesión deportiva","vertical":"fisioterapia","ciudad":"Valencia"}'
@@ -109,7 +110,7 @@ los scores y la campaña queda `lista`.
 Para dispararlo a mano sin esperar al cron:
 
 ```bash
-curl -X POST https://TU_REF.supabase.co/functions/v1/descubrir \
+curl -X POST https://tpfjeumrvdbciktmaaii.supabase.co/functions/v1/descubrir \
   -H "x-worker-secreto: TU_WORKER_SECRETO"
 ```
 
@@ -161,6 +162,49 @@ fila en `profiles`.
 
 `reclamar_tareas` deja de servir tareas cuando el job alcanza el techo de su
 campaña, así que el límite se aplica solo, sin vigilarlo.
+
+## Conectar Supabase a Claude Code (MCP)
+
+`.mcp.json` en la raíz del repo declara el servidor MCP alojado de Supabase.
+Autenticación por OAuth: no hay ningún token en el archivo, y por eso se puede
+commitear.
+
+```json
+{ "mcpServers": { "supabase": {
+    "type": "http",
+    "url": "https://mcp.supabase.com/mcp?project_ref=tpfjeumrvdbciktmaaii"
+} } }
+```
+
+Ya apunta al proyecto. Autentícate desde una sesión interactiva:
+
+```bash
+claude mcp login supabase
+```
+
+O con `/mcp` dentro de Claude Code. Comprobar con `claude mcp list`.
+
+### Está en modo escritura
+
+La URL no lleva `read_only=true`, así que Claude puede aplicar migraciones y
+modificar datos. Es lo útil ahora, con el esquema sin ejecutar y sin un solo
+lead dentro. Deja de serlo en cuanto haya datos de clientes:
+
+```
+https://mcp.supabase.com/mcp?project_ref=tpfjeumrvdbciktmaaii&read_only=true
+```
+
+Supabase recomienda no conectar este MCP a producción. El riesgo que citan es
+inyección de prompt: contenido que el modelo lee — el nombre de un negocio
+traído de Places, por ejemplo — y que puede contener instrucciones. Con
+permiso de escritura, esas instrucciones alcanzan a la base.
+
+Dos reglas mientras esté en escritura:
+
+- El repo es la fuente de verdad del esquema. Si aplicas una migración por
+  MCP, que salga de un archivo de `supabase/`, no de SQL improvisado. Si no,
+  la base y el repo divergen y nadie sabe cuál manda.
+- Antes de tener clientes, cambia a `read_only=true`. Es editar un parámetro.
 
 ## Estado
 

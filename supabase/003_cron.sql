@@ -16,7 +16,7 @@ create extension if not exists pg_net;
 -- cron.job es legible por cualquiera con acceso a la base: un secreto
 -- escrito en el `command` queda a la vista de todo el que la mire.
 -- ------------------------------------------------------------
-select vault.create_secret('https://TU_REF.supabase.co', 'url_proyecto');
+select vault.create_secret('https://tpfjeumrvdbciktmaaii.supabase.co', 'url_proyecto');
 select vault.create_secret('TU_WORKER_SECRETO',          'worker_secreto');
 
 -- ------------------------------------------------------------

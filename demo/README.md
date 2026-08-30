@@ -22,7 +22,7 @@ implícito, que es lo que convierte una demo en un problema.
 2. Abre `index.html` y pega la URL del proyecto arriba del `<script>`:
 
    ```js
-   const SUPABASE_URL = 'https://TU_REF.supabase.co';
+   const SUPABASE_URL = 'https://tpfjeumrvdbciktmaaii.supabase.co';
    ```
 
 3. Fija el dominio de la demo en el backend, o cualquiera podrá incrustar la
