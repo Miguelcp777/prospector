@@ -165,24 +165,39 @@ campaña, así que el límite se aplica solo, sin vigilarlo.
 
 ## Conectar Supabase a Claude Code (MCP)
 
-`.mcp.json` en la raíz del repo declara el servidor MCP alojado de Supabase.
-Autenticación por OAuth: no hay ningún token en el archivo, y por eso se puede
-commitear.
+`.mcp.json` en la raíz del repo declara el servidor MCP alojado de Supabase,
+acotado a este proyecto con `project_ref`.
+
+Autenticación por token personal, no por OAuth. El token se lee de una
+variable de entorno, así que **no está en el archivo** y este se puede
+commitear:
 
 ```json
 { "mcpServers": { "supabase": {
     "type": "http",
-    "url": "https://mcp.supabase.com/mcp?project_ref=tpfjeumrvdbciktmaaii"
+    "url": "https://mcp.supabase.com/mcp?project_ref=tpfjeumrvdbciktmaaii",
+    "headers": { "Authorization": "Bearer ${SUPABASE_ACCESS_TOKEN}" }
 } } }
 ```
 
-Ya apunta al proyecto. Autentícate desde una sesión interactiva:
+Para ponerlo en marcha:
 
-```bash
-claude mcp login supabase
-```
+1. Crea un Personal Access Token en supabase.com → Account → Access Tokens.
+2. Guárdalo como variable de usuario:
+   ```powershell
+   [Environment]::SetEnvironmentVariable('SUPABASE_ACCESS_TOKEN','sbp_...','User')
+   ```
+3. Cierra y reabre la terminal — las variables solo se leen al arrancar el
+   proceso.
+4. Comprueba con `claude mcp get supabase`: `Project config` y `✓ Connected`.
 
-O con `/mcp` dentro de Claude Code. Comprobar con `claude mcp list`.
+Si `${SUPABASE_ACCESS_TOKEN}` no está definida, la configuración carga igual
+pero el servidor no autentica, y Claude Code avisa de la variable que falta.
+
+El OAuth es la otra vía y funciona en Claude Code 2.1.186 o superior con
+`claude mcp login supabase`. En versiones anteriores solo se puede desde el
+panel `/mcp`, y requiere haber aprobado antes el `.mcp.json` del proyecto
+(`claude mcp reset-project-choices` si quedó rechazado).
 
 ### Está en modo escritura
 
