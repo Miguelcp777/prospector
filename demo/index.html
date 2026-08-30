@@ -50,6 +50,12 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;
   border:1px solid var(--line);padding:3px 8px;color:var(--slate);border-radius:100px;
 }
+.demo-tag.vivo{border-color:var(--moss);background:var(--moss);color:var(--paper)}
+.aviso{
+  font-size:13px;line-height:1.55;color:var(--slate);max-width:60ch;
+  border-left:2px solid var(--signal);padding:6px 0 6px 12px;margin:14px 0 0;
+}
+[hidden]{display:none !important}
 .steps{margin-left:auto;display:flex;gap:4px;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em}
 .step{color:var(--slate);text-transform:uppercase;padding:3px 0}
 .step.on{color:var(--ink);font-weight:600}
@@ -199,7 +205,7 @@ footer{border-top:1px solid var(--line);margin-top:64px;padding-top:20px;font-fa
 
 <header class="topbar">
   <div class="wordmark">Prospector<span>.</span></div>
-  <div class="demo-tag">Datos de demostración</div>
+  <div class="demo-tag" id="demo-tag">Datos de demostración</div>
   <nav class="steps" aria-label="Progreso">
     <span class="step on" id="s1">Negocio</span><span class="step-sep">/</span>
     <span class="step" id="s2">Segmentos</span><span class="step-sep">/</span>
@@ -272,8 +278,9 @@ footer{border-top:1px solid var(--line);margin-top:64px;padding-top:20px;font-fa
   <div class="map-head">
     <div>
       <p class="eyebrow">Paso 2 · Revisa y ajusta</p>
-      <h2 style="font-size:clamp(28px,3.6vw,40px)">Siete segmentos adyacentes</h2>
+      <h2 style="font-size:clamp(28px,3.6vw,40px)" id="seg-title">Siete segmentos adyacentes</h2>
       <p class="lede">Deducidos del negocio y anclados a la taxonomía de la vertical. Descarta lo que no encaje: tú conoces tu mercado mejor que el modelo.</p>
+      <p class="aviso" id="seg-aviso" hidden></p>
     </div>
   </div>
 
@@ -331,14 +338,31 @@ footer{border-top:1px solid var(--line);margin-top:64px;padding-top:20px;font-fa
 </section>
 
 <footer>
-  Demo estática · Todos los negocios, contactos y puntuaciones son inventados para esta demostración.<br>
-  Sin backend, sin llamadas a API, sin datos reales de terceros.
+  <span id="pie-nota">Demo estática · Todos los negocios, contactos y puntuaciones son inventados para esta demostración.<br>
+  Sin backend, sin llamadas a API, sin datos reales de terceros.</span>
 </footer>
 </div>
 
 <script>
+/* ============================================================
+   Configuración
+   ------------------------------------------------------------
+   Pega aquí la URL de tu proyecto Supabase. La demo solo llama a
+   demo-inferir, que es pública y va con cuota. No hay ninguna clave
+   en este archivo, y no debe haberla: es un sitio estático.
+
+   Si se deja vacío, la demo funciona entera con datos simulados.
+   ============================================================ */
+const SUPABASE_URL = '';   // https://TU_REF.supabase.co
+
+const API_INFERIR = SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/demo-inferir` : '';
+
 /* ---------------- datos simulados ---------------- */
-const SEGMENTS = [
+/* Se usan cuando no hay backend configurado, cuando la inferencia falla o
+   cuando se agota la cuota diaria. Están escritos para el caso de la
+   clínica de fisioterapia en Valencia, que es el ejemplo que trae el
+   formulario por defecto. */
+const SEGMENTS_DEMO = [
   {id:'clubes', n:'Clubes deportivos federados', why:'Recuperación de lesiones para plantilla y cantera. Un convenio cubre decenas de deportistas.', prio:'alta', r:26},
   {id:'gym', n:'Gimnasios y centros fitness', why:'Volumen alto de lesión por sobrecarga. Encaja acuerdo de derivación mutua.', prio:'alta', r:25},
   {id:'clinicas', n:'Clínicas derivadoras', why:'Traumatología y podología derivan pacientes de forma natural tras el alta.', prio:'alta', r:24},
@@ -348,7 +372,7 @@ const SEGMENTS = [
   {id:'edu', n:'Centros educativos con deporte escolar', why:'Equipos escolares y convenios con familias.', prio:'baja', r:14}
 ];
 
-const LEADS = [
+const LEADS_DEMO = [
   ['Club Deportivo Túria','clubes','Paterna',94,'contacto@ejemplo-cdturia.es','nuevo'],
   ['Gimnasio Serranos Fitness','gym','Valencia · Ciutat Vella',91,'info@ejemplo-serranos.es','nuevo'],
   ['Centro Traumatológico Mislata','clinicas','Mislata',89,'recepcion@ejemplo-ctm.es','nuevo'],
@@ -371,8 +395,78 @@ const LEADS = [
   ['Peña Ciclista Els Pedals','asoc','Moncada',44,'','nuevo']
 ];
 
-const SEGNAME = Object.fromEntries(SEGMENTS.map(s=>[s.id,s.n]));
-const state = {accepted:new Set(SEGMENTS.map(s=>s.id)), filter:'all', sel:null};
+/* Estado vivo. Arranca con lo simulado y lo sustituye la inferencia real. */
+let SEGMENTS = SEGMENTS_DEMO;
+let LEADS    = LEADS_DEMO;
+let SEGNAME  = Object.fromEntries(SEGMENTS.map(s=>[s.id,s.n]));
+
+const state = {
+  accepted: new Set(SEGMENTS.map(s=>s.id)),
+  filter: 'all',
+  sel: null,
+  real: false,          // ¿los segmentos vienen de Claude o del guion?
+  aviso: null,          // qué contarle al usuario si hubo que degradar
+  ciudad: 'Valencia',
+  radio: 25
+};
+
+/* ---------------- inferencia real ---------------- */
+/* Sustituye los segmentos simulados por los que devuelve la Edge Function.
+   Los leads NO se vuelven reales: descubrirlos cuesta consultas de pago y
+   exige una campaña de un cliente. Se sintetizan a partir de los segmentos
+   y se marcan como ejemplo, igual que hacían los de guion. */
+function aplicarSegmentos(segmentos, ciudad){
+  SEGMENTS = segmentos.slice(0, 8).map((s, i)=>({
+    id:   s.slug || `seg-${i}`,
+    n:    s.nombre,
+    why:  s.motivo,
+    prio: s.prioridad,
+    r:    s.prioridad === 'alta' ? 26 - i : s.prioridad === 'media' ? 20 - i : 15,
+    q:    Array.isArray(s.queries) && s.queries.length ? s.queries.length : 4
+  }));
+  LEADS   = sintetizarLeads(SEGMENTS, ciudad);
+  SEGNAME = Object.fromEntries(SEGMENTS.map(s=>[s.id, s.n]));
+  state.accepted = new Set(SEGMENTS.map(s=>s.id));
+  state.filter = 'all';
+  state.sel = null;
+}
+
+function volverASimulado(aviso){
+  SEGMENTS = SEGMENTS_DEMO;
+  LEADS    = LEADS_DEMO;
+  SEGNAME  = Object.fromEntries(SEGMENTS.map(s=>[s.id, s.n]));
+  state.accepted = new Set(SEGMENTS.map(s=>s.id));
+  state.filter = 'all';
+  state.sel = null;
+  state.real = false;
+  state.aviso = aviso;
+}
+
+/* Nombres deliberadamente reconocibles como ficticios: llevan "Ejemplo" y
+   el email el prefijo ejemplo-. Un nombre plausible en una demo acaba
+   copiado a un CRM como si fuera un lead de verdad. */
+const ZONAS = ['Centro','Norte','Sur','Este','Área metropolitana','Extrarradio'];
+
+function sintetizarLeads(segmentos, ciudad){
+  const filas = [];
+  segmentos.forEach((s, si)=>{
+    const cuantos = s.prio === 'alta' ? 4 : s.prio === 'media' ? 3 : 2;
+    const corto = s.n.split(/[ ,]/)[0];
+    for(let i=0; i<cuantos; i++){
+      const score = Math.max(38, 95 - si*6 - i*7);
+      const slug = `${s.id}-${i+1}`.toLowerCase().replace(/[^a-z0-9-]/g,'');
+      filas.push([
+        `${corto} Ejemplo ${i+1}`,
+        s.id,
+        `${ciudad} · ${ZONAS[(si+i) % ZONAS.length]}`,
+        score,
+        i === cuantos-1 ? '' : `contacto@ejemplo-${slug}.es`,
+        'nuevo'
+      ]);
+    }
+  });
+  return filas.sort((a,b)=>b[3]-a[3]);
+}
 
 /* ---------------- navegación ---------------- */
 const views = ['v1','vscan','v2','vscan2','v3'];
@@ -394,16 +488,115 @@ function runScan(logEl, lines, done){
   }, 950);
 }
 
+/* Como el anterior, pero en bucle y sin final: la inferencia real tarda lo
+   que tarda, y una barra que se planta en la última línea parece colgada. */
+function animar(logEl, lines){
+  let i = 0;
+  logEl.textContent = lines[0];
+  const t = setInterval(()=>{ i = (i+1) % lines.length; logEl.textContent = lines[i]; }, 950);
+  return ()=>clearInterval(t);
+}
+const espera = ms => new Promise(r=>setTimeout(r, ms));
+
 /* ---------------- paso 1 → 2 ---------------- */
-document.getElementById('go-infer').onclick = ()=>{
+/* Este es el único paso que llama de verdad al backend. El descubrimiento
+   de leads (paso 3) sigue simulado: consultar Places cuesta dinero por
+   consulta y exige una campaña de un cliente real. */
+async function inferir(descripcion, vertical, ciudad){
+  if(!API_INFERIR) return {modo:'simulado'};
+
+  try{
+    const r = await fetch(API_INFERIR, {
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      body: JSON.stringify({descripcion, vertical, ciudad})
+    });
+    const data = await r.json().catch(()=>({}));
+
+    if(!r.ok)      return {modo:'simulado', aviso: data.error || `El servicio respondió ${r.status}.`};
+    if(data.agotado) return {modo:'simulado', aviso: data.mensaje || 'Cuota de la demo agotada por hoy.'};
+    if(!Array.isArray(data.segmentos) || !data.segmentos.length){
+      return {modo:'simulado', aviso:'La inferencia no devolvió segmentos.'};
+    }
+    return {modo:'real', segmentos:data.segmentos, restantes:data.restantes};
+  }catch{
+    return {modo:'simulado', aviso:'No se pudo conectar con el servicio de inferencia.'};
+  }
+}
+
+document.getElementById('go-infer').onclick = async ()=>{
+  const boton      = document.getElementById('go-infer');
+  const descripcion = document.getElementById('f-desc').value.trim();
+  const vertical    = document.getElementById('f-sector').value;
+  const ciudad      = document.getElementById('f-city').value.trim() || 'España';
+  const radio       = parseInt(document.getElementById('f-radius').value, 10) || 25;
+
+  state.ciudad = ciudad;
+  state.radio  = radio;
+
+  if(API_INFERIR && descripcion.length < 20){
+    alert('Describe el negocio con algo más de detalle para que la inferencia tenga con qué trabajar.');
+    return;
+  }
+
+  boton.disabled = true;
   show('vscan');
-  runScan(document.getElementById('scanlog'), [
+
+  const detener = animar(document.getElementById('scanlog'), [
     'Leyendo la descripción del negocio…',
-    'Cargando taxonomía · vertical fisioterapia…',
+    `Cargando taxonomía · vertical ${vertical}…`,
     'Deduciendo segmentos adyacentes…',
     'Ordenando por prioridad comercial…'
-  ], ()=>{ show('v2'); drawRadial(); });
+  ]);
+
+  // El mínimo de espera es para que el barrido se lea, no para disimular:
+  // si la respuesta tarda más, mandan los datos.
+  const [resultado] = await Promise.all([
+    inferir(descripcion, vertical, ciudad),
+    espera(2600)
+  ]);
+
+  detener();
+  boton.disabled = false;
+
+  if(resultado.modo === 'real'){
+    aplicarSegmentos(resultado.segmentos, ciudad);
+    state.real  = true;
+    state.aviso = null;
+    state.restantes = resultado.restantes;
+  }else{
+    volverASimulado(resultado.aviso);
+  }
+
+  show('v2');
+  drawRadial();
+  pintarCabecera();
 };
+
+/* Que se vea de un vistazo qué parte es real y qué parte es guion. */
+function pintarCabecera(){
+  const n = SEGMENTS.length;
+  const palabras = ['cero','un','dos','tres','cuatro','cinco','seis','siete','ocho'];
+  document.getElementById('seg-title').textContent =
+    `${(palabras[n] || n).replace(/^./, c=>c.toUpperCase())} segmento${n===1?'':'s'} adyacente${n===1?'':'s'}`;
+
+  const tag = document.getElementById('demo-tag');
+  tag.textContent = state.real ? 'Segmentos en vivo · leads simulados' : 'Datos de demostración';
+  tag.classList.toggle('vivo', state.real);
+
+  const aviso = document.getElementById('seg-aviso');
+  if(state.aviso){
+    aviso.textContent = `${state.aviso} Lo que ves debajo es el ejemplo precalculado de una clínica de fisioterapia en Valencia.`;
+    aviso.hidden = false;
+  }else if(state.real){
+    const quedan = Number.isFinite(state.restantes)
+      ? ` Te quedan ${state.restantes} inferencias hoy.` : '';
+    aviso.textContent = `Estos segmentos los acaba de deducir el modelo a partir de tu descripción.${quedan} Los leads del paso siguiente son simulados: descubrirlos de verdad consulta Google Places, que se paga por consulta.`;
+    aviso.hidden = false;
+  }else{
+    aviso.hidden = true;
+  }
+}
 
 /* ---------------- mapa radial ---------------- */
 function drawRadial(){
@@ -461,7 +654,13 @@ function syncSegs(){
   const n = state.accepted.size;
   document.getElementById('segcount').textContent = n;
   document.getElementById('go-leads').disabled = n===0;
-  document.getElementById('est').textContent = `≈ ${n*48} consultas a Places · 25 km`;
+  // Places cobra por consulta, y una query son hasta 3 páginas de 20.
+  // Enseñar el número antes de lanzar es la mitad del argumento de venta.
+  const consultas = SEGMENTS
+    .filter(s=>state.accepted.has(s.id))
+    .reduce((t,s)=>t + (s.q ?? 4) * 3, 0);
+  document.getElementById('est').textContent =
+    `≈ ${consultas} consultas a Places · ${state.radio} km`;
   SEGMENTS.forEach(s=>{
     const g = document.querySelector(`.node[data-seg="${s.id}"]`);
     if(g) g.classList.toggle('off', !state.accepted.has(s.id));
@@ -472,7 +671,7 @@ function syncSegs(){
 document.getElementById('go-leads').onclick = ()=>{
   show('vscan2');
   runScan(document.getElementById('scanlog2'), [
-    'Barriendo el radio de 25 km…',
+    `Barriendo el radio de ${state.radio} km…`,
     'Consultando entidades por segmento…',
     'Eliminando duplicados…',
     'Enriqueciendo web y contacto…',
@@ -515,19 +714,32 @@ function renderLeads(){
   document.querySelectorAll('#tbody tr').forEach(r=>r.onclick=()=>{state.sel=+r.dataset.i; renderLeads(); renderPanel();});
 }
 
+/* Mensajes escritos a mano para los segmentos del guion. Cuando la
+   inferencia es real los slugs son otros, así que se compone uno con el
+   motivo que ha dado el modelo — que es texto suyo, no relleno nuestro.
+   La generación de copy de verdad es la Fase 3. */
+const MENSAJES = {
+  clubes:`Vuestra plantilla pierde semanas cada temporada en lesiones que se recuperan más rápido con seguimiento continuo. Trabajamos con clubes de la comarca en convenio de readaptación: sesiones a precio cerrado para federados y valoración funcional de pretemporada.`,
+  gym:`Los socios que se lesionan entrenando suelen darse de baja. Ofrecemos a gimnasios un acuerdo de derivación: atendemos a vuestros socios en 48 h y os devolvemos el alta con pautas para el monitor.`,
+  clinicas:`Tras el alta quirúrgica el paciente necesita continuidad y muchas veces se pierde por el camino. Somos centro de readaptación con sala funcional y podemos asumir vuestras derivaciones con informe de seguimiento.`,
+  resid:`La movilidad es lo primero que se pierde y lo más caro de recuperar. Damos servicio de fisioterapia geriátrica in situ, con sesiones grupales de mantenimiento y valoración individual trimestral.`,
+  asoc:`Vuestros federados entrenan sin cobertura de recuperación. Proponemos tarifa de asociación con acceso directo a consulta y charla de prevención de lesiones para la temporada.`,
+  empresas:`Las bajas por dolor lumbar y cervical son el primer coste oculto de una plantilla de oficina. Montamos programas de prevención in company: valoración postural, pausas activas y consulta abierta.`,
+  edu:`Los equipos escolares se lesionan y las familias no saben a dónde ir. Ofrecemos convenio con el centro: atención preferente para alumnado y sesión formativa para el profesorado de educación física.`
+};
+
+function mensajeFor(segId){
+  if(MENSAJES[segId]) return MENSAJES[segId];
+  const s = SEGMENTS.find(x=>x.id === segId);
+  if(!s) return 'Nos gustaría plantearos una colaboración.';
+  return `${s.why} Por eso os escribimos: trabajamos en ${state.ciudad} y su área, y creemos que hay encaje para una colaboración estable.`;
+}
+
 function renderPanel(){
   const l = LEADS[state.sel];
   if(!l) return;
   const first = l[0].split(' ').slice(0,2).join(' ');
-  const msg = {
-    clubes:`Vuestra plantilla pierde semanas cada temporada en lesiones que se recuperan más rápido con seguimiento continuo. Trabajamos con clubes de la comarca en convenio de readaptación: sesiones a precio cerrado para federados y valoración funcional de pretemporada.`,
-    gym:`Los socios que se lesionan entrenando suelen darse de baja. Ofrecemos a gimnasios un acuerdo de derivación: atendemos a vuestros socios en 48 h y os devolvemos el alta con pautas para el monitor.`,
-    clinicas:`Tras el alta quirúrgica el paciente necesita continuidad y muchas veces se pierde por el camino. Somos centro de readaptación con sala funcional y podemos asumir vuestras derivaciones con informe de seguimiento.`,
-    resid:`La movilidad es lo primero que se pierde y lo más caro de recuperar. Damos servicio de fisioterapia geriátrica in situ, con sesiones grupales de mantenimiento y valoración individual trimestral.`,
-    asoc:`Vuestros federados entrenan sin cobertura de recuperación. Proponemos tarifa de asociación con acceso directo a consulta y charla de prevención de lesiones para la temporada.`,
-    empresas:`Las bajas por dolor lumbar y cervical son el primer coste oculto de una plantilla de oficina. Montamos programas de prevención in company: valoración postural, pausas activas y consulta abierta.`,
-    edu:`Los equipos escolares se lesionan y las familias no saben a dónde ir. Ofrecemos convenio con el centro: atención preferente para alumnado y sesión formativa para el profesorado de educación física.`
-  }[l[1]];
+  const msg = mensajeFor(l[1]);
 
   document.getElementById('panel').innerHTML = `
     <h3>${l[0]}</h3>
@@ -547,6 +759,15 @@ ${msg}
 ¿Os viene bien que os llame esta semana?
     </div>`;
 }
+
+/* ---------------- arranque ---------------- */
+/* El pie tiene que decir la verdad en los dos modos. Con backend hay una
+   llamada real a Claude; sin él, no hay ninguna. */
+document.getElementById('pie-nota').innerHTML = API_INFERIR
+  ? 'Los segmentos se deducen en vivo con Claude a partir de lo que escribas.<br>' +
+    'Los negocios, contactos y puntuaciones del paso 3 son inventados: descubrir leads reales consulta Google Places, que se paga por consulta.'
+  : 'Demo estática · Todos los negocios, contactos y puntuaciones son inventados para esta demostración.<br>' +
+    'Sin backend, sin llamadas a API, sin datos reales de terceros.';
 </script>
 </body>
 </html>

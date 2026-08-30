@@ -1,0 +1,14 @@
+project_id = "prospector"
+
+# La inferencia del producto exige usuario: escribe en la campaña de un tenant.
+[functions.infer-segments]
+verify_jwt = true
+
+# El escaparate público no tiene usuarios. Lo que lo protege no es el JWT,
+# sino la cuota por IP y el tope diario de 002_descubrimiento_y_demo.sql.
+[functions.demo-inferir]
+verify_jwt = false
+
+# La despierta pg_cron, no una persona. Se autentica con WORKER_SECRETO.
+[functions.descubrir]
+verify_jwt = false

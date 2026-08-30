@@ -1,33 +1,79 @@
 # Supabase
 
+Todo el backend vive aquí: base de datos, aislamiento, inferencia y el worker
+de descubrimiento. No hay servidor propio.
+
 ## Puesta en marcha
 
-1. **Crear el proyecto** en supabase.com. Elige **región europea**
-   (Frankfurt o Irlanda). Esto no se puede cambiar después sin migrar.
+### 1 · Crear el proyecto
 
-2. **Cargar el esquema.** SQL Editor → pegar `schema.sql` → ejecutar.
-   Crea las tablas, las políticas RLS, la vista de resumen y la función de
-   scoring.
+En supabase.com, **región europea** (Frankfurt o Irlanda). Esto no se puede
+cambiar después sin migrar. Ver `docs/compliance.md`.
 
-3. **Desplegar la función de inferencia:**
+### 2 · Cargar el esquema
 
-   ```bash
-   supabase link --project-ref TU_REF
-   supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
-   supabase functions deploy infer-segments
-   ```
+SQL Editor, en este orden:
 
-4. **Crear el primer tenant a mano** (todavía no hay pantalla de alta):
+1. `schema.sql` — tablas, RLS, vista de resumen, función de scoring
+2. `002_descubrimiento_y_demo.sql` — tareas troceadas, cuota de la demo
 
-   ```sql
-   insert into tenants (nombre, vertical, ciudad)
-   values ('Clínica de prueba', 'fisioterapia', 'Valencia')
-   returning id;
+El 003 va más tarde: necesita que las funciones estén desplegadas.
 
-   -- Después de registrar el usuario desde la app:
-   insert into profiles (id, tenant_id, email, rol)
-   values ('UUID_DE_AUTH_USERS', 'UUID_DEL_TENANT', 'tu@email.com', 'propietario');
-   ```
+### 3 · Secretos
+
+```bash
+supabase link --project-ref TU_REF
+
+supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+supabase secrets set GOOGLE_PLACES_API_KEY=...
+
+# Cadenas largas y aleatorias. Genera cada una con:
+#   openssl rand -hex 32
+supabase secrets set WORKER_SECRETO=...
+supabase secrets set SAL_DEMO=...
+
+# El dominio de la demo. Con "*" cualquiera puede incrustar la función
+# y pagas tú las llamadas a Claude.
+supabase secrets set ORIGENES_PERMITIDOS=https://tu-demo.netlify.app
+```
+
+`SUPABASE_SERVICE_ROLE_KEY` no se configura: las Edge Functions ya la reciben.
+
+### 4 · Desplegar las funciones
+
+```bash
+supabase functions deploy infer-segments
+supabase functions deploy demo-inferir --no-verify-jwt
+supabase functions deploy descubrir    --no-verify-jwt
+```
+
+Las dos últimas van sin JWT a propósito, y `config.toml` lo deja fijado. Lo
+que las protege no es el token:
+
+| Función | Qué la protege |
+|---|---|
+| `infer-segments` | JWT del usuario. La RLS sigue aplicando |
+| `demo-inferir` | Cuota por IP y tope diario. No toca datos de nadie |
+| `descubrir` | Cabecera `x-worker-secreto`. La llama el cron |
+
+### 5 · Arrancar el cron
+
+Edita `003_cron.sql` y sustituye `TU_REF` y `TU_WORKER_SECRETO`. Ejecútalo en
+el SQL Editor. A partir de ahí el worker se despierta solo cada minuto.
+
+### 6 · Crear el primer tenant a mano
+
+Todavía no hay pantalla de alta:
+
+```sql
+insert into tenants (nombre, vertical, ciudad)
+values ('Clínica de prueba', 'fisioterapia', 'Valencia')
+returning id;
+
+-- Después de registrar el usuario desde la app:
+insert into profiles (id, tenant_id, email, rol)
+values ('UUID_DE_AUTH_USERS', 'UUID_DEL_TENANT', 'tu@email.com', 'propietario');
+```
 
 ## Probar la inferencia
 
@@ -41,6 +87,46 @@ curl -X POST https://TU_REF.supabase.co/functions/v1/infer-segments \
 Sin `campaign_id` devuelve los segmentos sin guardarlos. Con él, los persiste y
 marca la campaña como `inferido`.
 
+## Probar el descubrimiento
+
+```sql
+-- Como usuario autenticado, sobre una campaña con segmentos aceptados:
+select encolar_descubrimiento('UUID_DE_LA_CAMPAÑA');
+```
+
+El cron lo recoge en menos de un minuto. Para verlo avanzar:
+
+```sql
+select estado, progreso, consultas, detalle from jobs order by creado_en desc limit 5;
+
+select estado, count(*) from job_tareas
+where job_id = 'UUID_DEL_JOB' group by estado;
+```
+
+Cuando no queda ninguna tarea pendiente, el job pasa a `hecho`, se recalculan
+los scores y la campaña queda `lista`.
+
+Para dispararlo a mano sin esperar al cron:
+
+```bash
+curl -X POST https://TU_REF.supabase.co/functions/v1/descubrir \
+  -H "x-worker-secreto: TU_WORKER_SECRETO"
+```
+
+## Cómo está troceado el descubrimiento
+
+Una Edge Function no aguanta una campaña entera: el wall clock son 150 s en
+plan free. La unidad de trabajo no es la campaña sino **(segmento × query ×
+página)**, y vive en `job_tareas`.
+
+Cada invocación reclama unas pocas con `SKIP LOCKED`, las resuelve y se va. Si
+Places devuelve `nextPageToken`, la tarea encola su continuación en vez de
+seguir el bucle. El razonamiento completo, en
+`docs/decisiones/0002-worker-en-supabase.md`.
+
+Consecuencia práctica: **solapar invocaciones es inofensivo**. Dos ejecuciones
+a la vez se reparten tareas distintas, no las duplican.
+
 ## Claves
 
 | Clave | Dónde | Qué puede |
@@ -52,6 +138,11 @@ Si `service_role` acaba en el navegador, cualquiera puede leer los leads de
 todos los clientes. Es el único error de este proyecto que no tiene arreglo
 discreto.
 
+Lo mismo vale para las funciones `SECURITY DEFINER` de 002: se saltan la RLS,
+y por eso el archivo termina con un bloque de `revoke execute` sobre `anon` y
+`authenticated`. Postgres las abre a `public` por defecto. Si añades una
+función nueva de ese tipo, revócala en la misma migración.
+
 ## Comprobar que la RLS funciona
 
 Crea dos tenants con un usuario cada uno, inserta una campaña en cada uno y
@@ -59,8 +150,26 @@ consulta con el token del primero. Si ves las dos campañas, la RLS no está
 activa — revisa que `auth_tenant_id()` devuelve valor y que el usuario tiene
 fila en `profiles`.
 
+## Controlar el gasto
+
+| Palanca | Dónde | Por defecto |
+|---|---|---|
+| Consultas a Places por campaña | `campaigns.max_consultas` | 120 |
+| Inferencias de demo por IP y día | `DEMO_MAX_POR_IP` | 5 |
+| Inferencias de demo por día | `DEMO_MAX_POR_DIA` | 300 |
+| Tareas por invocación del worker | `TAREAS_POR_TANDA` | 5 |
+
+`reclamar_tareas` deja de servir tareas cuando el job alcanza el techo de su
+campaña, así que el límite se aplica solo, sin vigilarlo.
+
+## Estado
+
+Escrito y desplegable; **no ejecutado todavía** contra un proyecto real. Hasta
+que una campaña corra de punta a punta, esto está sin verificar.
+
 ## Pendiente
 
-- Worker de descubrimiento que consuma la tabla `jobs`.
-- Edge Function de generación de mensajes.
+- Edge Function de generación de mensajes (Fase 3).
+- Enriquecimiento: web, email corporativo, validación MX (Fase 2). Encaja como
+  un `tipo` nuevo en `jobs`, reusando el mismo troceado.
 - Trigger de alta que cree tenant y perfil automáticamente al registrarse.

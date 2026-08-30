@@ -6,10 +6,10 @@
    RLS. Migrarlo después de tener clientes es doloroso y caro.
 2. **El aislamiento vive en la base, no en la aplicación.** RLS sobre
    `auth_tenant_id()`, no un `WHERE tenant_id = ...` que alguien puede olvidar.
-3. **La cola es una tabla, no un orquestador visual.** El descubrimiento no cabe
-   en una Edge Function: cientos de consultas a Places y varios minutos frente a
-   un timeout corto. Por eso existe la tabla `jobs` y un worker externo en
-   Python. El scoring y el enriquecimiento se testean y se versionan como código.
+3. **La cola es una tabla, no un orquestador visual.** El trabajo pesado vive en
+   `jobs` y `job_tareas`, y lo consume una Edge Function que se come una tanda
+   pequeña por invocación. El estado del recorrido está en la base: si una
+   invocación muere a mitad, la tarea vuelve a la cola y no se pierde nada.
 4. **Solo datos públicos y buzones corporativos.** Ver `compliance.md`.
 5. **La taxonomía ancla al LLM.** La inferencia no parte de cero: se apoya en
    taxonomías curadas por vertical para reducir alucinación y ser reproducible.
@@ -20,9 +20,14 @@
 |---|---|---|
 | Postgres + RLS | Supabase | Datos y aislamiento entre tenants |
 | Auth | Supabase | Usuarios, roles, invitaciones |
-| Edge Functions | Supabase (Deno) | Lo que necesita clave secreta: inferencia, copy |
-| Worker | Contenedor externo | Descubrimiento y enriquecimiento. Usa `service_role` |
+| `infer-segments` | Supabase (Deno) | Inferencia autenticada. Escribe en la campaña |
+| `demo-inferir` | Supabase (Deno) | Escaparate público con cuota. No toca datos |
+| `descubrir` | Supabase (Deno) | El worker. Places y dedup. Usa `service_role` |
+| `pg_cron` | Supabase (Postgres) | Despierta al worker cada minuto |
 | Frontend | Estático | Onboarding, campañas, leads. Solo `anon key` |
+| Demo | Netlify | Un archivo. Solo llama a `demo-inferir` |
+
+No hay servidor propio. Ver `decisiones/0002-worker-en-supabase.md`.
 
 ## Flujo
 
@@ -44,9 +49,10 @@ Envío               → ESP con warmup, SPF/DKIM/DMARC, throttling, supresión
 Dashboard           → embudo, apertura, respuesta, leads por segmento
 ```
 
-Inferencia y oferta son Edge Functions. Descubrimiento y enriquecimiento son
-jobs que el worker toma de la tabla `jobs`. El scoring es una función SQL
-(`recalcular_scores`).
+Inferencia y oferta son Edge Functions síncronas. Descubrimiento y
+enriquecimiento son jobs troceados en `job_tareas` que la función `descubrir`
+consume por tandas. El scoring es una función SQL (`recalcular_scores`) que se
+dispara sola al cerrarse el job.
 
 ## Modelo de datos
 
@@ -59,14 +65,17 @@ Fuente de verdad: `supabase/schema.sql`.
 - `leads` — entidad descubierta: place_id, nombre, dirección, web, contacto, score
 - `messages` — plantilla generada y variante enviada por lead
 - `suppressions` — bajas y exclusiones, con motivo y fecha
-- `jobs` — cola de trabajo del worker, con estado y progreso
+- `jobs` — cola de trabajo, con estado, progreso y consultas gastadas
+- `job_tareas` — la unidad troceada: segmento × query × página
+- `demo_usos` — contador de la demo pública, por hash de IP
 
 ## Decisiones abiertas
 
-- Coste de Google Places: se paga por consulta y escala con nº de segmentos.
-  Definir presupuesto por campaña y cachear resultados por zona.
-- Dónde corre el worker: Proxmox o contenedor gestionado.
 - ESP para el envío: montar sobre SES o contratar Smartlead/Instantly.
+- Cachear resultados de Places por zona, para no pagar dos veces la misma
+  búsqueda en campañas distintas del mismo cliente.
+- Techo por defecto de `max_consultas`: hoy son 120 por campaña, elegidos a
+  ojo. Falta medirlo con coste real.
 
-La cola de jobs ya no es una decisión abierta: se resolvió con la tabla `jobs`
-en `docs/decisiones/0001-supabase.md`.
+Resueltas: dónde corre el worker y el presupuesto por campaña, ambas en
+`decisiones/0002-worker-en-supabase.md`.

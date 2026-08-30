@@ -1,6 +1,9 @@
 # 0001 · Supabase como backend
 
-**Fecha:** agosto 2026 · **Estado:** aceptada
+**Fecha:** agosto 2026 · **Estado:** aceptada, parcialmente superada
+
+> La conclusión de que el descubrimiento necesita un worker externo quedó
+> superada por `0002-worker-en-supabase.md`. El resto sigue vigente.
 
 ## Contexto
 
@@ -29,9 +32,10 @@ llegar antes a producto demostrable.
 
 **En contra**
 
-- El descubrimiento no cabe en una Edge Function: cientos de consultas a Places
+- ~~El descubrimiento no cabe en una Edge Function: cientos de consultas a Places
   y varios minutos frente a un timeout corto. Por eso existe la tabla `jobs` y
-  un worker externo.
+  un worker externo.~~ **Superado por la 0002:** sí cabe, troceando el trabajo.
+  La tabla `jobs` se queda; el worker externo, no.
 - Dependencia de proveedor. Mitigada porque el núcleo es Postgres estándar y el
   esquema es portable.
 
@@ -47,5 +51,7 @@ llegar antes a producto demostrable.
 
 ## Pendiente
 
-- Decidir dónde corre el worker: Proxmox o contenedor gestionado.
-- Rate limiting y presupuesto por campaña para Google Places.
+- ~~Decidir dónde corre el worker: Proxmox o contenedor gestionado.~~
+  Resuelto en la 0002: corre en Supabase.
+- ~~Rate limiting y presupuesto por campaña para Google Places.~~
+  Resuelto en la 0002: `campaigns.max_consultas`.
