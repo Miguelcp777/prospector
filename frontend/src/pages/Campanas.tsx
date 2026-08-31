@@ -89,7 +89,8 @@ export function Campanas() {
     <div className="panel">
       <div className="cabecera">
         <div className="cabecera-texto">
-          <h1>Campañas</h1>
+          <span className="rotulo">Prospección</span>
+          <h1>Tus <span className="destacado">campañas</span></h1>
           <p className="sutil">Cada campaña es un recorrido: describir, segmentar, buscar, escribir.</p>
         </div>
         <button className="primario" onClick={() => setCreando(!creando)}>

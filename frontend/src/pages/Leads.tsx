@@ -141,7 +141,10 @@ export function Leads() {
   return (
     <section className="panel">
       <header className="cabecera">
-        <h1>Leads</h1>
+        <div className="cabecera-texto">
+          <span className="rotulo">Clientes potenciales</span>
+          <h1>Leads</h1>
+        </div>
         <select value={elegida} onChange={(e) => setElegida(e.target.value)}>
           {campanas.map((c) => (
             <option key={c.id} value={c.id}>
@@ -162,7 +165,7 @@ export function Leads() {
         </div>
       )}
 
-      <div className="filtros">
+      <div className="rejilla">
         <input
           placeholder="Buscar por nombre o dirección"
           value={busqueda}

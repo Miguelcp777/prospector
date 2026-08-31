@@ -38,7 +38,10 @@ export function Cuenta() {
 
   return (
     <section className="panel">
-      <h1>Cuenta</h1>
+      <div className="cabecera-texto">
+        <span className="rotulo">Tu negocio</span>
+        <h1>Cuenta</h1>
+      </div>
 
       {error && <p className="error">{error}</p>}
       {!perfil && !error && <p className="sutil">Cargando tu cuenta…</p>}

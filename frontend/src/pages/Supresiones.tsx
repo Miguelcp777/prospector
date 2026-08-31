@@ -82,7 +82,10 @@ export function Supresiones() {
 
   return (
     <section className="panel">
-      <h1>Lista de supresión</h1>
+      <div className="cabecera-texto">
+        <span className="rotulo">Cumplimiento</span>
+        <h1>Lista de supresión</h1>
+      </div>
 
       <p className="sutil">
         Estas direcciones no reciben correos. No es una comprobación del

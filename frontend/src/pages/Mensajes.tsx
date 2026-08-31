@@ -90,6 +90,7 @@ export function Mensajes() {
     <div className="panel">
       <div className="cabecera">
         <div className="cabecera-texto">
+          <span className="rotulo">Borradores</span>
           <h1>Mensajes</h1>
           <p className="sutil">
             Todos en borrador. Léelos y corrígelos antes de que exista el
