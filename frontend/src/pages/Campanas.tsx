@@ -44,7 +44,7 @@ export function Campanas({ verLeads }: { verLeads: () => void }) {
   const [abierta, setAbierta] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
-    const [c, j, r] = await Promise.all([
+    const [c, j, r, s] = await Promise.all([
       supabase.from("campaigns")
         .select("id, nombre, ciudad, radio_km, estado, max_consultas, creado_en")
         .order("creado_en", { ascending: false }),
@@ -52,7 +52,12 @@ export function Campanas({ verLeads }: { verLeads: () => void }) {
         .select("campaign_id, estado, progreso, consultas, detalle, creado_en")
         .eq("tipo", "descubrir")
         .order("creado_en", { ascending: false }),
-      supabase.from("v_resumen_campana").select("campaign_id, leads, segmentos"),
+      supabase.from("v_resumen_campana").select("campaign_id, leads"),
+      // Los segmentos se cuentan aquí y no en v_resumen_campana: la vista
+      // hace count(distinct l.segment_id), que son los segmentos QUE YA
+      // TIENEN LEADS. Una campaña recién inferida da 0 por ahí, y con 0 el
+      // botón de buscar se queda deshabilitado para siempre.
+      supabase.from("segments").select("campaign_id").eq("aceptado", true),
     ]);
 
     if (c.error) { setError(c.error.message); setCargando(false); return; }
@@ -68,7 +73,14 @@ export function Campanas({ verLeads }: { verLeads: () => void }) {
     setJobs(ultimos);
 
     const porCampana: Record<string, Resumen> = {};
-    for (const fila of (r.data ?? []) as Resumen[]) porCampana[fila.campaign_id] = fila;
+    for (const fila of (r.data ?? []) as { campaign_id: string; leads: number }[]) {
+      porCampana[fila.campaign_id] = { ...fila, segmentos: 0 };
+    }
+    for (const fila of (s.data ?? []) as { campaign_id: string }[]) {
+      const actual = porCampana[fila.campaign_id] ??
+        { campaign_id: fila.campaign_id, leads: 0, segmentos: 0 };
+      porCampana[fila.campaign_id] = { ...actual, segmentos: actual.segmentos + 1 };
+    }
     setResumen(porCampana);
 
     setCargando(false);

@@ -74,3 +74,33 @@ con un dominio sin buzón. Haz un alta con tu email real para cerrar eso.
 - Invitar miembros a un tenant existente — hoy cada alta crea un tenant nuevo
 - Las tres pantallas del MVP: onboarding, campañas, leads
 - Despliegue: aún no está en Netlify. La demo y la app son sitios distintos
+
+## Desplegada
+
+**https://prospector-captacion.netlify.app**
+
+Sitio distinto del de la demo (`prospector-demo`), a propósito: la demo es un
+escaparate público sin cuentas y esto es la aplicación con datos de clientes.
+
+Desde el CLI, con el `dist` ya construido:
+
+```bash
+npm run build
+netlify deploy --prod --dir dist --site 98841a18-d890-4247-8427-4d3ba57abb88
+```
+
+Si conectas el repositorio a Netlify, pon `frontend` como base directory y
+define allí `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`: el build
+las necesita porque Vite las incrusta en el bundle.
+
+Cada dominio nuevo hay que añadirlo a `ORIGENES_PERMITIDOS`, o el navegador
+bloqueará las llamadas a `infer-segments` por CORS.
+
+## Pendiente en el panel de Supabase
+
+**Site URL y Redirect URLs**, en Authentication → URL Configuration. El enlace
+del correo de confirmación apunta a lo que haya configurado ahí; si sigue en
+`localhost`, quien se registre desde el dominio público recibirá un enlace
+roto. Hay que poner `https://prospector-captacion.netlify.app`.
+
+No se puede cambiar por CLI ni por MCP: es del panel.
