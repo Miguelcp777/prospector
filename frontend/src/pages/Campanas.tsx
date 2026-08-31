@@ -40,7 +40,7 @@ type Job = {
   creado_en: string;
 };
 
-type Resumen = { campaign_id: string; leads: number; segmentos: number };
+type Resumen = { campaign_id: string; leads: number; con_email: number; segmentos: number };
 
 export function Campanas({ verLeads }: { verLeads: () => void }) {
   const [campanas, setCampanas] = useState<Campana[]>([]);
@@ -63,7 +63,7 @@ export function Campanas({ verLeads }: { verLeads: () => void }) {
         .select("campaign_id, estado, progreso, consultas, detalle, creado_en")
         .eq("tipo", "descubrir")
         .order("creado_en", { ascending: false }),
-      supabase.from("v_resumen_campana").select("campaign_id, leads"),
+      supabase.from("v_resumen_campana").select("campaign_id, leads, con_email"),
       // Los segmentos se cuentan aquí y no en v_resumen_campana: la vista
       // hace count(distinct l.segment_id), que son los segmentos QUE YA
       // TIENEN LEADS. Una campaña recién inferida da 0 por ahí, y con 0 el
@@ -84,12 +84,12 @@ export function Campanas({ verLeads }: { verLeads: () => void }) {
     setJobs(ultimos);
 
     const porCampana: Record<string, Resumen> = {};
-    for (const fila of (r.data ?? []) as { campaign_id: string; leads: number }[]) {
+    for (const fila of (r.data ?? []) as { campaign_id: string; leads: number; con_email: number }[]) {
       porCampana[fila.campaign_id] = { ...fila, segmentos: 0 };
     }
     for (const fila of (s.data ?? []) as { campaign_id: string }[]) {
       const actual = porCampana[fila.campaign_id] ??
-        { campaign_id: fila.campaign_id, leads: 0, segmentos: 0 };
+        { campaign_id: fila.campaign_id, leads: 0, con_email: 0, segmentos: 0 };
       porCampana[fila.campaign_id] = { ...actual, segmentos: actual.segmentos + 1 };
     }
     setResumen(porCampana);
@@ -121,6 +121,17 @@ export function Campanas({ verLeads }: { verLeads: () => void }) {
     const t = setInterval(cargar, 5000);
     return () => clearInterval(t);
   }, [campanas, cargar]);
+
+  // El enriquecimiento no paga API: son peticiones a webs públicas. Por eso
+  // no tiene enfriado ni techo, y el botón no avisa de ningún coste.
+  async function enriquecer(c: Campana) {
+    setError(null);
+    const { error: fallo } = await supabase.rpc("encolar_enriquecimiento", {
+      p_campaign: c.id,
+    });
+    if (fallo) setError(fallo.message);
+    await cargar();
+  }
 
   async function encolar(c: Campana, forzar = false) {
     setError(null);
@@ -204,6 +215,7 @@ export function Campanas({ verLeads }: { verLeads: () => void }) {
 
               <div className="fila-cifras">
                 <span><strong>{res?.leads ?? 0}</strong> leads</span>
+                <span><strong>{res?.con_email ?? 0}</strong> con email</span>
                 <span><strong>{segmentos}</strong> segmentos</span>
                 {job && <span><strong>{job.consultas}</strong> consultas gastadas</span>}
               </div>
@@ -232,6 +244,11 @@ export function Campanas({ verLeads }: { verLeads: () => void }) {
                 >
                   {buscando ? "Buscando…" : "Buscar leads"}
                 </button>
+                {(res?.leads ?? 0) > 0 && (
+                  <button className="pestana" onClick={() => enriquecer(c)}>
+                    Buscar emails
+                  </button>
+                )}
                 {(res?.leads ?? 0) > 0 && (
                   <button className="pestana" onClick={verLeads}>Ver leads</button>
                 )}

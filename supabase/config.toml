@@ -12,3 +12,8 @@ verify_jwt = false
 # La despierta pg_cron, no una persona. Se autentica con WORKER_SECRETO.
 [functions.descubrir]
 verify_jwt = false
+
+# El worker de enriquecimiento. Como descubrir: lo despierta el cron, no una
+# persona, y lo autentica WORKER_SECRETO.
+[functions.enriquecer]
+verify_jwt = false
