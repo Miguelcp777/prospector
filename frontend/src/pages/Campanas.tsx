@@ -1,122 +1,76 @@
 // ============================================================
-// Pantalla de campañas.
+// Lista de campañas.
 //
-// Es la única que escribe en la base, y lo hace sin mandar tenant_id: desde
-// la migración 006 lo pone el DEFAULT auth_tenant_id(). La RLS lo sigue
-// comprobando igual.
+// Solo dos cosas: ver en qué punto está cada campaña y crear una nueva. El
+// trabajo de verdad pasa dentro de cada una, en su recorrido por pasos.
 //
-// Encolar un descubrimiento gasta dinero en Google Places, así que el botón
-// dice cuánto puede costar como mucho antes de pulsarlo, no después.
+// Escribe en la base sin mandar tenant_id: desde la 006 lo pone el DEFAULT
+// auth_tenant_id(). La RLS lo sigue comprobando igual.
 // ============================================================
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
-import { Segmentos } from "./Segmentos";
-import { Landing } from "./Landing";
+import { Campana } from "./Campana";
 
-type Campana = {
+type Fila = {
   id: string;
   nombre: string;
   ciudad: string;
   radio_km: number;
   estado: string;
   max_consultas: number;
-  creado_en: string;
-  ultima_busqueda_en: string | null;
 };
 
-/** Lo mismo que frena encolar_descubrimiento en la base. Aquí solo se enseña. */
-const DIAS_ENFRIADO = 30;
+type Resumen = { campaign_id: string; leads: number; con_email: number };
 
-function diasDesde(iso: string): number {
-  return Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
-}
-
-type Job = {
-  campaign_id: string;
-  estado: string;
-  progreso: number;
-  consultas: number;
-  detalle: string | null;
-  creado_en: string;
-};
-
-type Resumen = { campaign_id: string; leads: number; con_email: number; segmentos: number };
-
-export function Campanas({ verLeads }: { verLeads: () => void }) {
-  const [campanas, setCampanas] = useState<Campana[]>([]);
-  const [jobs, setJobs] = useState<Record<string, Job>>({});
+export function Campanas() {
+  const [campanas, setCampanas] = useState<Fila[]>([]);
   const [resumen, setResumen] = useState<Record<string, Resumen>>({});
+  const [segmentos, setSegmentos] = useState<Record<string, number>>({});
+  const [gasto, setGasto] = useState<
+    { tenant: number; techoT: number; proyecto: number; techoP: number } | null
+  >(null);
+  const [abierta, setAbierta] = useState<string | null>(null);
+  const [creando, setCreando] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [creando, setCreando] = useState(false);
-  const [abierta, setAbierta] = useState<string | null>(null);
-  const [landingDe, setLandingDe] = useState<string | null>(null);
-  const [gasto, setGasto] = useState<{ gastado: number; techo: number } | null>(null);
-  // El cupo gratuito de Google es del proyecto, no de cada cliente: 1000
-  // búsquedas al mes en Text Search Enterprise, que es el nivel en el que
-  // caemos por pedir websiteUri. Sin verlo, se pasa sin enterarse.
-  const [gastoProyecto, setGastoProyecto] = useState<{ gastado: number; techo: number } | null>(null);
-  // Campaña cuya repetición la base ha frenado y el usuario puede forzar.
-  const [frenada, setFrenada] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
-    const [c, j, r, s] = await Promise.all([
+    const [c, r, s, cp, tn, aj] = await Promise.all([
       supabase.from("campaigns")
-        .select("id, nombre, ciudad, radio_km, estado, max_consultas, creado_en, ultima_busqueda_en")
-        .order("creado_en", { ascending: false }),
-      supabase.from("jobs")
-        .select("campaign_id, estado, progreso, consultas, detalle, creado_en")
-        .eq("tipo", "descubrir")
+        .select("id, nombre, ciudad, radio_km, estado, max_consultas")
         .order("creado_en", { ascending: false }),
       supabase.from("v_resumen_campana").select("campaign_id, leads, con_email"),
-      // Los segmentos se cuentan aquí y no en v_resumen_campana: la vista
-      // hace count(distinct l.segment_id), que son los segmentos QUE YA
-      // TIENEN LEADS. Una campaña recién inferida da 0 por ahí, y con 0 el
-      // botón de buscar se queda deshabilitado para siempre.
+      // Los segmentos NO salen de v_resumen_campana: esa vista cuenta los
+      // que ya tienen leads, y una campaña recién inferida daría 0.
       supabase.from("segments").select("campaign_id").eq("aceptado", true),
-    ]);
-
-    if (c.error) { setError(c.error.message); setCargando(false); return; }
-
-    setCampanas((c.data ?? []) as Campana[]);
-
-    // Solo interesa el último job de cada campaña; vienen ordenados por
-    // fecha descendente, así que el primero que se ve de cada una gana.
-    const ultimos: Record<string, Job> = {};
-    for (const job of (j.data ?? []) as Job[]) {
-      if (!ultimos[job.campaign_id]) ultimos[job.campaign_id] = job;
-    }
-    setJobs(ultimos);
-
-    const porCampana: Record<string, Resumen> = {};
-    for (const fila of (r.data ?? []) as { campaign_id: string; leads: number; con_email: number }[]) {
-      porCampana[fila.campaign_id] = { ...fila, segmentos: 0 };
-    }
-    for (const fila of (s.data ?? []) as { campaign_id: string }[]) {
-      const actual = porCampana[fila.campaign_id] ??
-        { campaign_id: fila.campaign_id, leads: 0, con_email: 0, segmentos: 0 };
-      porCampana[fila.campaign_id] = { ...actual, segmentos: actual.segmentos + 1 };
-    }
-    setResumen(porCampana);
-
-    // Gasto del mes contra el techo del tenant. Las dos filas las filtra la
-    // RLS, así que esto es lo tuyo aunque no lleve ningún where.
-    const [cp, tn, aj] = await Promise.all([
       supabase.from("consumo_places").select("consultas").limit(1),
       supabase.from("tenants").select("max_consultas_mes").limit(1),
       supabase.from("ajustes").select("max_consultas_mes_proyecto").limit(1),
     ]);
-    const { data: totalProyecto } = await supabase.rpc("consultas_del_proyecto");
-    const techoP = (aj.data?.[0] as { max_consultas_mes_proyecto: number } | undefined)?.max_consultas_mes_proyecto;
-    if (techoP !== undefined) {
-      setGastoProyecto({ gastado: Number(totalProyecto ?? 0), techo: techoP });
+
+    if (c.error) { setError(c.error.message); setCargando(false); return; }
+    setCampanas((c.data ?? []) as Fila[]);
+
+    const porCampana: Record<string, Resumen> = {};
+    for (const f of (r.data ?? []) as Resumen[]) porCampana[f.campaign_id] = f;
+    setResumen(porCampana);
+
+    const segs: Record<string, number> = {};
+    for (const f of (s.data ?? []) as { campaign_id: string }[]) {
+      segs[f.campaign_id] = (segs[f.campaign_id] ?? 0) + 1;
     }
-    const techo = (tn.data?.[0] as { max_consultas_mes: number } | undefined)?.max_consultas_mes;
-    if (techo !== undefined) {
+    setSegmentos(segs);
+
+    const { data: totalP } = await supabase.rpc("consultas_del_proyecto");
+    const techoT = (tn.data?.[0] as { max_consultas_mes: number } | undefined)?.max_consultas_mes;
+    const techoP = (aj.data?.[0] as { max_consultas_mes_proyecto: number } | undefined)?.max_consultas_mes_proyecto;
+    if (techoT !== undefined && techoP !== undefined) {
       setGasto({
-        gastado: (cp.data?.[0] as { consultas: number } | undefined)?.consultas ?? 0,
-        techo,
+        tenant: (cp.data?.[0] as { consultas: number } | undefined)?.consultas ?? 0,
+        techoT,
+        proyecto: Number(totalP ?? 0),
+        techoP,
       });
     }
 
@@ -125,213 +79,88 @@ export function Campanas({ verLeads }: { verLeads: () => void }) {
 
   useEffect(() => { cargar(); }, [cargar]);
 
-  // Mientras algo esté buscando, refrescamos: el worker avanza por su cuenta
-  // y una pantalla congelada parece una campaña atascada.
-  useEffect(() => {
-    const buscando = campanas.some((c) => c.estado === "buscando");
-    if (!buscando) return;
-    const t = setInterval(cargar, 5000);
-    return () => clearInterval(t);
-  }, [campanas, cargar]);
-
-  // El enriquecimiento no paga API: son peticiones a webs públicas. Por eso
-  // no tiene enfriado ni techo, y el botón no avisa de ningún coste.
-  async function enriquecer(c: Campana) {
-    setError(null);
-    const { error: fallo } = await supabase.rpc("encolar_enriquecimiento", {
-      p_campaign: c.id,
-    });
-    if (fallo) setError(fallo.message);
-    await cargar();
-  }
-
-  // Redactar cuesta una llamada a Claude por lead, así que el botón dice
-  // cuántos van a redactarse antes de pulsarlo.
-  async function redactar(c: Campana) {
-    setError(null);
-    const { error: fallo } = await supabase.rpc("encolar_redaccion", { p_campaign: c.id });
-    if (fallo) setError(fallo.message);
-    await cargar();
-  }
-
-  async function encolar(c: Campana, forzar = false) {
-    setError(null);
-    setFrenada(null);
-    const { error: fallo } = await supabase.rpc("encolar_descubrimiento", {
-      p_campaign: c.id,
-      p_forzar: forzar,
-    });
-    if (fallo) {
-      setError(fallo.message);
-      // El enfriado se puede saltar; el techo mensual no. Distinguimos por el
-      // texto porque es lo único que devuelve PostgREST de un raise exception.
-      if (!forzar && fallo.message.includes("en pausa")) setFrenada(c.id);
-    }
-    await cargar();
-  }
-
-  // El onboarding es de una campaña concreta, así que vive dentro de esta
-  // pantalla en vez de en una pestaña suelta que no sabría de cuál habla.
-  if (landingDe) {
-    return <Landing campanaId={landingDe} volver={() => { setLandingDe(null); cargar(); }} />;
-  }
-
   if (abierta) {
-    return (
-      <Segmentos
-        campanaId={abierta}
-        volver={() => { setAbierta(null); cargar(); }}
-      />
-    );
+    return <Campana id={abierta} volver={() => { setAbierta(null); cargar(); }} />;
   }
 
-  if (cargando) return <section className="panel"><p className="sutil">Cargando campañas…</p></section>;
+  if (cargando) return <div className="panel"><p className="sutil">Cargando…</p></div>;
 
   return (
-    <section className="panel">
-      <header className="cabecera">
-        <h1>Campañas</h1>
-        <button className="pestana activa" onClick={() => setCreando(!creando)}>
+    <div className="panel">
+      <div className="cabecera">
+        <div className="cabecera-texto">
+          <h1>Campañas</h1>
+          <p className="sutil">Cada campaña es un recorrido: describir, segmentar, buscar, escribir.</p>
+        </div>
+        <button className="primario" onClick={() => setCreando(!creando)}>
           {creando ? "Cancelar" : "Nueva campaña"}
         </button>
-      </header>
+      </div>
+
+      {error && <p className="caja-error">{error}</p>}
 
       {gasto && (
-        <p className="sutil">
-          Consultas a Places este mes: <strong>{gasto.gastado}</strong> de{" "}
-          <strong>{gasto.techo}</strong>. Al alcanzar el techo se para todo hasta
-          el día 1, y eso no se puede forzar.
-        </p>
+        <div className="cifras">
+          <div className="cifra">
+            <strong>
+              {gasto.tenant}
+              <span style={{ fontSize: "1rem", color: "var(--texto-3)" }}> / {gasto.techoT}</span>
+            </strong>
+            <span>búsquedas tuyas este mes</span>
+          </div>
+          <div className="cifra">
+            <strong>
+              {gasto.proyecto}
+              <span style={{ fontSize: "1rem", color: "var(--texto-3)" }}> / {gasto.techoP}</span>
+            </strong>
+            <span>del servicio · cupo gratuito de Google</span>
+          </div>
+        </div>
       )}
-
-      {gastoProyecto && (
-        <p className="sutil">
-          En todo el servicio: <strong>{gastoProyecto.gastado}</strong> de{" "}
-          <strong>{gastoProyecto.techo}</strong>. Ese es el cupo gratuito
-          mensual de Google; a partir de ahí cada mil búsquedas cuestan 35 $.
-        </p>
-      )}
-
-      {error && <p className="error">{error}</p>}
 
       {creando && (
-        <FormularioCampana
-          alCrear={async () => { setCreando(false); await cargar(); }}
-          alFallar={setError}
-        />
+        <Formulario alCrear={async () => { setCreando(false); await cargar(); }} alFallar={setError} />
       )}
 
-      {campanas.length === 0 && (
-        <p className="sutil">
-          Todavía no hay campañas. Crea una para empezar a descubrir leads.
-        </p>
+      {campanas.length === 0 && !creando && (
+        <div className="tarjeta">
+          <h2>Todavía no hay campañas</h2>
+          <p className="sutil">
+            Una campaña es un negocio, una ciudad y un tipo de cliente al que
+            quieres llegar. Crea la primera y te guío paso a paso.
+          </p>
+        </div>
       )}
 
       <div className="lista">
         {campanas.map((c) => {
-          const job = jobs[c.id];
           const res = resumen[c.id];
-          const segmentos = res?.segmentos ?? 0;
-          const buscando = c.estado === "buscando";
-
+          const segs = segmentos[c.id] ?? 0;
           return (
-            <article key={c.id} className="fila">
+            <button key={c.id} className="tarjeta tarjeta-enlace" onClick={() => setAbierta(c.id)}>
               <div className="fila-cabeza">
                 <div>
-                  <strong>{c.nombre}</strong>
-                  <div className="sutil">
-                    {c.ciudad} · {c.radio_km} km · techo de {c.max_consultas} consultas
-                  </div>
+                  <strong style={{ fontSize: "1.0625rem" }}>{c.nombre}</strong>
+                  <div className="sutil">{c.ciudad} · {c.radio_km} km</div>
                 </div>
-                <Estado valor={c.estado} />
+                <span className={`etiqueta ${c.estado}`}>{c.estado}</span>
               </div>
-
               <div className="fila-cifras">
+                <span><strong>{segs}</strong> segmentos</span>
                 <span><strong>{res?.leads ?? 0}</strong> leads</span>
                 <span><strong>{res?.con_email ?? 0}</strong> con email</span>
-                <span><strong>{segmentos}</strong> segmentos</span>
-                {job && <span><strong>{job.consultas}</strong> consultas gastadas</span>}
               </div>
-
-              {buscando && job && (
-                <div className="progreso">
-                  <div className="barra-progreso">
-                    <div style={{ width: `${job.progreso}%` }} />
-                  </div>
-                  <span className="sutil">{job.progreso}% · {job.detalle}</span>
-                </div>
-              )}
-
-              {!buscando && job && job.detalle && (
-                <p className="sutil">Último descubrimiento: {job.detalle}</p>
-              )}
-
-              <div className="acciones">
-                <button className="pestana" onClick={() => setAbierta(c.id)}>
-                  {segmentos === 0 ? "Definir segmentos" : `Segmentos (${segmentos})`}
-                </button>
-                <button
-                  className="pestana activa"
-                  disabled={buscando || segmentos === 0}
-                  onClick={() => encolar(c)}
-                >
-                  {buscando ? "Buscando…" : "Buscar leads"}
-                </button>
-                {(res?.leads ?? 0) > 0 && (
-                  <button className="pestana" onClick={() => enriquecer(c)}>
-                    Buscar emails
-                  </button>
-                )}
-                {(res?.con_email ?? 0) > 0 && (
-                  <button className="pestana" onClick={() => redactar(c)}>
-                    Redactar mensajes ({res?.con_email})
-                  </button>
-                )}
-                <button className="pestana" onClick={() => setLandingDe(c.id)}>
-                  Landing
-                </button>
-                {(res?.leads ?? 0) > 0 && (
-                  <button className="pestana" onClick={verLeads}>Ver leads</button>
-                )}
-                {frenada === c.id && (
-                  <button className="pestana peligro" onClick={() => encolar(c, true)}>
-                    Buscar igualmente (hasta {c.max_consultas} consultas)
-                  </button>
-                )}
-              </div>
-
-              {c.ultima_busqueda_en && !buscando && (
-                <p className="sutil">
-                  {(() => {
-                    const d = diasDesde(c.ultima_busqueda_en);
-                    return d < DIAS_ENFRIADO
-                      ? `Buscada hace ${d} ${d === 1 ? "día" : "días"}. Places apenas cambia en semanas, así que repetir ahora sería pagar dos veces por lo mismo: en pausa ${DIAS_ENFRIADO - d} días más.`
-                      : `Buscada hace ${d} días. Ya compensa volver a mirar.`;
-                  })()}
-                </p>
-              )}
-
-              {segmentos === 0 && (
-                <p className="sutil">
-                  Sin segmentos aceptados no hay nada que buscar. Define primero
-                  a quién te diriges.
-                </p>
-              )}
-            </article>
+            </button>
           );
         })}
       </div>
-    </section>
+    </div>
   );
 }
 
-function FormularioCampana({
-  alCrear,
-  alFallar,
-}: {
-  alCrear: () => void;
-  alFallar: (m: string) => void;
-}) {
+function Formulario({
+  alCrear, alFallar,
+}: { alCrear: () => void; alFallar: (m: string) => void }) {
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [ciudad, setCiudad] = useState("");
@@ -360,7 +189,8 @@ function FormularioCampana({
   }
 
   return (
-    <form className="fila" onSubmit={enviar}>
+    <form className="tarjeta" onSubmit={enviar}>
+      <h2>Nueva campaña</h2>
       <label className="campo">
         <span>Nombre</span>
         <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Fisios Valencia" />
@@ -370,33 +200,29 @@ function FormularioCampana({
         <input value={descripcion} onChange={(e) => setDescripcion(e.target.value)}
                placeholder="Clínica de fisioterapia y readaptación deportiva" />
       </label>
-      <div className="filtros">
+      <div className="rejilla">
         <label className="campo">
           <span>Ciudad</span>
           <input value={ciudad} onChange={(e) => setCiudad(e.target.value)} placeholder="Valencia" />
         </label>
         <label className="campo">
           <span>Radio (km)</span>
-          <input type="number" min={1} max={200} value={radio}
-                 onChange={(e) => setRadio(Number(e.target.value))} />
+          <input type="number" min={1} max={200} value={radio} onChange={(e) => setRadio(Number(e.target.value))} />
         </label>
         <label className="campo">
-          <span>Techo de consultas</span>
-          <input type="number" min={1} max={2000} value={tope}
-                 onChange={(e) => setTope(Number(e.target.value))} />
+          <span>Techo de búsquedas</span>
+          <input type="number" min={1} max={2000} value={tope} onChange={(e) => setTope(Number(e.target.value))} />
         </label>
       </div>
-      <p className="sutil">
-        Cada consulta a Google Places se paga. El techo es el gasto máximo de
-        esta campaña, y el worker deja de buscar al alcanzarlo.
+      <p className="menudo">
+        Cada búsqueda en Google Places se paga a partir del cupo gratuito. El
+        techo es el gasto máximo de esta campaña.
       </p>
-      <button type="submit" disabled={enviando}>
-        {enviando ? "Creando…" : "Crear campaña"}
-      </button>
+      <div className="acciones">
+        <button className="primario" type="submit" disabled={enviando}>
+          {enviando ? "Creando…" : "Crear campaña"}
+        </button>
+      </div>
     </form>
   );
-}
-
-function Estado({ valor }: { valor: string }) {
-  return <span className={`etiqueta ${valor}`}>{valor}</span>;
 }

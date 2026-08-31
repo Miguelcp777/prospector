@@ -1,26 +1,35 @@
 // ============================================================
 // Raíz de la aplicación.
 //
-// Resuelve la sesión y, con ella, monta el armazón: navegación y pantalla.
-// Sin sesión, formularios de entrada o alta.
+// Resuelve la sesión y monta el armazón: barra lateral y contenido. Sin
+// sesión, entrada o alta.
 //
-// La navegación es un useState y no un router: con dos pantallas, meter una
-// dependencia de rutas es coste sin beneficio. Cuando entre onboarding y
-// haya enlaces que compartir, tocará cambiarlo.
+// La navegación sigue siendo un useState y no un router. Con cinco
+// secciones y ningún enlace que compartir, una dependencia de rutas es
+// coste sin beneficio. El día que haya que compartir la URL de una campaña
+// concreta, tocará cambiarlo.
 // ============================================================
 
 import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { Entrar } from "./pages/Entrar";
 import { Registro } from "./pages/Registro";
-import { Leads } from "./pages/Leads";
 import { Campanas } from "./pages/Campanas";
+import { Leads } from "./pages/Leads";
 import { Mensajes } from "./pages/Mensajes";
 import { Supresiones } from "./pages/Supresiones";
 import { Cuenta } from "./pages/Cuenta";
 import { supabase } from "./lib/supabase";
 
 type Vista = "campanas" | "leads" | "mensajes" | "supresiones" | "cuenta";
+
+const SECCIONES: { id: Vista; nombre: string; icono: string }[] = [
+  { id: "campanas",    nombre: "Campañas",    icono: "◈" },
+  { id: "leads",       nombre: "Leads",       icono: "◉" },
+  { id: "mensajes",    nombre: "Mensajes",    icono: "✉" },
+  { id: "supresiones", nombre: "Supresiones", icono: "⊘" },
+  { id: "cuenta",      nombre: "Cuenta",      icono: "◐" },
+];
 
 export default function App() {
   const [sesion, setSesion] = useState<Session | null>(null);
@@ -36,13 +45,11 @@ export default function App() {
       setCargando(false);
     });
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_evento, s) => {
-      setSesion(s);
-    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_evento, s) => setSesion(s));
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  if (cargando) return <main className="centro">Cargando…</main>;
+  if (cargando) return <main className="centro"><p className="sutil">Cargando…</p></main>;
 
   if (!sesion) {
     return (
@@ -55,51 +62,39 @@ export default function App() {
   }
 
   return (
-    <>
-      <nav className="barra">
-        <span className="marca">Prospector</span>
-        <button
-          className={vista === "campanas" ? "pestana activa" : "pestana"}
-          onClick={() => setVista("campanas")}
-        >
-          Campañas
-        </button>
-        <button
-          className={vista === "leads" ? "pestana activa" : "pestana"}
-          onClick={() => setVista("leads")}
-        >
-          Leads
-        </button>
-        <button
-          className={vista === "mensajes" ? "pestana activa" : "pestana"}
-          onClick={() => setVista("mensajes")}
-        >
-          Mensajes
-        </button>
-        <button
-          className={vista === "supresiones" ? "pestana activa" : "pestana"}
-          onClick={() => setVista("supresiones")}
-        >
-          Supresiones
-        </button>
-        <button
-          className={vista === "cuenta" ? "pestana activa" : "pestana"}
-          onClick={() => setVista("cuenta")}
-        >
-          Cuenta
-        </button>
-        <button className="pestana salir" onClick={() => supabase.auth.signOut()}>
+    <div className="armazon">
+      <nav className="lateral">
+        <div className="marca">
+          <div className="marca-punto" />
+          <span>Prospector</span>
+        </div>
+
+        {SECCIONES.map((s) => (
+          <button
+            key={s.id}
+            className={vista === s.id ? "nav-item activa" : "nav-item"}
+            onClick={() => setVista(s.id)}
+          >
+            <span aria-hidden="true">{s.icono}</span>
+            {s.nombre}
+          </button>
+        ))}
+
+        <button className="nav-item nav-fin" onClick={() => supabase.auth.signOut()}>
+          <span aria-hidden="true">→</span>
           Salir
         </button>
       </nav>
 
-      <main className="ancho">
-        {vista === "campanas" && <Campanas verLeads={() => setVista("leads")} />}
-        {vista === "leads" && <Leads />}
-        {vista === "mensajes" && <Mensajes />}
-        {vista === "supresiones" && <Supresiones />}
-        {vista === "cuenta" && <Cuenta />}
+      <main className="contenido">
+        <div className="ancho">
+          {vista === "campanas"    && <Campanas />}
+          {vista === "leads"       && <Leads />}
+          {vista === "mensajes"    && <Mensajes />}
+          {vista === "supresiones" && <Supresiones />}
+          {vista === "cuenta"      && <Cuenta />}
+        </div>
       </main>
-    </>
+    </div>
   );
 }

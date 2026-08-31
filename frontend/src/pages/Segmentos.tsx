@@ -139,7 +139,7 @@ export function Segmentos({
   return (
     <section className="panel">
       <header className="cabecera">
-        <button className="pestana" onClick={volver}>← Campañas</button>
+        <button className="fantasma" onClick={volver}>← Volver</button>
         <h1>{campana?.nombre}</h1>
       </header>
 
@@ -159,7 +159,7 @@ export function Segmentos({
           Cuanto más concreto, mejores segmentos. El modelo se apoya además en
           la taxonomía de {vertical || "tu vertical"} y en {campana?.ciudad}.
         </p>
-        <button onClick={inferir} disabled={infiriendo}>
+        <button className="primario" onClick={inferir} disabled={infiriendo}>
           {infiriendo
             ? "Pensando… (unos 15 segundos)"
             : segmentos.length > 0 ? "Volver a inferir" : "Inferir segmentos"}
@@ -208,7 +208,7 @@ export function Segmentos({
 
                 <div className="acciones">
                   <button
-                    className={s.aceptado ? "pestana" : "pestana activa"}
+                    className={s.aceptado ? "secundario" : "primario"}
                     onClick={() => alternar(s)}
                   >
                     {s.aceptado ? "Descartar" : "Recuperar"}

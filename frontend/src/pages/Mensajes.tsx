@@ -88,7 +88,7 @@ export function Mensajes() {
 
                 <div className="acciones">
                   <button
-                    className="pestana"
+                    className="secundario"
                     onClick={() => setAbierto(abierto === m.id ? null : m.id)}
                   >
                     {abierto === m.id ? "Plegar" : "Leer entero"}

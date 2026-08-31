@@ -79,7 +79,7 @@ export function Registro({ irAEntrar }: { irAEntrar: () => void }) {
   }
 
   return (
-    <form className="tarjeta" onSubmit={enviar}>
+    <form className="tarjeta-auth" onSubmit={enviar}>
       <h1>Crear cuenta</h1>
       <p className="sutil">
         Empezamos por tu negocio: es lo que usamos para deducir a qué clientes
@@ -147,7 +147,7 @@ export function Registro({ irAEntrar }: { irAEntrar: () => void }) {
       {error && <p className="error">{error}</p>}
       {aviso && <p className="aviso">{aviso}</p>}
 
-      <button type="submit" disabled={enviando}>
+      <button className="primario" type="submit" disabled={enviando}>
         {enviando ? "Creando cuenta…" : "Crear cuenta"}
       </button>
 

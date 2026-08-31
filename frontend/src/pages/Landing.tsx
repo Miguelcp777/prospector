@@ -105,7 +105,7 @@ export function Landing({
   return (
     <section className="panel">
       <header className="cabecera">
-        <button className="pestana" onClick={volver}>← Campañas</button>
+        <button className="fantasma" onClick={volver}>← Volver</button>
         <h1>Landing</h1>
       </header>
 
@@ -118,7 +118,7 @@ export function Landing({
             segmentos que aceptaste, así que conviene tenerlos definidos
             antes.
           </p>
-          <button onClick={generar} disabled={generando}>
+          <button className="primario" onClick={generar} disabled={generando}>
             {generando ? "Escribiendo… (unos 15 segundos)" : "Generar landing"}
           </button>
         </div>
@@ -151,16 +151,16 @@ export function Landing({
 
             <div className="acciones">
               <button
-                className={landing.publicada ? "pestana" : "pestana activa"}
+                className={landing.publicada ? "secundario" : "primario"}
                 onClick={alternarPublicada}
               >
                 {landing.publicada ? "Despublicar" : "Publicar"}
               </button>
-              <button className="pestana" onClick={generar} disabled={generando}>
+              <button className="secundario" onClick={generar} disabled={generando}>
                 {generando ? "Escribiendo…" : "Volver a escribirla"}
               </button>
               {landing.publicada && (
-                <a className="pestana" href={url} target="_blank" rel="noopener noreferrer">
+                <a className="secundario" href={url} target="_blank" rel="noopener noreferrer">
                   Verla
                 </a>
               )}

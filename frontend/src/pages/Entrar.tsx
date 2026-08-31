@@ -46,7 +46,7 @@ export function Entrar({ irARegistro }: { irARegistro: () => void }) {
   }
 
   return (
-    <form className="tarjeta" onSubmit={enviar}>
+    <form className="tarjeta-auth" onSubmit={enviar}>
       <h1>Entrar</h1>
 
       <Campo
@@ -66,7 +66,7 @@ export function Entrar({ irARegistro }: { irARegistro: () => void }) {
 
       {error && <p className="error">{error}</p>}
 
-      <button type="submit" disabled={enviando}>
+      <button className="primario" type="submit" disabled={enviando}>
         {enviando ? "Entrando…" : "Entrar"}
       </button>
 

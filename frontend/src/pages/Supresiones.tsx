@@ -102,7 +102,7 @@ export function Supresiones() {
         </label>
         {error && <p className="error">{error}</p>}
         {aviso && <p className="aviso">{aviso}</p>}
-        <button type="submit">Añadir a la lista</button>
+        <button className="primario" type="submit">Añadir a la lista</button>
         <p className="sutil">
           Una vez dentro no se puede sacar desde aquí, a propósito. Si hay
           que revertir una baja, tiene que ser una decisión consciente y con
