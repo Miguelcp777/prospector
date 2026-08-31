@@ -20,6 +20,7 @@ import { Mensajes } from "./pages/Mensajes";
 import { Supresiones } from "./pages/Supresiones";
 import { Cuenta } from "./pages/Cuenta";
 import { supabase } from "./lib/supabase";
+import { estadoDe, PASOS, ProveedorRecorrido, useRecorrido } from "./lib/recorrido";
 
 type Vista = "campanas" | "leads" | "mensajes" | "supresiones" | "cuenta";
 
@@ -32,6 +33,14 @@ const SECCIONES: { id: Vista; nombre: string; icono: string }[] = [
 ];
 
 export default function App() {
+  return (
+    <ProveedorRecorrido>
+      <Aplicacion />
+    </ProveedorRecorrido>
+  );
+}
+
+function Aplicacion() {
   const [sesion, setSesion] = useState<Session | null>(null);
   const [cargando, setCargando] = useState(true);
   const [pantalla, setPantalla] = useState<"entrar" | "registro">("entrar");
@@ -80,6 +89,8 @@ export default function App() {
           </button>
         ))}
 
+        <RecorridoLateral />
+
         <button className="nav-item nav-fin" onClick={() => supabase.auth.signOut()}>
           <span aria-hidden="true">→</span>
           Salir
@@ -95,6 +106,45 @@ export default function App() {
           {vista === "cuenta"      && <Cuenta />}
         </div>
       </main>
+    </div>
+  );
+}
+
+
+/**
+ * El recorrido de la campaña abierta, en el lateral.
+ *
+ * Solo aparece cuando hay una campaña abierta. Sirve para no perder el hilo
+ * al salir a Leads o a Mensajes: desde cualquier pantalla se ve por dónde va
+ * la campaña en la que estabas trabajando.
+ *
+ * No es navegable a propósito. Cada paso se hace en su sitio dentro de la
+ * campaña, y un atajo que salte al paso 4 sin haber pasado por el 3 rompe
+ * justo lo que el recorrido intenta ordenar.
+ */
+function RecorridoLateral() {
+  const { recorrido } = useRecorrido();
+  if (!recorrido) return null;
+
+  const hechos = recorrido.hechos.filter(Boolean).length;
+
+  return (
+    <div className="recorrido">
+      <div className="recorrido-cabeza">
+        <span className="rotulo">En curso</span>
+        <strong>{recorrido.campana}</strong>
+        <span className="menudo">{hechos} de {PASOS.length} pasos</span>
+      </div>
+
+      {PASOS.map((p, i) => {
+        const e = estadoDe(recorrido.hechos, i);
+        return (
+          <div key={p.corto} className={`recorrido-paso ${e}`}>
+            <span className="recorrido-marca">{e === "hecho" ? "✓" : i + 1}</span>
+            {p.corto}
+          </div>
+        );
+      })}
     </div>
   );
 }

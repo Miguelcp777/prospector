@@ -16,6 +16,7 @@ import { supabase } from "../lib/supabase";
 import { Segmentos } from "./Segmentos";
 import { Landing } from "./Landing";
 import { Recursos } from "./Recursos";
+import { estadoDe, PASOS, useRecorrido } from "../lib/recorrido";
 
 type Campana = {
   id: string;
@@ -39,8 +40,6 @@ type Datos = {
   jobs: Record<string, Job>;
 };
 
-type Estado = "hecho" | "actual" | "futuro";
-
 export function Campana({ id, volver }: { id: string; volver: () => void }) {
   const [d, setD] = useState<Datos | null>(null);
   const [sub, setSub] = useState<"segmentos" | "landing" | null>(null);
@@ -50,6 +49,7 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
   const [frenada, setFrenada] = useState(false);
   const [editandoDesc, setEditandoDesc] = useState(false);
   const [desc, setDesc] = useState("");
+  const { publicar } = useRecorrido();
 
   const cargar = useCallback(async () => {
     const [c, s, l, m, j] = await Promise.all([
@@ -138,15 +138,16 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
     mensajes > 0,
     false,               // el envío no existe todavía
   ];
-  const actual = hechos.findIndex((h) => !h);
-  const estadoDe = (i: number): Estado =>
-    hechos[i] ? "hecho" : i === actual ? "actual" : "futuro";
 
   return (
     <div className="panel">
+      <Publicador nombre={campana.nombre} hechos={hechos} publicar={publicar} />
+
       <div className="cabecera">
         <div className="cabecera-texto">
-          <button className="fantasma" onClick={volver} style={{ alignSelf: "flex-start", marginLeft: -10 }}>
+          <button className="fantasma"
+                  onClick={() => { publicar(null); volver(); }}
+                  style={{ alignSelf: "flex-start", marginLeft: -10 }}>
             ← Todas las campañas
           </button>
           <h1>{campana.nombre}</h1>
@@ -160,7 +161,7 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
       {error && <p className="caja-error">{error}</p>}
 
       <div className="pasos">
-        <Paso n={1} estado={estadoDe(0)} titulo="Describe tu negocio"
+        <Paso n={1} estado={estadoDe(hechos, 0)} titulo={PASOS[0].nombre}
               resumen="Es de donde sale todo lo demás: cuanto más concreto, mejores clientes potenciales.">
           {editandoDesc || !campana.descripcion ? (
             <>
@@ -188,7 +189,7 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
           )}
         </Paso>
 
-        <Paso n={2} estado={estadoDe(1)} titulo="Elige a quién te diriges"
+        <Paso n={2} estado={estadoDe(hechos, 1)} titulo={PASOS[1].nombre}
               resumen="El modelo propone tipos de negocio a partir de tu descripción. Tú decides cuáles valen."
               insignia={segmentos > 0 ? `${segmentos} segmentos` : undefined}>
           <p className="sutil">
@@ -208,7 +209,7 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
           )}
         </Paso>
 
-        <Paso n={3} estado={estadoDe(2)} titulo="Busca clientes potenciales"
+        <Paso n={3} estado={estadoDe(hechos, 2)} titulo={PASOS[2].nombre}
               resumen="Google Places, por segmento y zona. Es el único paso que cuesta dinero."
               insignia={leads > 0 ? `${leads} leads` : undefined}>
           {buscando && jobs.descubrir ? (
@@ -237,7 +238,7 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
           )}
         </Paso>
 
-        <Paso n={4} estado={estadoDe(3)} titulo="Encuentra sus correos"
+        <Paso n={4} estado={estadoDe(hechos, 3)} titulo={PASOS[3].nombre}
               resumen="Entramos en la web de cada lead a buscar su buzón de contacto. Esto no cuesta nada."
               insignia={conEmail > 0 ? `${conEmail} con email` : undefined}>
           {enriqueciendo && jobs.enriquecer ? (
@@ -264,7 +265,7 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
           )}
         </Paso>
 
-        <Paso n={5} estado={estadoDe(4)} titulo="Escribe los mensajes"
+        <Paso n={5} estado={estadoDe(hechos, 4)} titulo={PASOS[4].nombre}
               resumen="Un correo por lead, personalizado. Se guardan como borrador para que los leas antes."
               insignia={mensajes > 0 ? `${mensajes} escritos` : undefined}>
           {redactando && jobs.redactar ? (
@@ -289,7 +290,7 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
           )}
         </Paso>
 
-        <Paso n={6} estado="futuro" titulo="Envía los correos"
+        <Paso n={6} estado="futuro" titulo={PASOS[5].nombre}
               resumen="Todavía no está disponible.">
           <div className="caja-aviso">
             El envío automatizado no existe aún. Antes hace falta un dominio de
@@ -320,7 +321,7 @@ function Paso({
   n, estado, titulo, resumen, insignia, children,
 }: {
   n: number;
-  estado: Estado;
+  estado: "hecho" | "actual" | "futuro";
   titulo: string;
   resumen: string;
   insignia?: string;
@@ -343,4 +344,27 @@ function Paso({
       </div>
     </div>
   );
+}
+
+
+/**
+ * Publica el estado del recorrido al lateral.
+ *
+ * Va en su propio componente con una clave derivada de los datos: así el
+ * efecto solo corre cuando el estado cambia de verdad, y no en cada
+ * refresco del sondeo de los workers.
+ */
+function Publicador({
+  nombre, hechos, publicar,
+}: {
+  nombre: string;
+  hechos: boolean[];
+  publicar: (r: { campana: string; hechos: boolean[] } | null) => void;
+}) {
+  const clave = nombre + "|" + hechos.map((h) => (h ? 1 : 0)).join("");
+  useEffect(() => {
+    publicar({ campana: nombre, hechos });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clave]);
+  return null;
 }

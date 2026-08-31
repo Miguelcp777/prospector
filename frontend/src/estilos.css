@@ -470,3 +470,53 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e1) 0; width: 
   border-radius: var(--radio-s); padding: var(--e4); margin: 0; overflow-x: auto;
   color: var(--texto-2);
 }
+
+/* ---------------- recorrido en el lateral ---------------- */
+
+/* Aparece solo con una campaña abierta. Sirve para no perder el hilo al
+   salir a Leads o Mensajes: desde cualquier pantalla se ve por dónde iba la
+   campaña en la que estabas. */
+.recorrido {
+  margin-top: var(--e5);
+  padding-top: var(--e4);
+  border-top: 1px solid var(--borde);
+  display: flex; flex-direction: column; gap: 2px;
+}
+
+.recorrido-cabeza {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 0 var(--e3) var(--e3);
+}
+.recorrido-cabeza strong {
+  font-size: 0.8125rem; font-weight: 650;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.recorrido-paso {
+  display: flex; align-items: center; gap: var(--e3);
+  padding: 5px var(--e3);
+  font-size: 0.8125rem; color: var(--texto-3);
+  border-radius: var(--radio-s);
+}
+
+.recorrido-marca {
+  width: 18px; height: 18px; border-radius: 6px; flex-shrink: 0;
+  display: grid; place-items: center;
+  font-size: 0.625rem; font-weight: 700;
+  background: var(--superficie-2); color: var(--texto-3);
+  border: 1px solid var(--borde);
+}
+
+.recorrido-paso.hecho { color: var(--texto-2); }
+.recorrido-paso.hecho .recorrido-marca {
+  background: var(--exito-suave); color: var(--exito);
+  border-color: rgba(52, 211, 153, 0.35);
+}
+
+.recorrido-paso.actual { color: var(--texto); font-weight: 600; background: var(--acento-suave); }
+.recorrido-paso.actual .recorrido-marca {
+  background: var(--degradado); color: #08060f; border-color: transparent;
+}
+
+/* En móvil el lateral es una barra horizontal: el recorrido no cabe. */
+@media (max-width: 860px) { .recorrido { display: none; } }
