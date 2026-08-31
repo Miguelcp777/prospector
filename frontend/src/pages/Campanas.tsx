@@ -11,6 +11,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { Segmentos } from "./Segmentos";
 
 type Campana = {
   id: string;
@@ -40,6 +41,7 @@ export function Campanas({ verLeads }: { verLeads: () => void }) {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [creando, setCreando] = useState(false);
+  const [abierta, setAbierta] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
     const [c, j, r] = await Promise.all([
@@ -90,6 +92,17 @@ export function Campanas({ verLeads }: { verLeads: () => void }) {
     });
     if (fallo) setError(fallo.message);
     await cargar();
+  }
+
+  // El onboarding es de una campaña concreta, así que vive dentro de esta
+  // pantalla en vez de en una pestaña suelta que no sabría de cuál habla.
+  if (abierta) {
+    return (
+      <Segmentos
+        campanaId={abierta}
+        volver={() => { setAbierta(null); cargar(); }}
+      />
+    );
   }
 
   if (cargando) return <section className="panel"><p className="sutil">Cargando campañas…</p></section>;
@@ -157,6 +170,9 @@ export function Campanas({ verLeads }: { verLeads: () => void }) {
               )}
 
               <div className="acciones">
+                <button className="pestana" onClick={() => setAbierta(c.id)}>
+                  {segmentos === 0 ? "Definir segmentos" : `Segmentos (${segmentos})`}
+                </button>
                 <button
                   className="pestana activa"
                   disabled={buscando || segmentos === 0}
@@ -171,9 +187,8 @@ export function Campanas({ verLeads }: { verLeads: () => void }) {
 
               {segmentos === 0 && (
                 <p className="sutil">
-                  Esta campaña no tiene segmentos aceptados, así que no hay nada
-                  que buscar. Los segmentos salen de la inferencia — esa pantalla
-                  todavía no existe.
+                  Sin segmentos aceptados no hay nada que buscar. Define primero
+                  a quién te diriges.
                 </p>
               )}
             </article>

@@ -255,3 +255,34 @@ td a { color: var(--acento); }
 .etiqueta.buscando  { background: #17293f; color: #7db4ff; }
 .etiqueta.error     { background: #3a1c1c; color: var(--error); }
 .etiqueta.inferido  { background: #35300f; color: var(--aviso); }
+
+/* ---------------- segmentos ---------------- */
+
+textarea {
+  background: #0d0f14;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--texto);
+  font: inherit;
+  width: 100%;
+  resize: vertical;
+}
+textarea:focus { outline: 2px solid var(--acento); outline-offset: 1px; }
+
+/* Descartado sigue visible y legible: se recupera con un clic, no es basura. */
+.fila.descartada { opacity: 0.5; }
+
+.queries { display: flex; gap: 6px; flex-wrap: wrap; }
+.queries code {
+  background: #0d0f14;
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 0.8rem;
+  color: var(--sutil);
+}
+
+.etiqueta.alta  { background: #3a1c1c; color: #ff9b9b; }
+.etiqueta.media { background: #35300f; color: var(--aviso); }
+.etiqueta.baja  { background: #2a2f3a; color: var(--sutil); }
