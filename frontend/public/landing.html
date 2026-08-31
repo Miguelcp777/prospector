@@ -36,6 +36,12 @@
   button:disabled { opacity:0.6; cursor:progress; }
   .error { color:#dc2626; font-size:0.9rem; margin:0; }
   .sutil { color:var(--sutil); font-size:0.85rem; }
+  .logo { max-height:56px; max-width:200px; margin-bottom:24px; display:block; }
+  .documentos { margin:28px 0 0; padding:0; list-style:none; display:flex; flex-direction:column; gap:8px; }
+  .documentos a { display:flex; align-items:center; gap:10px; padding:12px 14px;
+                  border:1px solid var(--borde); border-radius:10px; text-decoration:none; }
+  .documentos a:hover { border-color:var(--acento); }
+  .documentos small { color:var(--sutil); }
   footer { margin-top:32px; padding-top:16px; border-top:1px solid var(--borde); }
 </style>
 </head>
@@ -76,6 +82,12 @@
     document.title = l.titulo;
     app.innerHTML = "";
 
+    if (l.logo) {
+      var img = document.createElement("img");
+      img.src = l.logo; img.alt = l.negocio; img.className = "logo";
+      app.appendChild(img);
+    }
+
     app.appendChild(txt("h1", l.titulo));
     if (l.subtitulo) app.appendChild(txt("p", l.subtitulo, "lead"));
     if (c.propuesta) app.appendChild(txt("p", c.propuesta));
@@ -87,6 +99,22 @@
       s.appendChild(txt("p", b.texto));
       app.appendChild(s);
     });
+
+    if ((l.documentos || []).length > 0) {
+      var lista = document.createElement("ul");
+      lista.className = "documentos";
+      l.documentos.forEach(function (doc) {
+        var li = document.createElement("li");
+        var a = document.createElement("a");
+        // El enlace caduca en una hora: es una URL firmada, no un archivo
+        // publico. Se regenera en cada carga de la pagina.
+        a.href = doc.url; a.target = "_blank"; a.rel = "noopener noreferrer";
+        a.appendChild(txt("span", doc.nombre));
+        a.appendChild(txt("small", "Descargar"));
+        li.appendChild(a); lista.appendChild(li);
+      });
+      app.appendChild(lista);
+    }
 
     var form = document.createElement("form");
     form.innerHTML =

@@ -194,6 +194,7 @@ export function Leads() {
                   <th>Segmento</th>
                   <th>Reseñas</th>
                   <th>Puntuación</th>
+                  <th>Email</th>
                   <th>Contacto</th>
                   <th>Estado</th>
                 </tr>
@@ -209,19 +210,23 @@ export function Leads() {
                     <td>{l.segments?.nombre ?? "—"}</td>
                     <td className="num">{l.resenas ?? "—"}</td>
                     <td className="num">{l.puntuacion_ext ?? "—"}</td>
+                    {/* El email tiene columna propia: es el dato con el que se
+                        trabaja después, y mezclado con la web y el teléfono
+                        no se encontraba. */}
+                    <td>
+                      {!l.email && <span className="menudo">—</span>}
+                      {l.email && (suprimidos.has(l.id)
+                        ? <span className="tachado" title="En la lista de supresión: no se le puede escribir">
+                            {l.email} · baja
+                          </span>
+                        : <a href={"mailto:" + l.email}>{l.email}</a>)}
+                    </td>
                     <td>
                       {l.web && (
-                        <a href={l.web} target="_blank" rel="noopener noreferrer">
-                          web
-                        </a>
+                        <a href={l.web} target="_blank" rel="noopener noreferrer">web</a>
                       )}
-                      {l.email && (
-                        suprimidos.has(l.id)
-                          ? <div className="tachado" title="En la lista de supresión: no se le puede escribir">{l.email} · baja</div>
-                          : <div className="sutil">{l.email}</div>
-                      )}
-                      {l.telefono && <div className="sutil">{l.telefono}</div>}
-                      {!l.web && !l.email && !l.telefono && "—"}
+                      {l.telefono && <div className="menudo">{l.telefono}</div>}
+                      {!l.web && !l.telefono && <span className="menudo">—</span>}
                     </td>
                     <td>{l.estado}</td>
                   </tr>

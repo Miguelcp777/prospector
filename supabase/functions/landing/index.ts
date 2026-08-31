@@ -61,11 +61,31 @@ Deno.serve(async (req) => {
   };
 
   if (req.method === "GET") {
+    // El bucket es privado a propósito: la oferta comercial de un cliente no
+    // debe quedar suelta en internet. Se firma aquí, una hora, en cada carga.
+    const { data: recursos } = await supabase
+      .rpc("recursos_de_landing", { p_slug: slug });
+
+    let logo: string | null = null;
+    const documentos: { nombre: string; url: string }[] = [];
+
+    for (const r of (recursos ?? []) as { tipo: string; nombre: string; ruta: string }[]) {
+      const { data: firmada } = await supabase.storage
+        .from("recursos").createSignedUrl(r.ruta, 3600);
+      if (!firmada?.signedUrl) continue;
+      // El primero que llega es el logo de la campaña; el del negocio va
+      // detrás y solo se usa si no había otro (lo ordena la función SQL).
+      if (r.tipo === "logo") logo ??= firmada.signedUrl;
+      else documentos.push({ nombre: r.nombre, url: firmada.signedUrl });
+    }
+
     return json({
       titulo: l.titulo,
       subtitulo: l.subtitulo,
       contenido: l.contenido,
       negocio: l.negocio,
+      logo,
+      documentos,
     });
   }
 

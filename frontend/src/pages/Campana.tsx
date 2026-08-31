@@ -15,6 +15,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { Segmentos } from "./Segmentos";
 import { Landing } from "./Landing";
+import { Recursos } from "./Recursos";
 
 type Campana = {
   id: string;
@@ -299,6 +300,8 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
           </div>
         </Paso>
       </div>
+
+      <Recursos campanaId={id} />
 
       <div className="tarjeta">
         <div className="fila-cabeza">
