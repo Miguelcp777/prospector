@@ -189,27 +189,73 @@ async function geocodificar(ciudad: string): Promise<{ lat: number; lng: number 
   return { lat: sitio.location.latitude, lng: sitio.location.longitude };
 }
 
+/**
+ * Clave de caché: la búsqueda, no el token.
+ *
+ * Los pageToken de Places caducan, así que una caché indexada por token no
+ * se puede reproducir más tarde. Por (query, centro, radio, página) sí.
+ *
+ * El centro va redondeado a tres decimales (~100 m): dos campañas de la
+ * misma ciudad no deben fallar el acierto por una diferencia de metros.
+ */
+function claveCache(query: string, campana: Campana, pagina: number): string {
+  return [
+    query.toLowerCase().trim(),
+    campana.lat.toFixed(3),
+    campana.lng.toFixed(3),
+    Math.min(50_000, campana.radio_km * 1000),
+    pagina,
+  ].join("|");
+}
+
 async function procesar(
   supabase: SupabaseClient,
   tarea: Tarea,
   campana: Campana,
 ): Promise<number> {
-  const respuesta = await llamarPlaces({
-    textQuery: tarea.query,
-    languageCode: "es",
-    regionCode: "ES",
-    pageSize: RESULTADOS_POR_PAGINA,
-    ...(tarea.page_token ? { pageToken: tarea.page_token } : {}),
-    locationBias: {
-      circle: {
-        center: { latitude: campana.lat, longitude: campana.lng },
-        radius: Math.min(50_000, campana.radio_km * 1000),  // Places topa en 50 km
-      },
-    },
-  }, CAMPOS);
+  const clave = claveCache(tarea.query, campana, tarea.pagina);
 
-  // Cada página es una consulta facturable: la contamos aunque venga vacía.
-  await supabase.rpc("sumar_consulta", { p_job: tarea.job_id });
+  const { data: cacheado } = await supabase
+    .rpc("leer_cache_places", { p_tenant: tarea.tenant_id, p_clave: clave })
+    .maybeSingle();
+
+  const deCache = !!cacheado;
+  let respuesta: { places?: PlaceApi[]; nextPageToken?: string };
+  let haySiguiente: boolean;
+
+  if (cacheado) {
+    // Acierto: ni llamada ni consulta contada. Esto es el ahorro.
+    respuesta = cacheado.respuesta;
+    haySiguiente = cacheado.hay_siguiente;
+  } else {
+    respuesta = await llamarPlaces({
+      textQuery: tarea.query,
+      languageCode: "es",
+      regionCode: "ES",
+      pageSize: RESULTADOS_POR_PAGINA,
+      ...(tarea.page_token ? { pageToken: tarea.page_token } : {}),
+      locationBias: {
+        circle: {
+          center: { latitude: campana.lat, longitude: campana.lng },
+          radius: Math.min(50_000, campana.radio_km * 1000),  // Places topa en 50 km
+        },
+      },
+    }, CAMPOS);
+
+    haySiguiente = !!respuesta.nextPageToken;
+
+    // Cada página pedida es una consulta facturable: la contamos aunque
+    // venga vacía. Un acierto de caché no pasa por aquí.
+    await supabase.rpc("sumar_consulta", { p_job: tarea.job_id });
+
+    // Sin el nextPageToken: caduca, y guardarlo invitaría a reusarlo.
+    await supabase.rpc("guardar_cache_places", {
+      p_tenant: tarea.tenant_id,
+      p_clave: clave,
+      p_respuesta: { places: respuesta.places ?? [] },
+      p_hay_siguiente: haySiguiente,
+    });
+  }
 
   const sitios = respuesta.places ?? [];
 
@@ -244,7 +290,23 @@ async function procesar(
 
   // Encadena la página siguiente como tarea nueva, en vez de recorrer la
   // paginación entera aquí dentro. Así el trozo sigue siendo pequeño.
-  if (respuesta.nextPageToken && tarea.pagina < PAGINAS_MAX) {
+  let encadenar = haySiguiente && tarea.pagina < PAGINAS_MAX;
+
+  if (encadenar && deCache) {
+    // Desde caché no hay token válido, así que la siguiente página solo se
+    // puede servir si también está cacheada. Pedirla a Places sin token
+    // devolvería la página 1 otra vez: misma factura, cero resultados
+    // nuevos, y una tarea que miente sobre qué página trae.
+    const { data: siguiente } = await supabase
+      .rpc("leer_cache_places", {
+        p_tenant: tarea.tenant_id,
+        p_clave: claveCache(tarea.query, campana, tarea.pagina + 1),
+      })
+      .maybeSingle();
+    if (!siguiente) encadenar = false;
+  }
+
+  if (encadenar) {
     await supabase.from("job_tareas").insert({
       job_id: tarea.job_id,
       tenant_id: tarea.tenant_id,
@@ -252,14 +314,14 @@ async function procesar(
       segment_id: tarea.segment_id,
       query: tarea.query,
       pagina: tarea.pagina + 1,
-      page_token: respuesta.nextPageToken,
+      page_token: deCache ? null : (respuesta.nextPageToken ?? null),
     });
   }
 
   await supabase.from("job_tareas")
     .update({
       estado: "hecho",
-      detalle: `${filas.length} resultados`,
+      detalle: `${filas.length} resultados${deCache ? " (de caché, sin coste)" : ""}`,
       actualizado_en: new Date().toISOString(),
     })
     .eq("id", tarea.id);
