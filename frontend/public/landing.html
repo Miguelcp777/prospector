@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cargando…</title>
+<!--
+  Landing pública de una campaña. Estática, sin build y sin dependencias:
+  el contenido lo trae la Edge Function `landing` y se pinta aquí.
+
+  Las Edge Functions no pueden servir HTML, y además una página comercial
+  servida desde una URL de infraestructura da mala espina a quien la abre.
+-->
+<style>
+  :root { color-scheme: light dark; --borde:#e2e5ea; --sutil:#6b7280; --acento:#2563eb; }
+  @media (prefers-color-scheme: dark) { :root { --borde:#262b36; --sutil:#9aa2b1; --acento:#5b8cff; } }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:32px 20px 64px; background:#fff; color:#14171c;
+         font:17px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  @media (prefers-color-scheme: dark) { body { background:#0f1115; color:#e6e8ec; } }
+  main { max-width:640px; margin:0 auto; }
+  h1 { font-size:2rem; line-height:1.2; margin:0 0 10px; }
+  h2 { font-size:1.05rem; margin:0 0 6px; }
+  .lead { font-size:1.15rem; color:var(--sutil); margin:0 0 28px; }
+  .bloque { margin:22px 0; padding-left:16px; border-left:3px solid var(--borde); }
+  .bloque p { margin:0; }
+  form { margin-top:36px; padding:24px; border:1px solid var(--borde); border-radius:12px;
+         display:flex; flex-direction:column; gap:12px; }
+  label { display:flex; flex-direction:column; gap:5px; font-size:0.9rem; color:var(--sutil); }
+  input, textarea { font:inherit; padding:10px 12px; border:1px solid var(--borde);
+                    border-radius:8px; background:transparent; color:inherit; width:100%; }
+  .consentimiento { flex-direction:row; align-items:flex-start; gap:10px; font-size:0.85rem; }
+  .consentimiento input { width:auto; margin-top:4px; }
+  button { background:var(--acento); color:#fff; border:0; border-radius:8px; padding:13px;
+           font:inherit; font-weight:600; cursor:pointer; }
+  button:disabled { opacity:0.6; cursor:progress; }
+  .error { color:#dc2626; font-size:0.9rem; margin:0; }
+  .sutil { color:var(--sutil); font-size:0.85rem; }
+  footer { margin-top:32px; padding-top:16px; border-top:1px solid var(--borde); }
+</style>
+</head>
+<body>
+<main id="app"><p class="sutil">Cargando…</p></main>
+<script>
+  var API = "https://tpfjeumrvdbciktmaaii.supabase.co/functions/v1/landing";
+  var app = document.getElementById("app");
+  var slug = new URLSearchParams(location.search).get("s");
+
+  function txt(tag, contenido, clase) {
+    var e = document.createElement(tag);
+    e.textContent = contenido || "";
+    if (clase) e.className = clase;
+    return e;
+  }
+  function aviso(titulo, cuerpo) {
+    app.innerHTML = "";
+    app.appendChild(txt("h1", titulo));
+    app.appendChild(txt("p", cuerpo));
+  }
+
+  if (!slug) {
+    aviso("Enlace incompleto", "Falta la referencia de la página.");
+  } else {
+    fetch(API + "?s=" + encodeURIComponent(slug))
+      .then(function (r) { return r.json().then(function (d) { return { s: r.status, d: d }; }); })
+      .then(function (res) {
+        if (res.s === 404) return aviso("Página no disponible", "Este enlace no lleva a ninguna página activa.");
+        if (res.s !== 200)  return aviso("Algo ha fallado", "Vuelve a intentarlo en unos minutos.");
+        pintar(res.d);
+      })
+      .catch(function () { aviso("Algo ha fallado", "Parece un problema de conexión."); });
+  }
+
+  function pintar(l) {
+    var c = l.contenido || {};
+    document.title = l.titulo;
+    app.innerHTML = "";
+
+    app.appendChild(txt("h1", l.titulo));
+    if (l.subtitulo) app.appendChild(txt("p", l.subtitulo, "lead"));
+    if (c.propuesta) app.appendChild(txt("p", c.propuesta));
+
+    (c.bloques || []).forEach(function (b) {
+      var s = document.createElement("section");
+      s.className = "bloque";
+      s.appendChild(txt("h2", b.titulo));
+      s.appendChild(txt("p", b.texto));
+      app.appendChild(s);
+    });
+
+    var form = document.createElement("form");
+    form.innerHTML =
+      '<h2></h2>' +
+      '<p class="error" id="err" hidden></p>' +
+      '<label>Nombre <input name="nombre" autocomplete="name"></label>' +
+      '<label>Email <input name="email" type="email" required autocomplete="email"></label>' +
+      '<label>Teléfono <input name="telefono" autocomplete="tel"></label>' +
+      '<label>¿En qué podemos ayudarte? <textarea name="mensaje" rows="3"></textarea></label>' +
+      '<label class="consentimiento"><input type="checkbox" name="consentimiento">' +
+      '<span>Acepto que <strong class="neg"></strong> guarde estos datos para ponerse en ' +
+      'contacto conmigo. Puedo pedir su borrado escribiéndoles.</span></label>' +
+      '<button type="submit"></button>';
+    form.querySelector("h2").textContent = c.cta || "Hablemos";
+    form.querySelector("button").textContent = c.cta || "Enviar";
+    form.querySelector(".neg").textContent = l.negocio;
+    app.appendChild(form);
+
+    var pie = document.createElement("footer");
+    pie.appendChild(txt("p", "Página de " + l.negocio + ".", "sutil"));
+    app.appendChild(pie);
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var err = form.querySelector("#err");
+      var boton = form.querySelector("button");
+      err.hidden = true;
+
+      var cuerpo = {
+        nombre: form.nombre.value,
+        email: form.email.value,
+        telefono: form.telefono.value,
+        mensaje: form.mensaje.value,
+        consentimiento: form.consentimiento.checked
+      };
+
+      if (!cuerpo.consentimiento) {
+        err.textContent = "Para poder responderte necesitamos que marques la casilla.";
+        err.hidden = false;
+        return;
+      }
+
+      boton.disabled = true;
+      fetch(API + "?s=" + encodeURIComponent(slug), {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(cuerpo)
+      })
+        .then(function (r) { return r.json().then(function (d) { return { s: r.status, d: d }; }); })
+        .then(function (res) {
+          if (res.d.ok) {
+            aviso("Gracias", "Hemos recibido tus datos. " + l.negocio + " se pondrá en contacto contigo.");
+            return;
+          }
+          boton.disabled = false;
+          err.textContent = res.d.error === "email_no_valido"
+            ? "Revisa la dirección de correo."
+            : "No hemos podido registrar tus datos. Inténtalo de nuevo.";
+          err.hidden = false;
+        })
+        .catch(function () {
+          boton.disabled = false;
+          err.textContent = "Parece un problema de conexión.";
+          err.hidden = false;
+        });
+    });
+  }
+</script>
+</body>
+</html>

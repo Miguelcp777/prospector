@@ -27,3 +27,12 @@ verify_jwt = false
 # WORKER_SECRETO.
 [functions.redactar]
 verify_jwt = false
+
+# Genera el texto de la landing. Escribe en la campaña de un tenant, así que
+# exige usuario.
+[functions.generar-landing]
+verify_jwt = true
+
+# La landing pública. La abre cualquiera que reciba el enlace.
+[functions.landing]
+verify_jwt = false

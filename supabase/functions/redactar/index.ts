@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
-  const base = Deno.env.get("URL_PUBLICA") ?? Deno.env.get("SUPABASE_URL")!;
+  const base = Deno.env.get("URL_PUBLICA") ?? "https://prospector-captacion.netlify.app";
   const hasta = Date.now() + PLAZO_MS;
   let redactados = 0, errores = 0;
 
@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
 
         if (falloIns) throw new Error(`Guardando mensaje: ${falloIns.message}`);
 
-        const urlBaja = `${base}/functions/v1/baja?t=${creado.token_baja}`;
+        const urlBaja = `${base}/baja.html?t=${creado.token_baja}`;
         const { error: falloPie } = await supabase
           .from("messages")
           .update({ cuerpo: cuerpo + pie((ctx as Contexto).negocio_nombre, urlBaja) })

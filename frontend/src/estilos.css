@@ -315,3 +315,10 @@ textarea:focus { outline: 2px solid var(--acento); outline-offset: 1px; }
 }
 .etiqueta.borrador { background: #2a2f3a; color: var(--sutil); }
 .etiqueta.enviado  { background: #14361f; color: #6ee7a0; }
+
+.bloque-landing {
+  padding-left: 14px;
+  border-left: 3px solid var(--borde);
+}
+.bloque-landing p { margin: 4px 0 0; }
+a.pestana { text-decoration: none; display: inline-block; }

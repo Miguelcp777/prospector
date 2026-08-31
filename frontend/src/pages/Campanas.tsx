@@ -12,6 +12,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { Segmentos } from "./Segmentos";
+import { Landing } from "./Landing";
 
 type Campana = {
   id: string;
@@ -50,6 +51,7 @@ export function Campanas({ verLeads }: { verLeads: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [creando, setCreando] = useState(false);
   const [abierta, setAbierta] = useState<string | null>(null);
+  const [landingDe, setLandingDe] = useState<string | null>(null);
   const [gasto, setGasto] = useState<{ gastado: number; techo: number } | null>(null);
   // El cupo gratuito de Google es del proyecto, no de cada cliente: 1000
   // búsquedas al mes en Text Search Enterprise, que es el nivel en el que
@@ -170,6 +172,10 @@ export function Campanas({ verLeads }: { verLeads: () => void }) {
 
   // El onboarding es de una campaña concreta, así que vive dentro de esta
   // pantalla en vez de en una pestaña suelta que no sabría de cuál habla.
+  if (landingDe) {
+    return <Landing campanaId={landingDe} volver={() => { setLandingDe(null); cargar(); }} />;
+  }
+
   if (abierta) {
     return (
       <Segmentos
@@ -281,6 +287,9 @@ export function Campanas({ verLeads }: { verLeads: () => void }) {
                     Redactar mensajes ({res?.con_email})
                   </button>
                 )}
+                <button className="pestana" onClick={() => setLandingDe(c.id)}>
+                  Landing
+                </button>
                 {(res?.leads ?? 0) > 0 && (
                   <button className="pestana" onClick={verLeads}>Ver leads</button>
                 )}
