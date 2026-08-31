@@ -21,7 +21,15 @@ type Campana = {
   estado: string;
   max_consultas: number;
   creado_en: string;
+  ultima_busqueda_en: string | null;
 };
+
+/** Lo mismo que frena encolar_descubrimiento en la base. Aquí solo se enseña. */
+const DIAS_ENFRIADO = 30;
+
+function diasDesde(iso: string): number {
+  return Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+}
 
 type Job = {
   campaign_id: string;
@@ -42,11 +50,14 @@ export function Campanas({ verLeads }: { verLeads: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [creando, setCreando] = useState(false);
   const [abierta, setAbierta] = useState<string | null>(null);
+  const [gasto, setGasto] = useState<{ gastado: number; techo: number } | null>(null);
+  // Campaña cuya repetición la base ha frenado y el usuario puede forzar.
+  const [frenada, setFrenada] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
     const [c, j, r, s] = await Promise.all([
       supabase.from("campaigns")
-        .select("id, nombre, ciudad, radio_km, estado, max_consultas, creado_en")
+        .select("id, nombre, ciudad, radio_km, estado, max_consultas, creado_en, ultima_busqueda_en")
         .order("creado_en", { ascending: false }),
       supabase.from("jobs")
         .select("campaign_id, estado, progreso, consultas, detalle, creado_en")
@@ -83,6 +94,20 @@ export function Campanas({ verLeads }: { verLeads: () => void }) {
     }
     setResumen(porCampana);
 
+    // Gasto del mes contra el techo del tenant. Las dos filas las filtra la
+    // RLS, así que esto es lo tuyo aunque no lleve ningún where.
+    const [cp, tn] = await Promise.all([
+      supabase.from("consumo_places").select("consultas").limit(1),
+      supabase.from("tenants").select("max_consultas_mes").limit(1),
+    ]);
+    const techo = (tn.data?.[0] as { max_consultas_mes: number } | undefined)?.max_consultas_mes;
+    if (techo !== undefined) {
+      setGasto({
+        gastado: (cp.data?.[0] as { consultas: number } | undefined)?.consultas ?? 0,
+        techo,
+      });
+    }
+
     setCargando(false);
   }, []);
 
@@ -97,12 +122,19 @@ export function Campanas({ verLeads }: { verLeads: () => void }) {
     return () => clearInterval(t);
   }, [campanas, cargar]);
 
-  async function encolar(c: Campana) {
+  async function encolar(c: Campana, forzar = false) {
     setError(null);
+    setFrenada(null);
     const { error: fallo } = await supabase.rpc("encolar_descubrimiento", {
       p_campaign: c.id,
+      p_forzar: forzar,
     });
-    if (fallo) setError(fallo.message);
+    if (fallo) {
+      setError(fallo.message);
+      // El enfriado se puede saltar; el techo mensual no. Distinguimos por el
+      // texto porque es lo único que devuelve PostgREST de un raise exception.
+      if (!forzar && fallo.message.includes("en pausa")) setFrenada(c.id);
+    }
     await cargar();
   }
 
@@ -127,6 +159,14 @@ export function Campanas({ verLeads }: { verLeads: () => void }) {
           {creando ? "Cancelar" : "Nueva campaña"}
         </button>
       </header>
+
+      {gasto && (
+        <p className="sutil">
+          Consultas a Places este mes: <strong>{gasto.gastado}</strong> de{" "}
+          <strong>{gasto.techo}</strong>. Al alcanzar el techo se para todo hasta
+          el día 1, y eso no se puede forzar.
+        </p>
+      )}
 
       {error && <p className="error">{error}</p>}
 
@@ -195,7 +235,23 @@ export function Campanas({ verLeads }: { verLeads: () => void }) {
                 {(res?.leads ?? 0) > 0 && (
                   <button className="pestana" onClick={verLeads}>Ver leads</button>
                 )}
+                {frenada === c.id && (
+                  <button className="pestana peligro" onClick={() => encolar(c, true)}>
+                    Buscar igualmente (hasta {c.max_consultas} consultas)
+                  </button>
+                )}
               </div>
+
+              {c.ultima_busqueda_en && !buscando && (
+                <p className="sutil">
+                  {(() => {
+                    const d = diasDesde(c.ultima_busqueda_en);
+                    return d < DIAS_ENFRIADO
+                      ? `Buscada hace ${d} ${d === 1 ? "día" : "días"}. Places apenas cambia en semanas, así que repetir ahora sería pagar dos veces por lo mismo: en pausa ${DIAS_ENFRIADO - d} días más.`
+                      : `Buscada hace ${d} días. Ya compensa volver a mirar.`;
+                  })()}
+                </p>
+              )}
 
               {segmentos === 0 && (
                 <p className="sutil">

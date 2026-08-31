@@ -286,3 +286,10 @@ textarea:focus { outline: 2px solid var(--acento); outline-offset: 1px; }
 .etiqueta.alta  { background: #3a1c1c; color: #ff9b9b; }
 .etiqueta.media { background: #35300f; color: var(--aviso); }
 .etiqueta.baja  { background: #2a2f3a; color: var(--sutil); }
+
+/* Forzar una búsqueda cuesta dinero: el botón no debe parecer inocuo. */
+.pestana.peligro {
+  border: 1px solid var(--error);
+  color: var(--error);
+}
+.pestana.peligro:hover { background: #3a1c1c; color: #ff9b9b; }
