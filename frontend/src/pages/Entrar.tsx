@@ -7,6 +7,7 @@
 // ============================================================
 
 import { useState } from "react";
+import { BotonGoogle } from "../components/BotonGoogle";
 import { Campo } from "../components/Campo";
 import { supabase } from "../lib/supabase";
 import { validarContrasena, validarEmail } from "../lib/validacion";
@@ -48,6 +49,11 @@ export function Entrar({ irARegistro }: { irARegistro: () => void }) {
   return (
     <form className="tarjeta-auth" onSubmit={enviar}>
       <h1>Entrar</h1>
+
+      {/* Arriba porque es el camino corto: quien tenga cuenta con Google no
+          necesita leer el formulario de abajo. */}
+      <BotonGoogle />
+      <div className="separador-o"><span>o con tu correo</span></div>
 
       <Campo
         etiqueta="Email"

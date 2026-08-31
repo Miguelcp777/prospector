@@ -128,6 +128,72 @@ seguir el bucle. El razonamiento completo, en
 Consecuencia práctica: **solapar invocaciones es inofensivo**. Dos ejecuciones
 a la vez se reparten tareas distintas, no las duplican.
 
+## Entrar con Google
+
+El botón ya está en la app y no funciona hasta que se den estos pasos. Hasta
+entonces dice "Google todavía no está activado en este proyecto", que es el
+error real de Supabase traducido.
+
+### 1 · Credenciales en Google Cloud
+
+En console.cloud.google.com, con el proyecto que ya tiene Places habilitado:
+
+1. **APIs y servicios → Pantalla de consentimiento OAuth.** Tipo *Externo*.
+   Nombre de la app, correo de soporte y de contacto. Mientras esté en
+   *Testing* solo entran los correos que añadas como usuarios de prueba;
+   para abrirlo a cualquiera hay que publicarlo.
+2. **Credenciales → Crear credenciales → ID de cliente de OAuth**, tipo
+   *Aplicación web*.
+3. En **URI de redireccionamiento autorizados**, exactamente esto:
+
+   ```
+   https://tpfjeumrvdbciktmaaii.supabase.co/auth/v1/callback
+   ```
+
+   Es el callback de Supabase, no el de la app. Si aquí se pone el dominio de
+   Netlify, Google responde `redirect_uri_mismatch` sin más pista.
+
+Salen un **Client ID** y un **Client Secret**.
+
+### 2 · Darlos de alta en Supabase
+
+Dashboard → Authentication → Providers → Google: activar y pegar los dos
+valores. El secreto va ahí y en ningún sitio más — nunca en `frontend/`, que
+se publica entero.
+
+### 3 · URLs de retorno
+
+Dashboard → Authentication → URL Configuration:
+
+| Campo | Valor |
+|---|---|
+| Site URL | `https://prospector-captacion.netlify.app` |
+| Redirect URLs | `https://prospector-captacion.netlify.app/**` y `http://localhost:5173/**` |
+
+Esto **ya hacía falta** sin Google: mientras el Site URL apunte a localhost,
+los enlaces de confirmación de los registros por correo llegan rotos. Con
+OAuth pasa a ser bloqueante, porque el botón manda `redirectTo` con el origen
+actual y Supabase lo rechaza si no está en la lista.
+
+### Qué pasa con las cuentas que ya existen
+
+Supabase enlaza identidades por correo (*automatic linking*): quien ya tenga
+cuenta con contraseña y entre después con Google del mismo correo cae en el
+mismo usuario, no en uno nuevo. Sin eso tendría dos tenants y vería la cuenta
+vacía.
+
+### El negocio queda a medias, y es a propósito
+
+Google no sabe a qué se dedica quien entra. El trigger de alta crea el tenant
+con el nombre que Google dé y `vertical = 'sin_definir'`, que es la marca de
+"falta completar". La pantalla de Cuenta lo avisa y deja rellenarlo, y la de
+segmentos vuelve a avisar antes de inferir — que es donde de verdad estropea
+el resultado, porque esa palabra va literal al prompt.
+
+`tenants` solo acepta escritura en `nombre`, `vertical` y `ciudad` (GRANT por
+columna, en 021). `max_consultas_mes` y `plan` se leen pero no se tocan: son
+el reparto del presupuesto de Places entre clientes.
+
 ## Claves
 
 | Clave | Dónde | Qué puede |

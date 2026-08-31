@@ -465,6 +465,25 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
 
 /* ---------------- entrada y registro ---------------- */
 
+/* Ancho completo, como el botón de entrar: las dos vías son igual de
+   válidas y una a media caja parecería la de segunda. */
+.boton-google { width: 100%; }
+.boton-google svg { flex-shrink: 0; }
+
+/* La raya con la palabra en medio. El span tapa la línea con el fondo de la
+   tarjeta, que es más simple que partir la raya en dos. */
+.separador-o {
+  position: relative; text-align: center;
+  margin: var(--e2) 0;
+  color: var(--texto-3); font-size: 0.75rem;
+  text-transform: uppercase; letter-spacing: 0.08em;
+}
+.separador-o::before {
+  content: ""; position: absolute; top: 50%; left: 0; right: 0;
+  border-top: 1px solid var(--borde);
+}
+.separador-o span { position: relative; background: var(--superficie); padding: 0 var(--e3); }
+
 .tarjeta-auth {
   width: 100%; max-width: 430px;
   background: var(--superficie);

@@ -11,6 +11,7 @@
 // ============================================================
 
 import { useState } from "react";
+import { BotonGoogle } from "../components/BotonGoogle";
 import { Campo } from "../components/Campo";
 import { supabase } from "../lib/supabase";
 import { LARGO_MINIMO, validarAlta } from "../lib/validacion";
@@ -81,6 +82,16 @@ export function Registro({ irAEntrar }: { irAEntrar: () => void }) {
   return (
     <form className="tarjeta-auth" onSubmit={enviar}>
       <h1>Crear cuenta</h1>
+
+      {/* Google no sabe a qué se dedica tu negocio, así que por esta vía los
+          datos de abajo se piden después, desde Cuenta. Decirlo aquí evita
+          que parezca que se han perdido. */}
+      <BotonGoogle etiqueta="Registrarse con Google" />
+      <p className="menudo">
+        Por esta vía te pediremos los datos del negocio al entrar.
+      </p>
+      <div className="separador-o"><span>o rellena la ficha</span></div>
+
       <p className="sutil">
         Empezamos por tu negocio: es lo que usamos para deducir a qué clientes
         merece la pena que te dirijas.

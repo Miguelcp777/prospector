@@ -13,6 +13,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { SIN_DEFINIR } from "./Cuenta";
 
 type Campana = {
   id: string;
@@ -157,8 +158,21 @@ export function Segmentos({
         </label>
         <p className="sutil">
           Cuanto más concreto, mejores segmentos. El modelo se apoya además en
-          la taxonomía de {vertical || "tu vertical"} y en {campana?.ciudad}.
+          la taxonomía de {vertical && vertical !== SIN_DEFINIR ? vertical : "tu vertical"} y en {campana?.ciudad}.
         </p>
+
+        {/* Es el punto exacto donde una cuenta creada con Google se rompe: el
+            trigger de alta no tiene de dónde sacar la vertical, y esa palabra
+            va literal al prompt. Avisar aquí, y no solo en Cuenta, porque es
+            aquí donde el resultado sale mal. */}
+        {vertical === SIN_DEFINIR && (
+          <p className="caja-aviso">
+            Todavía no has dicho a qué se dedica tu negocio, y el modelo usa
+            ese dato para anclarse. Complétalo en <strong>Cuenta</strong> antes
+            de inferir, o los segmentos saldrán genéricos.
+          </p>
+        )}
+
         <button className="primario" onClick={inferir} disabled={infiriendo}>
           {infiriendo
             ? "Pensando… (unos 15 segundos)"
