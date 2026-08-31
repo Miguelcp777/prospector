@@ -49,10 +49,11 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
   const [frenada, setFrenada] = useState(false);
   const [editandoDesc, setEditandoDesc] = useState(false);
   const [desc, setDesc] = useState("");
+  const [topeMensajes, setTopeMensajes] = useState<number | null>(null);
   const { publicar } = useRecorrido();
 
   const cargar = useCallback(async () => {
-    const [c, s, l, m, j] = await Promise.all([
+    const [c, s, l, m, j, a] = await Promise.all([
       supabase.from("campaigns")
         .select("id, nombre, descripcion, ciudad, radio_km, estado, max_consultas, ultima_busqueda_en")
         .eq("id", id).single(),
@@ -61,6 +62,7 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
       supabase.from("messages").select("id, leads!inner(campaign_id)").eq("leads.campaign_id", id),
       supabase.from("jobs").select("tipo, estado, progreso, detalle")
         .eq("campaign_id", id).order("creado_en", { ascending: false }),
+      supabase.from("ajustes").select("max_mensajes_por_campana").limit(1),
     ]);
 
     if (c.error) { setError(c.error.message); setCargando(false); return; }
@@ -68,6 +70,10 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
     // El último job de cada tipo: vienen ordenados por fecha descendente.
     const jobs: Record<string, Job> = {};
     for (const job of (j.data ?? []) as Job[]) if (!jobs[job.tipo]) jobs[job.tipo] = job;
+
+    setTopeMensajes(
+      (a.data?.[0] as { max_mensajes_por_campana: number } | undefined)?.max_mensajes_por_campana ?? null,
+    );
 
     const campana = c.data as Campana;
     setDesc(campana.descripcion ?? "");
@@ -276,8 +282,16 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
           ) : (
             <>
               <p className="sutil">
-                Cuesta una llamada al modelo por lead. Se saltan los que están en la lista de supresión.
+                Cuesta una llamada al modelo por lead. Se saltan los que están
+                en la lista de supresión.
               </p>
+              {topeMensajes !== null && conEmail > topeMensajes && (
+                <p className="caja-aviso">
+                  Tope de {topeMensajes} mensajes por tanda mientras se está
+                  probando. Se escriben los de mayor score primero; para el
+                  resto, vuelve a pulsar.
+                </p>
+              )}
               <div className="acciones">
                 <button className={mensajes > 0 ? "secundario" : "primario"}
                         disabled={conEmail === 0 || ocupado === "redactar"}
