@@ -65,6 +65,7 @@ function Aplicacion() {
   if (!sesion) {
     return (
       <main className="centro">
+        <img src="/aurevanta.png" alt="Aurevanta Labs" className="logo-auth" />
         {pantalla === "entrar"
           ? <Entrar irARegistro={() => setPantalla("registro")} />
           : <Registro irAEntrar={() => setPantalla("entrar")} />}
@@ -76,7 +77,7 @@ function Aplicacion() {
     <div className="armazon">
       <nav className="lateral">
         <div className="marca">
-          <div className="marca-punto" />
+          <img src="/aurevanta-marca.png" alt="" className="marca-logo" />
           <span>Prospector</span>
         </div>
 
@@ -97,6 +98,10 @@ function Aplicacion() {
           <span aria-hidden="true">→</span>
           Salir
         </button>
+
+        <div className="pie-marca">
+          <img src="/aurevanta.png" alt="Aurevanta Labs" />
+        </div>
       </nav>
 
       <main className="contenido">
