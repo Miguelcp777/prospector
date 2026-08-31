@@ -88,3 +88,118 @@ button.enlace {
 }
 .datos dt { color: var(--sutil); font-size: 0.85rem; }
 .datos dd { margin: 0; }
+
+/* ---------------- armazón con sesión ---------------- */
+
+.barra {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--borde);
+  background: var(--tarjeta);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.marca { font-weight: 700; margin-right: 12px; }
+
+.pestana {
+  background: none;
+  color: var(--sutil);
+  font-weight: 500;
+  padding: 7px 12px;
+  border-radius: 8px;
+  width: auto;
+}
+.pestana:hover { color: var(--texto); }
+.pestana.activa { background: #222735; color: var(--texto); }
+.pestana.salir { margin-left: auto; }
+
+.ancho { padding: 24px; max-width: 1200px; margin: 0 auto; }
+
+.panel { display: flex; flex-direction: column; gap: 16px; }
+
+.cabecera {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.cabecera h1 { margin: 0; }
+
+select {
+  background: #0d0f14;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: var(--texto);
+  font: inherit;
+}
+
+/* ---------------- cifras de cabecera ---------------- */
+
+.cifras { display: flex; gap: 12px; flex-wrap: wrap; }
+.cifra {
+  background: var(--tarjeta);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 12px 18px;
+  display: flex;
+  flex-direction: column;
+}
+.cifra strong { font-size: 1.5rem; line-height: 1.2; }
+.cifra span { color: var(--sutil); font-size: 0.8rem; }
+
+.filtros { display: flex; gap: 10px; flex-wrap: wrap; }
+.filtros input { max-width: 320px; }
+
+/* ---------------- tabla ---------------- */
+
+/* El scroll vive aquí y no en el body: una tabla ancha no debe empujar
+   la página entera de lado. */
+.tabla-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+}
+
+table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+
+th {
+  text-align: left;
+  padding: 10px 12px;
+  color: var(--sutil);
+  font-weight: 500;
+  font-size: 0.8rem;
+  background: var(--tarjeta);
+  border-bottom: 1px solid var(--borde);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+}
+
+td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--borde);
+  vertical-align: top;
+}
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover { background: #1b1f28; }
+
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+td a { color: var(--acento); }
+
+/* El número siempre visible: el color acompaña, no sustituye. */
+.score {
+  display: inline-block;
+  min-width: 34px;
+  text-align: center;
+  padding: 3px 7px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.score.alto  { background: #14361f; color: #6ee7a0; }
+.score.medio { background: #35300f; color: #ffc857; }
+.score.bajo  { background: #2a2f3a; color: var(--sutil); }
