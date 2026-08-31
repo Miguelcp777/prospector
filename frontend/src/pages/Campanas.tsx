@@ -51,6 +51,10 @@ export function Campanas({ verLeads }: { verLeads: () => void }) {
   const [creando, setCreando] = useState(false);
   const [abierta, setAbierta] = useState<string | null>(null);
   const [gasto, setGasto] = useState<{ gastado: number; techo: number } | null>(null);
+  // El cupo gratuito de Google es del proyecto, no de cada cliente: 1000
+  // búsquedas al mes en Text Search Enterprise, que es el nivel en el que
+  // caemos por pedir websiteUri. Sin verlo, se pasa sin enterarse.
+  const [gastoProyecto, setGastoProyecto] = useState<{ gastado: number; techo: number } | null>(null);
   // Campaña cuya repetición la base ha frenado y el usuario puede forzar.
   const [frenada, setFrenada] = useState<string | null>(null);
 
@@ -96,10 +100,16 @@ export function Campanas({ verLeads }: { verLeads: () => void }) {
 
     // Gasto del mes contra el techo del tenant. Las dos filas las filtra la
     // RLS, así que esto es lo tuyo aunque no lleve ningún where.
-    const [cp, tn] = await Promise.all([
+    const [cp, tn, aj] = await Promise.all([
       supabase.from("consumo_places").select("consultas").limit(1),
       supabase.from("tenants").select("max_consultas_mes").limit(1),
+      supabase.from("ajustes").select("max_consultas_mes_proyecto").limit(1),
     ]);
+    const { data: totalProyecto } = await supabase.rpc("consultas_del_proyecto");
+    const techoP = (aj.data?.[0] as { max_consultas_mes_proyecto: number } | undefined)?.max_consultas_mes_proyecto;
+    if (techoP !== undefined) {
+      setGastoProyecto({ gastado: Number(totalProyecto ?? 0), techo: techoP });
+    }
     const techo = (tn.data?.[0] as { max_consultas_mes: number } | undefined)?.max_consultas_mes;
     if (techo !== undefined) {
       setGasto({
@@ -185,6 +195,14 @@ export function Campanas({ verLeads }: { verLeads: () => void }) {
           Consultas a Places este mes: <strong>{gasto.gastado}</strong> de{" "}
           <strong>{gasto.techo}</strong>. Al alcanzar el techo se para todo hasta
           el día 1, y eso no se puede forzar.
+        </p>
+      )}
+
+      {gastoProyecto && (
+        <p className="sutil">
+          En todo el servicio: <strong>{gastoProyecto.gastado}</strong> de{" "}
+          <strong>{gastoProyecto.techo}</strong>. Ese es el cupo gratuito
+          mensual de Google; a partir de ahí cada mil búsquedas cuestan 35 $.
         </p>
       )}
 
