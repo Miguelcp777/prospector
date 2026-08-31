@@ -25,6 +25,8 @@ type Fila = {
   estado: string;
   enviado_en: string | null;
   creado_en: string;
+  lead_id: string;
+  estado_lead: string;
 };
 
 const TIPOS: Record<string, string> = {
@@ -43,7 +45,7 @@ export function Historial() {
   const cargar = useCallback(async () => {
     setCargando(true);
     let q = supabase.from("v_historial_contacto")
-      .select("mensaje_id, lead, email_actual, email_destino, campana, tipo_campana, asunto, estado, enviado_en, creado_en")
+      .select("mensaje_id, lead_id, lead, email_actual, email_destino, campana, tipo_campana, asunto, estado, enviado_en, creado_en, estado_lead")
       .order("enviado_en", { ascending: false, nullsFirst: false })
       .order("creado_en", { ascending: false })
       .limit(300);
@@ -54,6 +56,18 @@ export function Historial() {
   }, [soloEnviados]);
 
   useEffect(() => { cargar(); }, [cargar]);
+
+  /**
+   * Mover el lead por el embudo desde aquí.
+   *
+   * El historial es donde se mira quién ha contestado, así que es donde tiene
+   * sentido anotarlo. El estado vive en el lead y no en el mensaje: alguien
+   * responde al negocio, no a un correo concreto.
+   */
+  async function cambiarEstado(leadId: string, estado: string) {
+    await supabase.from("leads").update({ estado }).eq("id", leadId);
+    await cargar();
+  }
 
   const visibles = filas.filter((f) => {
     if (!busqueda) return true;
@@ -117,6 +131,7 @@ export function Historial() {
                   <th>Tipo</th>
                   <th>Asunto</th>
                   <th>Fecha</th>
+                  <th>Resultado</th>
                 </tr>
               </thead>
               <tbody>
@@ -139,6 +154,17 @@ export function Historial() {
                             day: "2-digit", month: "2-digit", year: "numeric",
                           })
                         : <span className="etiqueta">borrador</span>}
+                    </td>
+                    <td>
+                      {f.estado === "enviado" ? (
+                        <select value={f.estado_lead}
+                                onChange={(e) => cambiarEstado(f.lead_id, e.target.value)}>
+                          <option value="contactado">Sin respuesta</option>
+                          <option value="respondido">Respondió</option>
+                          <option value="descartado">Descartado</option>
+                          <option value="nuevo">Sin contactar</option>
+                        </select>
+                      ) : <span className="menudo">—</span>}
                     </td>
                   </tr>
                 ))}

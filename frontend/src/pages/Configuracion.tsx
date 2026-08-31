@@ -15,6 +15,7 @@ import { supabase } from "../lib/supabase";
 
 type Config = {
   tipo: string;
+  evitar_ya_contactados: boolean;
   tono: string;
   idioma: string;
   firma: string | null;
@@ -48,7 +49,7 @@ export function Configuracion({ campanaId }: { campanaId: string }) {
 
   useEffect(() => {
     supabase.from("campaigns")
-      .select("tipo, tono, idioma, firma, llamada_accion")
+      .select("tipo, tono, idioma, firma, llamada_accion, evitar_ya_contactados")
       .eq("id", campanaId).single()
       .then(({ data, error: fallo }) => {
         if (fallo) setError(fallo.message);
@@ -56,7 +57,7 @@ export function Configuracion({ campanaId }: { campanaId: string }) {
       });
   }, [campanaId]);
 
-  function cambiar(campo: keyof Config, valor: string) {
+  function cambiar(campo: keyof Config, valor: string | boolean) {
     setC((prev) => (prev ? { ...prev, [campo]: valor } : prev));
     setGuardado(false);
   }
@@ -71,6 +72,7 @@ export function Configuracion({ campanaId }: { campanaId: string }) {
       idioma: c.idioma,
       firma: c.firma?.trim() || null,
       llamada_accion: c.llamada_accion?.trim() || null,
+      evitar_ya_contactados: c.evitar_ya_contactados,
     }).eq("id", campanaId);
     setGuardando(false);
     if (fallo) setError(fallo.message);
@@ -132,6 +134,22 @@ export function Configuracion({ campanaId }: { campanaId: string }) {
         Es la única frase que decide si hay respuesta. Si lo dejas vacío, la
         elige el modelo.
       </p>
+
+      <hr />
+
+      <label className="fila-cabeza" style={{ cursor: "pointer", alignItems: "center" }}>
+        <div>
+          <strong style={{ fontSize: "0.9375rem" }}>No repetir contactos</strong>
+          <p className="menudo">
+            No se escribe a direcciones que ya recibieron un correo en otra
+            campaña. Desactívalo en campañas de seguimiento o reactivación,
+            donde volver a escribir es justo lo que quieres.
+          </p>
+        </div>
+        <input type="checkbox" style={{ width: 18, height: 18, flexShrink: 0 }}
+               checked={c.evitar_ya_contactados}
+               onChange={(e) => cambiar("evitar_ya_contactados", e.target.checked)} />
+      </label>
 
       <div className="acciones">
         <button className="primario" onClick={guardar} disabled={guardando}>
