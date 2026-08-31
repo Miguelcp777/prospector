@@ -3,9 +3,14 @@
 --
 -- Ejecutar DESPUÉS de 002 y DESPUÉS de desplegar la función `descubrir`.
 --
--- ANTES DE EJECUTAR, sustituye los tres valores de abajo. No dejes el
--- secreto del worker en un archivo del repo: escríbelo aquí solo mientras
--- lo pegas en el SQL Editor.
+-- Este archivo ya NO tiene huecos que rellenar. El secreto del worker lo
+-- genera Postgres y se queda en Vault: así no hay ningún momento en que
+-- esté escrito en un archivo del repo, que es de donde nunca se va del
+-- todo una vez commiteado.
+--
+-- Después de ejecutarlo hay UN paso manual, abajo del todo: copiar ese
+-- secreto a los secretos de las Edge Functions, porque `descubrir` compara
+-- contra su propia copia.
 -- ============================================================
 
 create extension if not exists pg_cron;
@@ -21,7 +26,10 @@ create extension if not exists pg_net;
 delete from vault.secrets where name in ('url_proyecto', 'worker_secreto');
 
 select vault.create_secret('https://tpfjeumrvdbciktmaaii.supabase.co', 'url_proyecto');
-select vault.create_secret('TU_WORKER_SECRETO',                        'worker_secreto');
+
+-- 32 bytes aleatorios en hexadecimal — lo mismo que `openssl rand -hex 32`,
+-- pero generado dentro de la base y sin pasar por el portapapeles de nadie.
+select vault.create_secret(encode(gen_random_bytes(32), 'hex'), 'worker_secreto');
 
 -- ------------------------------------------------------------
 -- Cada minuto: despierta al worker.
@@ -56,6 +64,24 @@ select cron.schedule(
   '0 4 * * *',
   $cron$ select limpiar_demo_usos(); $cron$
 );
+
+-- ============================================================
+-- EL PASO MANUAL
+--
+-- `descubrir` compara la cabecera contra su propio WORKER_SECRETO, que vive
+-- en los secretos de las Edge Functions y no puede leer Vault. Hay que
+-- copiarlo. Lee el valor:
+--
+--   select decrypted_secret from vault.decrypted_secrets
+--    where name = 'worker_secreto';
+--
+-- Y fíjalo en las funciones:
+--
+--   supabase secrets set WORKER_SECRETO=<lo que salga arriba>
+--
+-- Hasta que los dos coincidan, el cron despierta al worker cada minuto y
+-- se lleva un 401. No rompe nada, pero tampoco descubre nada.
+-- ============================================================
 
 -- ------------------------------------------------------------
 -- Comprobaciones
