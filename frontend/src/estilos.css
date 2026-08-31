@@ -170,16 +170,25 @@ a:hover { text-decoration: underline; }
   padding: 9px var(--e3);
   border: 0; border-radius: var(--radio-s);
   background: none; color: var(--texto-2);
-  font: inherit; font-weight: 500; text-align: left;
+  font: inherit; font-weight: 500;
   cursor: pointer; width: 100%;
   transition: background .15s, color .15s;
+  /* El botón genérico centra su contenido, y aquí eso dejaba cada etiqueta
+     empezando en un sitio distinto. text-align no lo arregla: en un
+     contenedor flex no lo mira nadie. */
+  justify-content: flex-start;
 }
 .nav-item:hover { background: var(--superficie-2); color: var(--texto); }
 .nav-item.activa {
   background: var(--acento-suave); color: var(--texto);
   box-shadow: inset 2px 0 0 var(--cian);
 }
-.nav-item span[aria-hidden] { color: var(--cian); font-size: 0.875rem; }
+/* Ancho fijo, como .recorrido-marca: los iconos no miden lo mismo (◈ ✉ ◑) y
+   sin esto las etiquetas quedan escalonadas aunque el bloque esté alineado. */
+.nav-item span[aria-hidden] {
+  color: var(--cian); font-size: 0.875rem;
+  width: 18px; flex-shrink: 0; text-align: center;
+}
 .nav-fin { margin-top: auto; }
 
 .contenido { flex: 1; min-width: 0; padding: var(--e7) var(--e6); }
