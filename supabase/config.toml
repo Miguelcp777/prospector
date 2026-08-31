@@ -22,3 +22,8 @@ verify_jwt = false
 # nuestro. Lo que la protege es que el token del enlace no se adivina.
 [functions.baja]
 verify_jwt = false
+
+# El redactor. Como los otros workers: lo despierta el cron y lo autentica
+# WORKER_SECRETO.
+[functions.redactar]
+verify_jwt = false

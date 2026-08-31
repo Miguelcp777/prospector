@@ -15,11 +15,12 @@ import { Entrar } from "./pages/Entrar";
 import { Registro } from "./pages/Registro";
 import { Leads } from "./pages/Leads";
 import { Campanas } from "./pages/Campanas";
+import { Mensajes } from "./pages/Mensajes";
 import { Supresiones } from "./pages/Supresiones";
 import { Cuenta } from "./pages/Cuenta";
 import { supabase } from "./lib/supabase";
 
-type Vista = "campanas" | "leads" | "supresiones" | "cuenta";
+type Vista = "campanas" | "leads" | "mensajes" | "supresiones" | "cuenta";
 
 export default function App() {
   const [sesion, setSesion] = useState<Session | null>(null);
@@ -70,6 +71,12 @@ export default function App() {
           Leads
         </button>
         <button
+          className={vista === "mensajes" ? "pestana activa" : "pestana"}
+          onClick={() => setVista("mensajes")}
+        >
+          Mensajes
+        </button>
+        <button
           className={vista === "supresiones" ? "pestana activa" : "pestana"}
           onClick={() => setVista("supresiones")}
         >
@@ -89,6 +96,7 @@ export default function App() {
       <main className="ancho">
         {vista === "campanas" && <Campanas verLeads={() => setVista("leads")} />}
         {vista === "leads" && <Leads />}
+        {vista === "mensajes" && <Mensajes />}
         {vista === "supresiones" && <Supresiones />}
         {vista === "cuenta" && <Cuenta />}
       </main>

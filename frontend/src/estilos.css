@@ -301,3 +301,17 @@ textarea:focus { outline: 2px solid var(--acento); outline-offset: 1px; }
   color: var(--error);
   font-size: 0.85rem;
 }
+
+/* El cuerpo del mensaje, tal cual se va a enviar: saltos de línea incluidos. */
+.cuerpo {
+  white-space: pre-wrap;
+  font: inherit;
+  background: #0d0f14;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  padding: 14px;
+  margin: 0;
+  overflow-x: auto;
+}
+.etiqueta.borrador { background: #2a2f3a; color: var(--sutil); }
+.etiqueta.enviado  { background: #14361f; color: #6ee7a0; }

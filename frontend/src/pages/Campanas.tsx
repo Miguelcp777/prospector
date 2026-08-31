@@ -133,6 +133,15 @@ export function Campanas({ verLeads }: { verLeads: () => void }) {
     await cargar();
   }
 
+  // Redactar cuesta una llamada a Claude por lead, así que el botón dice
+  // cuántos van a redactarse antes de pulsarlo.
+  async function redactar(c: Campana) {
+    setError(null);
+    const { error: fallo } = await supabase.rpc("encolar_redaccion", { p_campaign: c.id });
+    if (fallo) setError(fallo.message);
+    await cargar();
+  }
+
   async function encolar(c: Campana, forzar = false) {
     setError(null);
     setFrenada(null);
@@ -247,6 +256,11 @@ export function Campanas({ verLeads }: { verLeads: () => void }) {
                 {(res?.leads ?? 0) > 0 && (
                   <button className="pestana" onClick={() => enriquecer(c)}>
                     Buscar emails
+                  </button>
+                )}
+                {(res?.con_email ?? 0) > 0 && (
+                  <button className="pestana" onClick={() => redactar(c)}>
+                    Redactar mensajes ({res?.con_email})
                   </button>
                 )}
                 {(res?.leads ?? 0) > 0 && (
