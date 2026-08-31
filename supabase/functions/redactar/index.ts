@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
         const urlBaja = `${base}/baja.html?t=${creado.token_baja}`;
         const { error: falloPie } = await supabase
           .from("messages")
-          .update({ cuerpo: cuerpo + pie((ctx as Contexto).negocio_nombre, urlBaja) })
+          .update({ cuerpo: cuerpo + pie((ctx as Contexto).negocio_nombre, urlBaja, (ctx as Contexto).campana_firma) })
           .eq("id", creado.id);
 
         if (falloPie) throw new Error(`Añadiendo el pie: ${falloPie.message}`);

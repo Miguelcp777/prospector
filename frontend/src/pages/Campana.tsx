@@ -16,6 +16,7 @@ import { supabase } from "../lib/supabase";
 import { Segmentos } from "./Segmentos";
 import { Landing } from "./Landing";
 import { Recursos } from "./Recursos";
+import { Configuracion } from "./Configuracion";
 import { estadoDe, PASOS, useRecorrido } from "../lib/recorrido";
 
 type Campana = {
@@ -315,6 +316,8 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
           </div>
         </Paso>
       </div>
+
+      <Configuracion campanaId={id} />
 
       <Recursos campanaId={id} />
 

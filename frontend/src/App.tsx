@@ -17,17 +17,19 @@ import { Registro } from "./pages/Registro";
 import { Campanas } from "./pages/Campanas";
 import { Leads } from "./pages/Leads";
 import { Mensajes } from "./pages/Mensajes";
+import { Historial } from "./pages/Historial";
 import { Supresiones } from "./pages/Supresiones";
 import { Cuenta } from "./pages/Cuenta";
 import { supabase } from "./lib/supabase";
 import { estadoDe, PASOS, ProveedorRecorrido, useRecorrido } from "./lib/recorrido";
 
-type Vista = "campanas" | "leads" | "mensajes" | "supresiones" | "cuenta";
+type Vista = "campanas" | "leads" | "mensajes" | "historial" | "supresiones" | "cuenta";
 
 const SECCIONES: { id: Vista; nombre: string; icono: string }[] = [
   { id: "campanas",    nombre: "Campañas",    icono: "◈" },
   { id: "leads",       nombre: "Leads",       icono: "◉" },
   { id: "mensajes",    nombre: "Mensajes",    icono: "✉" },
+  { id: "historial",   nombre: "Historial",   icono: "◔" },
   { id: "supresiones", nombre: "Supresiones", icono: "⊘" },
   { id: "cuenta",      nombre: "Cuenta",      icono: "◐" },
 ];
@@ -102,6 +104,7 @@ function Aplicacion() {
           {vista === "campanas"    && <Campanas />}
           {vista === "leads"       && <Leads />}
           {vista === "mensajes"    && <Mensajes />}
+          {vista === "historial"   && <Historial />}
           {vista === "supresiones" && <Supresiones />}
           {vista === "cuenta"      && <Cuenta />}
         </div>

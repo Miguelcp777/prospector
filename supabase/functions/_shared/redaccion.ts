@@ -26,8 +26,32 @@ export type Contexto = {
   negocio_nombre: string;
   negocio_vertical: string;
   negocio_ciudad: string | null;
+  campana_tipo: string;
+  campana_tono: string;
+  campana_idioma: string;
+  campana_firma: string | null;
+  campana_llamada: string | null;
   /** Texto de los documentos de oferta de la campaña. Puede no haber. */
   oferta: string | null;
+};
+
+const TONOS: Record<string, string> = {
+  formal:  "Trato de usted, distancia profesional, sin coloquialismos.",
+  cercano: "Trato de usted pero cercano y natural, como escribiría un vecino del sector.",
+  directo: "Trato de usted, frases cortas, al grano desde la primera línea.",
+};
+
+const IDIOMAS: Record<string, string> = {
+  es: "español de España",
+  ca: "valenciano/catalán",
+  en: "inglés",
+};
+
+const TIPOS: Record<string, string> = {
+  prospeccion:  "Es el primer contacto: no os conocen de nada.",
+  seguimiento:  "Ya hubo un contacto anterior: retomas, no te presentas desde cero.",
+  reactivacion: "Fue cliente o contacto y se enfrió: el tono reconoce que ya os conocéis.",
+  colaboracion: "Propones colaborar entre iguales, no vender.",
 };
 
 export type Mensaje = { asunto: string; cuerpo: string };
@@ -38,8 +62,7 @@ export class ErrorRedaccion extends Error {
   }
 }
 
-const SISTEMA = `Escribes el primer correo de contacto comercial entre dos
-empresas, en español de España.
+const SISTEMA = `Escribes un correo de contacto comercial entre dos empresas.
 
 Quien escribe es un negocio pequeño que busca colaboración o clientes. Quien
 recibe es otra empresa. Escribes al buzón corporativo, no a una persona: no
@@ -94,6 +117,17 @@ export async function redactarMensaje(c: Contexto): Promise<Mensaje> {
       : "",
   ].filter(Boolean).join("\n");
 
+  const instrucciones = [
+    "",
+    "CÓMO ESCRIBIRLO:",
+    `- Idioma: ${IDIOMAS[c.campana_idioma] ?? IDIOMAS.es}.`,
+    `- Tono: ${TONOS[c.campana_tono] ?? TONOS.cercano}`,
+    `- ${TIPOS[c.campana_tipo] ?? TIPOS.prospeccion}`,
+    c.campana_llamada
+      ? `- Lo que se pide al final, y nada más: ${c.campana_llamada}`
+      : "",
+  ].filter(Boolean).join("\n");
+
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -105,7 +139,7 @@ export async function redactarMensaje(c: Contexto): Promise<Mensaje> {
       model: MODELO,
       max_tokens: 1000,
       system: SISTEMA,
-      messages: [{ role: "user", content: contexto }],
+      messages: [{ role: "user", content: contexto + "\n" + instrucciones }],
     }),
   });
 
@@ -145,12 +179,14 @@ export async function redactarMensaje(c: Contexto): Promise<Mensaje> {
  * prompt, porque no son cosa del estilo: son requisitos que no pueden
  * quedar a merced de lo que el modelo decida escribir ese día.
  */
-export function pie(negocio: string, urlBaja: string): string {
+export function pie(negocio: string, urlBaja: string, firma?: string | null): string {
   return [
     "",
     "—",
+    firma ? `${firma}` : "",
     `${negocio}`,
     `Le escribimos porque su negocio aparece en directorios públicos de empresas del sector.`,
     `Si no desea recibir más correos nuestros, puede darse de baja aquí: ${urlBaja}`,
-  ].join("\n");
+    // filter: sin firma no queremos una línea en blanco de más en el pie.
+  ].filter((l) => l !== "").join("\n");
 }

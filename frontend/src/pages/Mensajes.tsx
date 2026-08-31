@@ -65,6 +65,26 @@ export function Mensajes() {
 
   useEffect(() => { cargar(); }, [cargar]);
 
+  /**
+   * Marcar a mano lo que ya se ha mandado por fuera.
+   *
+   * El envío automático no existe todavía, así que hoy los correos se mandan
+   * desde el buzón propio. Sin esta acción el historial nace vacío y no hay
+   * forma de saber a quién se ha escrito.
+   *
+   * La base sigue mandando: si la dirección está suprimida o el cuerpo perdió
+   * su enlace de baja, el UPDATE falla y aquí se ve el porqué.
+   */
+  async function marcarEnviado(id: string) {
+    setError(null);
+    const { error: fallo } = await supabase
+      .from("messages")
+      .update({ estado: "enviado", enviado_en: new Date().toISOString() })
+      .eq("id", id);
+    if (fallo) { setError(fallo.message); return; }
+    await cargar();
+  }
+
   async function guardar(id: string, asunto: string, cuerpo: string, pie: string) {
     setError(null);
     // El pie vuelve tal cual salió. Si el mensaje no tenía separador,
@@ -93,8 +113,10 @@ export function Mensajes() {
           <span className="rotulo">Borradores</span>
           <h1>Mensajes</h1>
           <p className="sutil">
-            Todos en borrador. Léelos y corrígelos antes de que exista el
-            envío: lo que salga de aquí lleva el nombre de tu negocio.
+            Léelos y corrígelos antes de mandarlos: lo que salga de aquí lleva
+            el nombre de tu negocio. El envío automático no existe todavía, así
+            que mándalos desde tu buzón y márcalos aquí — es lo que alimenta el
+            historial de contacto.
           </p>
         </div>
       </div>
@@ -139,6 +161,7 @@ export function Mensajes() {
                 abierto={abierto === m.id}
                 alAbrir={() => setAbierto(abierto === m.id ? null : m.id)}
                 alGuardar={guardar}
+                alEnviar={marcarEnviado}
               />
             ))}
           </div>
@@ -149,12 +172,13 @@ export function Mensajes() {
 }
 
 function Tarjeta({
-  m, abierto, alAbrir, alGuardar,
+  m, abierto, alAbrir, alGuardar, alEnviar,
 }: {
   m: Mensaje;
   abierto: boolean;
   alAbrir: () => void;
   alGuardar: (id: string, asunto: string, cuerpo: string, pie: string) => Promise<boolean>;
+  alEnviar: (id: string) => Promise<void>;
 }) {
   // El pie se separa aquí: lo que se edita es solo lo de arriba.
   const corte = m.cuerpo.indexOf(SEPARADOR);
@@ -234,6 +258,12 @@ function Tarjeta({
             )}
             <button className="fantasma" onClick={alAbrir}>Plegar</button>
             {guardado && <span className="etiqueta lista">guardado</span>}
+            {m.estado === "borrador" && (
+              <button className="secundario" style={{ marginLeft: "auto" }}
+                      onClick={() => alEnviar(m.id)}>
+                Ya lo he enviado
+              </button>
+            )}
           </div>
         </>
       )}
