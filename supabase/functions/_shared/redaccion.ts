@@ -26,6 +26,8 @@ export type Contexto = {
   negocio_nombre: string;
   negocio_vertical: string;
   negocio_ciudad: string | null;
+  /** Texto de los documentos de oferta de la campaña. Puede no haber. */
+  oferta: string | null;
 };
 
 export type Mensaje = { asunto: string; cuerpo: string };
@@ -56,6 +58,9 @@ Qué NO hacer:
 - Nada de "espero que estés bien", "me pongo en contacto contigo para",
   "somos líderes en" ni fórmulas de plantilla.
 - No exagerar ni prometer resultados. No inventar datos, cifras ni casos.
+- Si te dan una oferta con condiciones concretas, puedes mencionar UNA que
+  encaje con ese negocio. Nunca inventes descuentos, plazos ni condiciones
+  que no estén ahí escritas: eso es un compromiso comercial en firme.
 - No mencionar reseñas ni puntuaciones aunque te las den: saber eso de
   alguien a quien escribes en frío resulta invasivo.
 - No incluir despedida con firma, ni enlaces, ni texto legal. Eso se añade
@@ -80,6 +85,13 @@ export async function redactarMensaje(c: Contexto): Promise<Mensaje> {
     c.segmento_nombre ? `Tipo de negocio: ${c.segmento_nombre}` : "",
     c.segmento_motivo ? `Por qué encaja: ${c.segmento_motivo}` : "",
     `Zona de la campaña: ${c.campana_ciudad}`,
+    // La oferta va al final y con una instrucción propia: es lo único del
+    // contexto que el modelo puede citar como compromiso concreto, y hay que
+    // dejarle claro que no puede inventar condiciones que no estén aquí.
+    c.oferta
+      ? "\nLO QUE SE OFRECE (sacado de los documentos de la campaña; puedes " +
+        "mencionar estas condiciones y ninguna otra):\n" + c.oferta.slice(0, 3000)
+      : "",
   ].filter(Boolean).join("\n");
 
   const r = await fetch("https://api.anthropic.com/v1/messages", {

@@ -36,3 +36,8 @@ verify_jwt = true
 # La landing pública. La abre cualquiera que reciba el enlace.
 [functions.landing]
 verify_jwt = false
+
+# Lee el texto de un PDF de oferta. Escribe en el recurso de un tenant, así
+# que exige usuario.
+[functions.leer-documento]
+verify_jwt = true

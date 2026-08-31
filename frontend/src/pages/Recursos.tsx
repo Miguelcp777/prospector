@@ -21,6 +21,8 @@ type Recurso = {
   ruta: string;
   mime: string | null;
   tamano: number | null;
+  texto: string | null;
+  texto_estado: string;
 };
 
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -37,7 +39,7 @@ export function Recursos({ campanaId }: { campanaId: string }) {
     const [p, r] = await Promise.all([
       supabase.from("profiles").select("tenant_id").single(),
       supabase.from("recursos")
-        .select("id, campaign_id, tipo, nombre, ruta, mime, tamano")
+        .select("id, campaign_id, tipo, nombre, ruta, mime, tamano, texto, texto_estado")
         // Los de esta campaña, más el logo del negocio (campaign_id null).
         .or(`campaign_id.eq.${campanaId},campaign_id.is.null`)
         .order("creado_en"),
@@ -98,6 +100,21 @@ export function Recursos({ campanaId }: { campanaId: string }) {
       setError(falloFila.message);
       return;
     }
+    if (tipo === "documento") await leer(ruta);
+    await cargar();
+  }
+
+  // Lee el texto del PDF para que el redactor sepa qué se ofrece. Si falla,
+  // no es un error del usuario: puede escribirlo a mano.
+  async function leer(ruta: string) {
+    const { data: r } = await supabase.from("recursos").select("id").eq("ruta", ruta).single();
+    if (!r) return;
+    await supabase.functions.invoke("leer-documento", { body: { recurso_id: r.id } });
+  }
+
+  async function guardarTexto(id: string, texto: string) {
+    await supabase.from("recursos")
+      .update({ texto, texto_estado: "manual" }).eq("id", id);
     await cargar();
   }
 
@@ -118,9 +135,9 @@ export function Recursos({ campanaId }: { campanaId: string }) {
       <div>
         <h2>Logo y documentos</h2>
         <p className="sutil">
-          Aparecen en la landing de la campaña. Los archivos son privados: la
-          página los sirve con enlaces que caducan, no quedan sueltos en
-          internet.
+          El logo irá en el cuerpo del correo y los documentos como adjunto.
+          Además, lo que digan los documentos es lo que el redactor usa para
+          escribir la oferta concreta a cada lead.
         </p>
       </div>
 
@@ -173,14 +190,86 @@ export function Recursos({ campanaId }: { campanaId: string }) {
       )}
 
       {documentos.map((d) => (
-        <div key={d.id} className="fila-cabeza">
-          <div>
-            <strong style={{ fontSize: "0.9375rem" }}>{d.nombre}</strong>
-            <div className="menudo">{peso(d.tamano)}</div>
-          </div>
-          <button className="fantasma" onClick={() => borrar(d)}>Quitar</button>
-        </div>
+        <Documento key={d.id} d={d} alBorrar={() => borrar(d)} alGuardar={guardarTexto} />
       ))}
+    </div>
+  );
+}
+
+/**
+ * Cada documento enseña su texto, y ese texto es editable.
+ *
+ * Lo que llega al redactor es esta caja, no el archivo: una extracción con
+ * cabeceras y números de página da malos mensajes, y corregirla aquí los
+ * arregla sin volver a subir nada.
+ */
+function Documento({
+  d, alBorrar, alGuardar,
+}: {
+  d: Recurso;
+  alBorrar: () => void;
+  alGuardar: (id: string, texto: string) => Promise<void>;
+}) {
+  const [abierto, setAbierto] = useState(false);
+  const [texto, setTexto] = useState(d.texto ?? "");
+  const [guardando, setGuardando] = useState(false);
+
+  const sinTexto = !d.texto?.trim();
+
+  return (
+    <div className="fila" style={{ padding: "var(--e4)" }}>
+      <div className="fila-cabeza">
+        <div>
+          <strong style={{ fontSize: "0.9375rem" }}>{d.nombre}</strong>
+          <div className="menudo">
+            {peso(d.tamano)}
+            {d.texto_estado === "extraido" && " · texto leído del PDF"}
+            {d.texto_estado === "manual"   && " · texto escrito a mano"}
+            {d.texto_estado === "fallido"  && " · no se ha podido leer"}
+            {d.texto_estado === "no_soportado" && " · solo se leen PDF"}
+          </div>
+        </div>
+        <div className="acciones">
+          <button className="fantasma" onClick={() => setAbierto(!abierto)}>
+            {abierto ? "Cerrar" : sinTexto ? "Escribir la oferta" : "Ver la oferta"}
+          </button>
+          <button className="fantasma" onClick={alBorrar}>Quitar</button>
+        </div>
+      </div>
+
+      {sinTexto && !abierto && (
+        <p className="caja-aviso">
+          Este documento se adjuntará al correo, pero el redactor no sabe qué
+          dice. Escribe de qué va la oferta para que los mensajes la
+          mencionen.
+        </p>
+      )}
+
+      {abierto && (
+        <>
+          <label className="campo">
+            <span>Qué se ofrece — es lo que lee el redactor</span>
+            <textarea rows={7} value={texto} onChange={(e) => setTexto(e.target.value)}
+              placeholder="Convenio para gimnasios: primera valoración gratuita para sus socios, descuento en bonos…" />
+          </label>
+          <p className="menudo">
+            El modelo puede mencionar estas condiciones y ninguna otra. Lo que
+            escribas aquí es un compromiso comercial: si dice «15 % de
+            descuento», eso llega a los correos.
+          </p>
+          <div className="acciones">
+            <button className="primario" disabled={guardando}
+                    onClick={async () => {
+                      setGuardando(true);
+                      await alGuardar(d.id, texto.trim());
+                      setGuardando(false);
+                      setAbierto(false);
+                    }}>
+              {guardando ? "Guardando…" : "Guardar"}
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
