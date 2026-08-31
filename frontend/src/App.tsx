@@ -14,16 +14,17 @@ import type { Session } from "@supabase/supabase-js";
 import { Entrar } from "./pages/Entrar";
 import { Registro } from "./pages/Registro";
 import { Leads } from "./pages/Leads";
+import { Campanas } from "./pages/Campanas";
 import { Cuenta } from "./pages/Cuenta";
 import { supabase } from "./lib/supabase";
 
-type Vista = "leads" | "cuenta";
+type Vista = "campanas" | "leads" | "cuenta";
 
 export default function App() {
   const [sesion, setSesion] = useState<Session | null>(null);
   const [cargando, setCargando] = useState(true);
   const [pantalla, setPantalla] = useState<"entrar" | "registro">("entrar");
-  const [vista, setVista] = useState<Vista>("leads");
+  const [vista, setVista] = useState<Vista>("campanas");
 
   useEffect(() => {
     // getSession primero: al recargar, la sesión ya está en localStorage y
@@ -56,6 +57,12 @@ export default function App() {
       <nav className="barra">
         <span className="marca">Prospector</span>
         <button
+          className={vista === "campanas" ? "pestana activa" : "pestana"}
+          onClick={() => setVista("campanas")}
+        >
+          Campañas
+        </button>
+        <button
           className={vista === "leads" ? "pestana activa" : "pestana"}
           onClick={() => setVista("leads")}
         >
@@ -73,7 +80,9 @@ export default function App() {
       </nav>
 
       <main className="ancho">
-        {vista === "leads" ? <Leads /> : <Cuenta />}
+        {vista === "campanas" && <Campanas verLeads={() => setVista("leads")} />}
+        {vista === "leads" && <Leads />}
+        {vista === "cuenta" && <Cuenta />}
       </main>
     </>
   );
