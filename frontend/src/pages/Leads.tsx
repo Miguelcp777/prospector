@@ -47,6 +47,7 @@ export function Leads() {
   const [elegida, setElegida] = useState<string>("");
   const [resumen, setResumen] = useState<Resumen | null>(null);
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [suprimidos, setSuprimidos] = useState<Set<string>>(new Set());
   const [segmento, setSegmento] = useState("");
   const [busqueda, setBusqueda] = useState("");
   const [cargando, setCargando] = useState(true);
@@ -90,12 +91,22 @@ export function Leads() {
         .order("score", { ascending: false, nullsFirst: false })
         .order("resenas", { ascending: false, nullsFirst: false })
         .limit(TOPE),
-    ]).then(([r, l]) => {
+      // Enseñar un email que no se puede usar es peor que no enseñarlo:
+      // invita a copiarlo y escribir a mano, que es justo lo que la lista
+      // de supresión existe para impedir.
+      supabase
+        .from("v_leads_contactables")
+        .select("id, suprimido")
+        .eq("campaign_id", elegida)
+        .eq("suprimido", true),
+    ]).then(([r, l, s]) => {
       if (r.error) setResumen(null);
       else setResumen(r.data as unknown as Resumen);
 
       if (l.error) setError(l.error.message);
       else setLeads((l.data ?? []) as unknown as Lead[]);
+
+      setSuprimidos(new Set(((s.data ?? []) as { id: string }[]).map((x) => x.id)));
 
       setCargando(false);
     });
@@ -204,7 +215,11 @@ export function Leads() {
                           web
                         </a>
                       )}
-                      {l.email && <div className="sutil">{l.email}</div>}
+                      {l.email && (
+                        suprimidos.has(l.id)
+                          ? <div className="tachado" title="En la lista de supresión: no se le puede escribir">{l.email} · baja</div>
+                          : <div className="sutil">{l.email}</div>
+                      )}
                       {l.telefono && <div className="sutil">{l.telefono}</div>}
                       {!l.web && !l.email && !l.telefono && "—"}
                     </td>

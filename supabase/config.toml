@@ -17,3 +17,8 @@ verify_jwt = false
 # persona, y lo autentica WORKER_SECRETO.
 [functions.enriquecer]
 verify_jwt = false
+
+# La página de baja. Pública por definición: quien la abre no es usuario
+# nuestro. Lo que la protege es que el token del enlace no se adivina.
+[functions.baja]
+verify_jwt = false
