@@ -274,7 +274,7 @@ update ajustes set
   precio_tokens_entrada_millon = 2,    -- USD por millón de tokens de entrada
   precio_tokens_salida_millon  = 10,   -- USD por millón de salida
   precio_places_mil            = 35,   -- USD por 1000 consultas a Places
-  moneda = USD;
+  moneda = 'USD';
 ```
 
 Mientras estén a cero, el panel enseña el consumo medido y avisa de que falta
