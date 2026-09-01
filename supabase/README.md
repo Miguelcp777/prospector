@@ -170,6 +170,15 @@ Dashboard → Authentication → URL Configuration:
 | Site URL | `https://prospector-captacion.netlify.app` |
 | Redirect URLs | `https://prospector-captacion.netlify.app/**` y `http://localhost:5173/**` |
 
+En esos patrones `.` y `/` son separadores, así que `.../**` exige que la
+barra final esté. Por eso `urlDeRetorno()` la añade: `window.location.origin`
+no la lleva, y sin ella Supabase descarta el `redirectTo` y devuelve al Site
+URL — probando en local acabas en producción sin ningún error que lo explique.
+
+El localhost es solo para desarrollo. **Quítalo cuando dejes de tocar el
+código en local**: el token de sesión vuelve en la URL, y cada entrada de esa
+lista es un sitio al que se puede hacer que vuelva.
+
 Esto **ya hacía falta** sin Google: mientras el Site URL apunte a localhost,
 los enlaces de confirmación de los registros por correo llegan rotos. Con
 OAuth pasa a ser bloqueante, porque el botón manda `redirectTo` con el origen

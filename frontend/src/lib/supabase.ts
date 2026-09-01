@@ -76,6 +76,20 @@ const almacenamiento = {
   },
 };
 
+/**
+ * A dónde vuelve el usuario tras Google o tras el enlace de recuperar.
+ *
+ * Con barra final, y no es cosmético. La lista blanca de Redirect URLs del
+ * proyecto usa patrones donde `.` y `/` son separadores, así que el patrón
+ * recomendado `https://dominio/**` NO casa con `https://dominio` a secas.
+ * `window.location.origin` no lleva barra: mandarlo tal cual hace que
+ * Supabase descarte el redirectTo y devuelva al Site URL — probando en local
+ * acabas en producción, sin ningún error que lo explique.
+ */
+export function urlDeRetorno(): string {
+  return window.location.origin + "/";
+}
+
 export const supabase = createClient(url, clave, {
   auth: {
     storage: almacenamiento,

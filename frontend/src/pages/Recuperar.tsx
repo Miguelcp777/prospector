@@ -11,7 +11,7 @@
 // ============================================================
 
 import { useState } from "react";
-import { supabase } from "../lib/supabase";
+import { supabase, urlDeRetorno } from "../lib/supabase";
 import { validarEmail } from "../lib/validacion";
 
 export function Recuperar({ irAEntrar }: { irAEntrar: () => void }) {
@@ -30,7 +30,7 @@ export function Recuperar({ irAEntrar }: { irAEntrar: () => void }) {
     setEnviando(true);
     const { error: fallo } = await supabase.auth.resetPasswordForEmail(
       email.trim(),
-      { redirectTo: window.location.origin },
+      { redirectTo: urlDeRetorno() },
     );
     setEnviando(false);
 

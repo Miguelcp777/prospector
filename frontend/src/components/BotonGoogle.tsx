@@ -12,7 +12,7 @@
 // ============================================================
 
 import { useState } from "react";
-import { supabase } from "../lib/supabase";
+import { supabase, urlDeRetorno } from "../lib/supabase";
 
 export function BotonGoogle({ etiqueta = "Continuar con Google" }: { etiqueta?: string }) {
   const [yendo, setYendo] = useState(false);
@@ -24,10 +24,9 @@ export function BotonGoogle({ etiqueta = "Continuar con Google" }: { etiqueta?: 
 
     const { error: fallo } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      // Volver a donde estábamos. Este origen tiene que estar en la lista de
-      // Redirect URLs del proyecto, o Supabase devuelve al Site URL y en
-      // desarrollo acabas en producción sin entender por qué.
-      options: { redirectTo: window.location.origin },
+      // Volver a donde estábamos. Tiene que estar en la lista de Redirect
+      // URLs del proyecto, o Supabase devuelve al Site URL.
+      options: { redirectTo: urlDeRetorno() },
     });
 
     if (fallo) {
