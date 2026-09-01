@@ -31,8 +31,11 @@ export function BotonGoogle({ etiqueta = "Continuar con Google" }: { etiqueta?: 
 
     if (fallo) {
       setYendo(false);
-      // El fallo más probable no es del usuario: es que el proveedor no esté
-      // dado de alta en el proyecto. Decirlo así ahorra buscar donde no es.
+      // Ojo con lo que NO llega aquí: signInWithOAuth no valida el proveedor,
+      // solo navega el navegador a /auth/v1/authorize. Si Google no está dado
+      // de alta, el 400 lo pinta Supabase como JSON crudo en su propia página
+      // y este código ya no se está ejecutando. Aquí solo caen los fallos
+      // previos a la navegación — sin red, sobre todo.
       setError(
         /provider is not enabled|Unsupported provider/i.test(fallo.message)
           ? "Google todavía no está activado en este proyecto."

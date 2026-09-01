@@ -157,9 +157,26 @@ Salen un **Client ID** y un **Client Secret**.
 
 ### 2 · Darlos de alta en Supabase
 
-Dashboard → Authentication → Providers → Google: activar y pegar los dos
-valores. El secreto va ahí y en ningún sitio más — nunca en `frontend/`, que
-se publica entero.
+Dashboard → Authentication → Sign In / Providers → Google. Son tres cosas y
+la tercera se olvida:
+
+1. El interruptor **Enable Sign in with Google**.
+2. **Client ID** y **Client Secret**.
+3. **Save**. Sin guardar, el interruptor vuelve atrás y la pantalla no avisa.
+
+El secreto va ahí y en ningún sitio más — nunca en `frontend/`, que se
+publica entero.
+
+Mientras no esté hecho, pulsar el botón lleva a una página de Supabase con
+este JSON:
+
+```json
+{"code":400,"error_code":"validation_failed","msg":"Unsupported provider: provider is not enabled"}
+```
+
+Lo pinta Supabase, no la app: `signInWithOAuth` no valida el proveedor, solo
+navega a `/auth/v1/authorize`. Que salga ese error confirma que la petición
+llega bien y que solo falta el alta.
 
 ### 3 · URLs de retorno
 
