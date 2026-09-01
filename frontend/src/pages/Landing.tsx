@@ -8,6 +8,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { invocar } from "../lib/edge";
 
 type Bloque = { titulo: string; texto: string };
 type Contenido = {
@@ -78,13 +79,12 @@ export function Landing({
   async function generar() {
     setError(null);
     setGenerando(true);
-    const { data, error: fallo } = await supabase.functions.invoke("generar-landing", {
-      body: { campaign_id: campanaId },
-    });
+    const { error: fallo } = await invocar(
+      "generar-landing", { campaign_id: campanaId }, "Generar landing",
+    );
     setGenerando(false);
 
-    if (fallo) { setError(`No se pudo generar: ${fallo.message}`); return; }
-    if (data?.error) { setError(data.error); return; }
+    if (fallo) { setError(fallo); return; }
     await cargar();
   }
 

@@ -13,6 +13,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { invocar } from "../lib/edge";
 import { SIN_DEFINIR } from "./Cuenta";
 
 type Campana = {
@@ -45,6 +46,7 @@ export function Segmentos({
   const [vertical, setVertical] = useState("");
   const [segmentos, setSegmentos] = useState<Segmento[]>([]);
   const [infiriendo, setInfiriendo] = useState(false);
+  const [huboFallo, setHuboFallo] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,6 +89,7 @@ export function Segmentos({
     }
 
     setInfiriendo(true);
+    setHuboFallo(false);
 
     // Guardamos la descripción antes de inferir: si el usuario la ha
     // reescrito, la campaña debe quedarse con la que produjo estos segmentos.
@@ -94,23 +97,24 @@ export function Segmentos({
       .update({ descripcion: descripcion.trim() })
       .eq("id", campanaId);
 
-    const { data, error: fallo } = await supabase.functions.invoke("infer-segments", {
-      body: {
+    const { error: fallo } = await invocar(
+      "infer-segments",
+      {
         campaign_id: campanaId,
         descripcion: descripcion.trim(),
         vertical,
         ciudad: campana?.ciudad,
       },
-    });
+      "Inferir segmentos",
+    );
 
     setInfiriendo(false);
 
     if (fallo) {
-      setError(`La inferencia falló: ${fallo.message}`);
-      return;
-    }
-    if (data?.error) {
-      setError(data.error);
+      // El motivo real, no "non-2xx status code": invocar lo saca del cuerpo
+      // de la respuesta y además lo deja registrado en Incidencias.
+      setError(fallo);
+      setHuboFallo(true);
       return;
     }
 
@@ -144,7 +148,13 @@ export function Segmentos({
         <h1>{campana?.nombre}</h1>
       </header>
 
-      {error && <p className="error">{error}</p>}
+      {error && <p className="caja-error">{error}</p>}
+      {huboFallo && (
+        <p className="menudo">
+          Queda registrado en <strong>Incidencias</strong>, con el diagnóstico y
+          un informe listo para reenviar a quien lo tenga que arreglar.
+        </p>
+      )}
 
       <div className="fila">
         <label className="campo">

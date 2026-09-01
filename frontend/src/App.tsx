@@ -20,10 +20,11 @@ import { Mensajes } from "./pages/Mensajes";
 import { Historial } from "./pages/Historial";
 import { Supresiones } from "./pages/Supresiones";
 import { Cuenta } from "./pages/Cuenta";
+import { Incidencias } from "./pages/Incidencias";
 import { supabase } from "./lib/supabase";
 import { estadoDe, PASOS, ProveedorRecorrido, useRecorrido } from "./lib/recorrido";
 
-type Vista = "campanas" | "leads" | "mensajes" | "historial" | "supresiones" | "cuenta";
+type Vista = "campanas" | "leads" | "mensajes" | "historial" | "supresiones" | "incidencias" | "cuenta";
 
 const SECCIONES: { id: Vista; nombre: string; icono: string }[] = [
   { id: "campanas",    nombre: "Campañas",    icono: "◈" },
@@ -31,6 +32,7 @@ const SECCIONES: { id: Vista; nombre: string; icono: string }[] = [
   { id: "mensajes",    nombre: "Mensajes",    icono: "✉" },
   { id: "historial",   nombre: "Historial",   icono: "◔" },
   { id: "supresiones", nombre: "Supresiones", icono: "⊘" },
+  { id: "incidencias", nombre: "Incidencias", icono: "⚠" },
   { id: "cuenta",      nombre: "Cuenta",      icono: "◐" },
 ];
 
@@ -110,6 +112,7 @@ function Aplicacion() {
           {vista === "mensajes"    && <Mensajes />}
           {vista === "historial"   && <Historial />}
           {vista === "supresiones" && <Supresiones />}
+          {vista === "incidencias" && <Incidencias />}
           {vista === "cuenta"      && <Cuenta />}
         </div>
       </main>

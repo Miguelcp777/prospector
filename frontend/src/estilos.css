@@ -557,3 +557,12 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e1) 0; width: 
 
 /* En móvil el lateral es una barra horizontal: el recorrido no cabe. */
 @media (max-width: 860px) { .recorrido { display: none; } }
+
+/* ---------------- incidencias ---------------- */
+
+.pasos-arreglo {
+  margin: 0; padding-left: 1.15rem;
+  display: flex; flex-direction: column; gap: 6px;
+  color: var(--texto-2); font-size: 0.875rem;
+}
+.pasos-arreglo li::marker { color: var(--cian); font-weight: 700; }

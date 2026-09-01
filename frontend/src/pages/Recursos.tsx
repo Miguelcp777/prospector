@@ -12,6 +12,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { invocar } from "../lib/edge";
 
 type Recurso = {
   id: string;
@@ -109,7 +110,9 @@ export function Recursos({ campanaId }: { campanaId: string }) {
   async function leer(ruta: string) {
     const { data: r } = await supabase.from("recursos").select("id").eq("ruta", ruta).single();
     if (!r) return;
-    await supabase.functions.invoke("leer-documento", { body: { recurso_id: r.id } });
+    // Se ignora el resultado a propósito —la lectura del documento es
+    // opcional— pero ahora, si falla, queda registrado en Incidencias.
+    await invocar("leer-documento", { recurso_id: r.id }, "Leer documento adjunto");
   }
 
   async function guardarTexto(id: string, texto: string) {

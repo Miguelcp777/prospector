@@ -86,8 +86,29 @@ export async function inferirSegmentos(
   });
 
   if (!r.ok) {
-    console.error("Anthropic devolvió", r.status, await r.text());
-    throw new ErrorInferencia(502, "No se pudo completar la inferencia. Inténtalo de nuevo.");
+    // El motivo va al mensaje, no solo al log. Un 502 a secas obliga a mirar
+    // los logs del proveedor, y esos no siempre están: el día que hizo falta,
+    // el API de logs de Supabase estaba caído.
+    //
+    // Se expone el tipo de error y el código HTTP, nunca el cuerpo entero:
+    // basta para distinguir la clave, el saldo y el modelo.
+    const cuerpo = await r.text();
+    let tipo = "", detalle = "";
+    try {
+      const j = JSON.parse(cuerpo);
+      tipo = j?.error?.type ?? "";
+      detalle = j?.error?.message ?? "";
+    } catch { /* no era JSON */ }
+    console.error("Anthropic devolvió", r.status, cuerpo.slice(0, 500));
+    throw new ErrorInferencia(
+      502,
+      `El proveedor del modelo rechazó la petición (HTTP ${r.status}` +
+        `${tipo ? " · " + tipo : ""})` +
+        // El mensaje del proveedor es lo único que distingue "modelo que no
+        // existe" de "parámetro mal puesto". Recortado, y con las claves
+        // tachadas por si algún día las cita de vuelta.
+        `${detalle ? ": " + detalle.replace(/sk-ant-[\w-]+/g, "sk-ant-***").slice(0, 200) : ""}`,
+    );
   }
 
   const data = await r.json();

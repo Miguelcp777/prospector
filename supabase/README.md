@@ -220,6 +220,71 @@ el resultado, porque esa palabra va literal al prompt.
 columna, en 021). `max_consultas_mes` y `plan` se leen pero no se tocan: son
 el reparto del presupuesto de Places entre clientes.
 
+## Incidencias
+
+Cuando algo falla, la app lo guarda, lo diagnostica y prepara el texto para
+reenviárselo a quien lo tenga que arreglar. Está en la sección
+**Incidencias** del menú.
+
+Antes un fallo se veía una vez, en rojo, encima de un formulario, y
+desaparecía al recargar. Cuando llegaba el aviso —"no me deja inferir"— no
+quedaba rastro de qué pasó ni de cuándo empezó.
+
+### Por qué el diagnóstico no lo hace el modelo
+
+La tentación es mandarle el error a Claude. El primer fallo que hubo que
+diagnosticar enseñó por qué no: la inferencia devolvía 502 porque **se había
+agotado el saldo de Anthropic**. Un diagnosticador que llama a Anthropic para
+explicar que Anthropic no responde se cae con el mismo error, y encima cobra.
+
+Así que el catálogo manda: firmas conocidas con su causa y su arreglo, en
+`frontend/src/lib/diagnostico.ts`. Es instantáneo, gratis y funciona con el
+proveedor caído. Añadir un caso nuevo es añadir una entrada a ese array.
+
+### Qué se guarda
+
+`incidencias`, una fila por (tenant, componente, firma) con contador. Sin
+agrupar, un bucle de reintentos escribe mil filas iguales y la pantalla deja
+de servir.
+
+Se escribe solo por `registrar_incidencia`, que es `SECURITY DEFINER`: el
+INSERT directo está revocado. El usuario solo puede leer las suyas y cambiar
+el estado.
+
+### El mensaje que se ve
+
+`supabase.functions.invoke` devuelve siempre el mismo texto cuando una Edge
+Function responde con error:
+
+```
+Edge Function returned a non-2xx status code
+```
+
+El motivo real viaja en el cuerpo de la respuesta, colgado del error en
+`context`. `frontend/src/lib/edge.ts` lo lee y lo registra; todas las
+llamadas a funciones pasan por ahí. Sin eso, la pantalla enseñaba esa frase y
+no había forma de distinguir un problema de saldo de un negocio inexistente.
+
+### Fallos frecuentes ya catalogados
+
+| Firma | Causa | Quién lo arregla |
+|---|---|---|
+| `credit balance is too low` | Sin saldo en Anthropic | Tú, en console.anthropic.com |
+| `authentication_error` | Clave de Anthropic revocada | Secreto de la Edge Function |
+| `provider is not enabled` | Google OAuth sin activar | Dashboard de Supabase |
+| `permission denied for table` | Falta un GRANT | Migración |
+| `REQUEST_DENIED` | Places rechaza la clave | Google Cloud |
+
+Ojo con el primero: Anthropic devuelve la falta de saldo como
+`400 invalid_request_error`, que parece una petición mal formada. Esa
+confusión es la que costó dos despliegues encontrar.
+
+### Lo que todavía no cubre
+
+Los jobs del worker (`descubrir`, `enriquecer`, `redactar`) escriben sus
+fallos en `job_tareas.detalle`, no en `incidencias`. Son los que nadie ve,
+porque ocurren sin navegador delante. Falta llevarlos aquí.
+
 ## Claves
 
 | Clave | Dónde | Qué puede |
