@@ -269,15 +269,26 @@ respuesta, no se estiman— pero convertirlos a dinero necesita un precio, y
 ese no lo inventamos:
 
 ```sql
+-- Tarifa de claude-sonnet-5 a 1 de septiembre de 2026, precio de lista.
 update ajustes set
-  precio_tokens_entrada_millon = 0,   -- lo que diga tu factura, por millón
-  precio_tokens_salida_millon  = 0,
-  precio_places_mil            = 35,  -- USD por 1000 consultas
-  moneda = 'USD';
+  precio_tokens_entrada_millon = 2,    -- USD por millón de tokens de entrada
+  precio_tokens_salida_millon  = 10,   -- USD por millón de salida
+  precio_places_mil            = 35,   -- USD por 1000 consultas a Places
+  moneda = USD;
 ```
 
 Mientras estén a cero, el panel enseña el consumo medido y avisa de que falta
 la tarifa, en vez de un importe falso.
+
+**El precio va atado al modelo.** Si cambia `MODELO` en
+`functions/_shared/inferencia.ts`, hay que cambiar la tarifa a la vez o el
+panel seguirá calculando con la vieja sin decir nada.
+
+**Es una estimación por tarifa de lista.** El caché de prompts y el
+procesamiento por lotes abaratan tokens que aquí se cuentan a precio
+completo, así que el panel tiende a estimar por encima. Para vigilar
+tendencia sirve; para cuadrar la factura al céntimo, no. Los tokens sí son
+exactos: los devuelve Anthropic en cada respuesta.
 
 ### Lo que no mide
 
