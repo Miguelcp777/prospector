@@ -80,8 +80,11 @@ export function Registro({ irAEntrar }: { irAEntrar: () => void }) {
   }
 
   return (
-    <form className="tarjeta-auth" onSubmit={enviar}>
-      <h1>Crear cuenta</h1>
+    <form className="acceso-tarjeta acceso-tarjeta-larga" onSubmit={enviar}>
+      <div className="acceso-tarjeta-cabeza">
+        <small>Empezar</small>
+        <h2>Crear cuenta</h2>
+      </div>
 
       {/* Google no sabe a qué se dedica tu negocio, así que por esta vía los
           datos de abajo se piden después, desde Cuenta. Decirlo aquí evita
@@ -155,14 +158,14 @@ export function Registro({ irAEntrar }: { irAEntrar: () => void }) {
         autoComplete="new-password"
       />
 
-      {error && <p className="error">{error}</p>}
-      {aviso && <p className="aviso">{aviso}</p>}
+      {error && <p className="caja-error" role="alert">{error}</p>}
+      {aviso && <p className="caja-aviso">{aviso}</p>}
 
       <button className="primario" type="submit" disabled={enviando}>
         {enviando ? "Creando cuenta…" : "Crear cuenta"}
       </button>
 
-      <p className="sutil">
+      <p className="sutil acceso-pie-tarjeta">
         ¿Ya tienes cuenta?{" "}
         <button type="button" className="enlace" onClick={irAEntrar}>
           Entrar

@@ -12,8 +12,8 @@
 
 import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { Entrar } from "./pages/Entrar";
-import { Registro } from "./pages/Registro";
+import { Acceso } from "./pages/Acceso";
+import { NuevaContrasena } from "./pages/NuevaContrasena";
 import { Campanas } from "./pages/Campanas";
 import { Leads } from "./pages/Leads";
 import { Mensajes } from "./pages/Mensajes";
@@ -45,7 +45,7 @@ export default function App() {
 function Aplicacion() {
   const [sesion, setSesion] = useState<Session | null>(null);
   const [cargando, setCargando] = useState(true);
-  const [pantalla, setPantalla] = useState<"entrar" | "registro">("entrar");
+  const [recuperando, setRecuperando] = useState(false);
   const [vista, setVista] = useState<Vista>("campanas");
 
   useEffect(() => {
@@ -56,22 +56,21 @@ function Aplicacion() {
       setCargando(false);
     });
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_evento, s) => setSesion(s));
+    const { data: sub } = supabase.auth.onAuthStateChange((evento, s) => {
+      setSesion(s);
+      // El enlace del correo de recuperación abre sesión y dispara este
+      // evento. Sin atenderlo, el usuario acabaría dentro de la app sin
+      // haber cambiado la contraseña que venía a cambiar.
+      if (evento === "PASSWORD_RECOVERY") setRecuperando(true);
+    });
     return () => sub.subscription.unsubscribe();
   }, []);
 
   if (cargando) return <main className="centro"><p className="sutil">Cargando…</p></main>;
 
-  if (!sesion) {
-    return (
-      <main className="centro">
-        <img src="/aurevanta.png" alt="Aurevanta Labs" className="logo-auth" />
-        {pantalla === "entrar"
-          ? <Entrar irARegistro={() => setPantalla("registro")} />
-          : <Registro irAEntrar={() => setPantalla("entrar")} />}
-      </main>
-    );
-  }
+  if (recuperando) return <NuevaContrasena alTerminar={() => setRecuperando(false)} />;
+
+  if (!sesion) return <Acceso />;
 
   return (
     <div className="armazon">

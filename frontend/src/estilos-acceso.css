@@ -1,0 +1,245 @@
+/* ============================================================
+   Pantalla de acceso
+   ============================================================
+
+   El fondo se sirve en tres tamaños y cada pantalla se lleva el suyo: el
+   original de 4K pesa 1,6 MB, que en la puerta de entrada es medio segundo
+   de pantalla vacía sobre una conexión mala. Escritorio 287 KB, móvil 152.
+
+   El degradado de encima no es decoración: la escena tiene mucho detalle
+   claro por la derecha y el texto se pierde encima. Oscurece la izquierda,
+   que es donde va lo que hay que leer.
+   ============================================================ */
+
+.acceso {
+  position: relative;
+  isolation: isolate;
+  min-height: 100svh;
+  overflow: hidden;
+  background: var(--fondo) no-repeat 58% center / cover;
+
+  /* Fallback para quien no entienda image-set. */
+  background-image: url("/hero-1920.jpg");
+  /* image-set solo admite resolución (1x, 2x); con descriptores de anchura
+     (640w) la declaración entera es inválida y nadie ve nunca la 4K. */
+  background-image: image-set(url("/hero-1920.jpg") 1x, url("/hero-4k.jpg") 2x);
+}
+
+/* En el móvil la escena queda detrás de un degradado casi opaco y se ve un
+   tercio: no hay motivo para bajar 287 KB. */
+@media (max-width: 720px) {
+  .acceso {
+    background-image: url("/hero-1280.jpg");
+    background-image: image-set(url("/hero-1280.jpg") 1x, url("/hero-1920.jpg") 2x);
+  }
+}
+
+.acceso::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background:
+    linear-gradient(90deg,
+      rgba(8, 6, 15, 0.985) 0%,
+      rgba(8, 6, 15, 0.9)  32%,
+      rgba(8, 6, 15, 0.35) 59%,
+      rgba(8, 6, 15, 0.08) 100%),
+    linear-gradient(0deg, rgba(8, 6, 15, 0.72), transparent 42%);
+}
+
+/* Rejilla tenue, desvanecida hacia la derecha para no ensuciar la escena. */
+.acceso::after {
+  content: ""; position: absolute; inset: 0; z-index: -1; opacity: 0.18;
+  background-image:
+    linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+  background-size: 72px 72px;
+  -webkit-mask-image: linear-gradient(90deg, #000, transparent 68%);
+          mask-image: linear-gradient(90deg, #000, transparent 68%);
+}
+
+.acceso-aurora {
+  position: absolute; z-index: -1;
+  width: 38vw; height: 38vw; left: -20vw; top: 22%;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(34, 211, 238, 0.16), rgba(99, 102, 241, 0.08) 35%, transparent 68%);
+  filter: blur(25px);
+}
+
+.acceso-marco {
+  width: min(1480px, calc(100% - 64px));
+  min-height: 100svh; margin: auto;
+  display: grid; grid-template-rows: auto 1fr auto;
+  padding: 28px 0 24px;
+}
+
+.acceso-cabecera {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--e5);
+}
+.acceso-logo {
+  display: block; width: clamp(200px, 19vw, 300px); height: auto;
+  filter: drop-shadow(0 0 20px rgba(139, 92, 246, 0.25));
+}
+.acceso-sello {
+  display: flex; align-items: center; gap: 9px; margin: 0;
+  font-size: 0.75rem; letter-spacing: 0.08em; color: var(--texto-2);
+}
+.acceso-sello::before {
+  content: ""; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--exito); box-shadow: 0 0 15px var(--exito);
+}
+
+.acceso-cuerpo {
+  display: grid;
+  grid-template-columns: minmax(420px, 1.08fr) minmax(380px, 470px);
+  align-items: center; gap: clamp(48px, 8vw, 140px);
+  padding: 54px 0 42px;
+}
+.acceso-cuerpo-centrado { grid-template-columns: minmax(380px, 470px); justify-content: center; }
+
+/* ---------------- el discurso ---------------- */
+
+.acceso-antetitulo {
+  display: flex; align-items: center; gap: 11px; margin: 0 0 22px;
+  color: var(--cian); font-size: 0.75rem; font-weight: 800;
+  letter-spacing: 0.22em; text-transform: uppercase;
+}
+.acceso-antetitulo::before {
+  content: ""; width: 28px; height: 1px;
+  background: linear-gradient(90deg, var(--cian), #ec4899);
+  box-shadow: 0 0 11px var(--cian);
+}
+
+.acceso-discurso h1 {
+  max-width: 740px; margin: 0;
+  font-size: clamp(2.75rem, 5.2vw, 5.2rem);
+  line-height: 0.98; letter-spacing: -0.05em;
+  /* Sin esto, en portátiles de 1280 la primera línea se lleva "Convierte el
+     mercado" y deja "en" solo en la siguiente. */
+  text-wrap: balance;
+}
+.acceso-discurso h1 .degradado {
+  display: block; color: transparent;
+  background: linear-gradient(94deg, #fff 4%, #7de9ff 35%, #9b71ff 68%, #ff63ba);
+  -webkit-background-clip: text; background-clip: text;
+}
+
+.acceso-entradilla {
+  max-width: 620px; margin: 26px 0 0;
+  color: var(--texto-2); font-size: clamp(1rem, 1.25vw, 1.1875rem); line-height: 1.65;
+}
+.acceso-entradilla strong { color: var(--texto); font-weight: 600; }
+
+.acceso-pruebas {
+  display: flex; flex-wrap: wrap; gap: 10px;
+  margin: 32px 0 0; padding: 0; list-style: none;
+}
+.acceso-pruebas li {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 14px; border-radius: 999px;
+  border: 1px solid var(--borde); background: rgba(8, 7, 19, 0.46);
+  backdrop-filter: blur(10px);
+  color: var(--texto-2); font-size: 0.75rem;
+}
+.acceso-pruebas li::before {
+  content: ""; width: 5px; height: 5px; border-radius: 50%;
+  background: linear-gradient(var(--cian), #ec4899);
+  box-shadow: 0 0 10px var(--cian);
+}
+
+/* ---------------- la tarjeta ---------------- */
+
+.acceso-tarjeta-marco { position: relative; }
+.acceso-halo {
+  position: absolute; inset: -40px; pointer-events: none;
+  background: radial-gradient(circle at 50% 35%, rgba(139, 92, 246, 0.27), transparent 65%);
+  filter: blur(30px);
+}
+
+.acceso-tarjeta {
+  position: relative; overflow: hidden;
+  padding: var(--e6); border-radius: var(--radio-l);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: linear-gradient(145deg, rgba(19, 16, 41, 0.9), rgba(8, 7, 20, 0.86));
+  box-shadow: 0 32px 100px rgba(0, 0, 0, 0.52), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(26px);
+  display: flex; flex-direction: column; gap: var(--e4);
+}
+.acceso-tarjeta::before {
+  content: ""; position: absolute; inset: 0 0 auto; height: 2px;
+  background: var(--degradado);
+}
+/* El alta pide seis campos: sin esto se sale de pantalla en un portátil. */
+.acceso-tarjeta-larga { max-height: min(78svh, 760px); overflow-y: auto; }
+
+.acceso-tarjeta-cabeza { display: flex; flex-direction: column; gap: 6px; }
+.acceso-tarjeta-cabeza small {
+  color: var(--cian); font-size: 0.6875rem; font-weight: 800;
+  letter-spacing: 0.18em; text-transform: uppercase;
+}
+.acceso-tarjeta-cabeza h2 { margin: 0; font-size: 1.75rem; letter-spacing: -0.03em; }
+.acceso-tarjeta-cabeza p { margin: 0; color: var(--texto-2); font-size: 0.875rem; }
+
+.acceso-pie-tarjeta { text-align: center; margin: 0; }
+
+/* Etiqueta con el enlace de "¿la has olvidado?" a la derecha. Aquí la
+   etiqueta es un <label>, no el <span> del resto de campos, así que hay que
+   repetirle el estilo. */
+.campo-cabeza {
+  display: flex; align-items: baseline; justify-content: space-between; gap: var(--e3);
+}
+.campo-cabeza > label {
+  font-size: 0.6875rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--texto-3);
+}
+.enlace-menudo { font-size: 0.75rem; font-weight: 500; text-transform: none; letter-spacing: 0; }
+
+/* El ojo va dentro del campo, así que el input necesita hueco a la derecha. */
+.campo-con-boton { position: relative; display: block; }
+.campo-con-boton input { padding-right: 46px; }
+.ojo {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  width: 34px; height: 34px; padding: 0;
+  border: 0; border-radius: 9px; background: none; color: var(--texto-2);
+}
+.ojo:hover { background: var(--superficie-2); color: var(--texto); }
+
+.casilla {
+  display: flex; align-items: flex-start; gap: 10px;
+  color: var(--texto-2); font-size: 0.8125rem; cursor: pointer;
+}
+.casilla input { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; accent-color: #6366f1; }
+
+.acceso-pie {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--e6);
+  color: var(--texto-3); font-size: 0.6875rem;
+}
+
+/* ---------------- pantallas estrechas ---------------- */
+
+@media (max-width: 980px) {
+  .acceso-marco { width: min(100% - 40px, 720px); }
+  .acceso-cuerpo { grid-template-columns: 1fr; padding-top: 56px; }
+  .acceso { background-position: 68% center; }
+  /* En columna el texto ya no está a la izquierda de la escena, así que el
+     degradado tiene que oscurecer de arriba abajo, no de lado. */
+  .acceso::before {
+    background: linear-gradient(180deg,
+      rgba(8, 6, 15, 0.84), rgba(8, 6, 15, 0.95) 44%, var(--fondo) 100%);
+  }
+  .acceso-discurso { text-align: center; }
+  .acceso-antetitulo, .acceso-pruebas { justify-content: center; }
+  .acceso-entradilla { margin-inline: auto; }
+  .acceso-tarjeta-marco { width: min(100%, 500px); margin: auto; }
+}
+
+@media (max-width: 560px) {
+  .acceso-marco { width: calc(100% - 28px); padding-top: 20px; }
+  .acceso-logo { width: 200px; }
+  .acceso-sello { display: none; }
+  .acceso-cuerpo { gap: 36px; padding: 44px 0 32px; }
+  .acceso-discurso h1 { font-size: clamp(2.4rem, 12vw, 3.4rem); }
+  .acceso-pruebas li:nth-child(3) { display: none; }
+  .acceso-tarjeta { padding: var(--e5) var(--e4); }
+  .acceso-pie { flex-direction: column; align-items: flex-start; gap: var(--e3); }
+}

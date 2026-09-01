@@ -157,13 +157,6 @@ a:hover { text-decoration: underline; }
 .pie-marca img { width: 100%; height: auto; display: block; opacity: 0.55; }
 .pie-marca:hover img { opacity: 0.8; }
 
-/* Entrada y registro: aquí no hay producto que enseñar todavía, solo quién
-   lo firma, así que el logotipo completo va arriba y grande. */
-.logo-auth {
-  display: block; width: 232px; max-width: 70vw; height: auto;
-  margin: 0 auto var(--e6);
-  filter: drop-shadow(0 0 24px rgba(139, 92, 246, 0.3));
-}
 
 .nav-item {
   display: flex; align-items: center; gap: var(--e3);
@@ -470,34 +463,19 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .boton-google { width: 100%; }
 .boton-google svg { flex-shrink: 0; }
 
-/* La raya con la palabra en medio. El span tapa la línea con el fondo de la
-   tarjeta, que es más simple que partir la raya en dos. */
+/* La raya con la palabra en medio. Dos rayas que crecen a los lados, no una
+   sola tapada por el texto: así no depende del color de fondo, y la tarjeta
+   de acceso lo tiene translúcido. */
 .separador-o {
-  position: relative; text-align: center;
+  display: flex; align-items: center; gap: var(--e3);
   margin: var(--e2) 0;
   color: var(--texto-3); font-size: 0.75rem;
   text-transform: uppercase; letter-spacing: 0.08em;
 }
-.separador-o::before {
-  content: ""; position: absolute; top: 50%; left: 0; right: 0;
-  border-top: 1px solid var(--borde);
+.separador-o::before, .separador-o::after {
+  content: ""; flex: 1; height: 1px; background: var(--borde);
 }
-.separador-o span { position: relative; background: var(--superficie); padding: 0 var(--e3); }
 
-.tarjeta-auth {
-  width: 100%; max-width: 430px;
-  background: var(--superficie);
-  border: 1px solid var(--borde);
-  border-radius: var(--radio-l);
-  padding: var(--e7) var(--e6);
-  box-shadow: var(--sombra-m), var(--brillo);
-  display: flex; flex-direction: column; gap: var(--e4);
-  position: relative; overflow: hidden;
-}
-.tarjeta-auth::before {
-  content: ""; position: absolute; inset: 0 0 auto 0; height: 3px;
-  background: var(--degradado);
-}
 .enlace {
   background: none; border: 0; padding: 0;
   color: var(--cian); font: inherit; font-weight: 600;

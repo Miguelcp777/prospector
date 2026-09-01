@@ -8,13 +8,19 @@
 
 import { useState } from "react";
 import { BotonGoogle } from "../components/BotonGoogle";
-import { Campo } from "../components/Campo";
-import { supabase } from "../lib/supabase";
+import { recordarSesion, seRecuerdaLaSesion, supabase } from "../lib/supabase";
 import { validarContrasena, validarEmail } from "../lib/validacion";
 
-export function Entrar({ irARegistro }: { irARegistro: () => void }) {
+export function Entrar({
+  irARegistro, irARecuperar,
+}: {
+  irARegistro: () => void;
+  irARecuperar: () => void;
+}) {
   const [email, setEmail] = useState("");
   const [contrasena, setContrasena] = useState("");
+  const [verClave, setVerClave] = useState(false);
+  const [recordar, setRecordar] = useState(seRecuerdaLaSesion());
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
@@ -27,6 +33,10 @@ export function Entrar({ irARegistro }: { irARegistro: () => void }) {
       setError(problema);
       return;
     }
+
+    // Antes de autenticar: la preferencia decide en qué almacén escribe
+    // supabase-js la sesión que está a punto de crear.
+    recordarSesion(recordar);
 
     setEnviando(true);
     const { error: fallo } = await supabase.auth.signInWithPassword({
@@ -47,36 +57,63 @@ export function Entrar({ irARegistro }: { irARegistro: () => void }) {
   }
 
   return (
-    <form className="tarjeta-auth" onSubmit={enviar}>
-      <h1>Entrar</h1>
+    <form className="acceso-tarjeta" onSubmit={enviar} noValidate>
+      <div className="acceso-tarjeta-cabeza">
+        <small>Tu espacio de trabajo</small>
+        <h2>Entra en Prospector</h2>
+        <p>Sigue donde lo dejaste.</p>
+      </div>
 
-      {/* Arriba porque es el camino corto: quien tenga cuenta con Google no
-          necesita leer el formulario de abajo. */}
       <BotonGoogle />
       <div className="separador-o"><span>o con tu correo</span></div>
 
-      <Campo
-        etiqueta="Email"
-        tipo="email"
-        valor={email}
-        alCambiar={setEmail}
-        autoComplete="email"
-      />
-      <Campo
-        etiqueta="Contraseña"
-        tipo="password"
-        valor={contrasena}
-        alCambiar={setContrasena}
-        autoComplete="current-password"
-      />
+      <label className="campo">
+        <span>Email</span>
+        <input type="email" value={email} autoComplete="email" inputMode="email"
+               placeholder="nombre@empresa.com"
+               onChange={(e) => setEmail(e.target.value)} />
+      </label>
 
-      {error && <p className="error">{error}</p>}
+      {/* La etiqueta va fuera del <label> a propósito: un botón dentro de una
+          etiqueta recibe el clic y además se lo reenvía al input, y el enlace
+          de recuperar se quedaba sin efecto. Se enlazan por htmlFor/id. */}
+      <div className="campo">
+        <div className="campo-cabeza">
+          <label htmlFor="contrasena">Contraseña</label>
+          <button type="button" className="enlace enlace-menudo" onClick={irARecuperar}>
+            ¿La has olvidado?
+          </button>
+        </div>
+        <div className="campo-con-boton">
+          <input id="contrasena" type={verClave ? "text" : "password"} value={contrasena}
+                 autoComplete="current-password" placeholder="Tu contraseña"
+                 onChange={(e) => setContrasena(e.target.value)} />
+          <button type="button" className="ojo" onClick={() => setVerClave(!verClave)}
+                  aria-pressed={verClave}
+                  aria-label={verClave ? "Ocultar contraseña" : "Mostrar contraseña"}>
+            {verClave ? "◍" : "◉"}
+          </button>
+        </div>
+      </div>
+
+      <label className="casilla">
+        <input type="checkbox" checked={recordar}
+               onChange={(e) => setRecordar(e.target.checked)} />
+        <span>
+          Mantener la sesión
+          {!recordar && (
+            <small className="menudo"> · se cerrará al cerrar el navegador</small>
+          )}
+        </span>
+      </label>
+
+      {error && <p className="caja-error" role="alert">{error}</p>}
 
       <button className="primario" type="submit" disabled={enviando}>
         {enviando ? "Entrando…" : "Entrar"}
       </button>
 
-      <p className="sutil">
+      <p className="sutil acceso-pie-tarjeta">
         ¿No tienes cuenta?{" "}
         <button type="button" className="enlace" onClick={irARegistro}>
           Crear una
