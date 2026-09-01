@@ -21,10 +21,11 @@ import { Historial } from "./pages/Historial";
 import { Supresiones } from "./pages/Supresiones";
 import { Cuenta } from "./pages/Cuenta";
 import { Incidencias } from "./pages/Incidencias";
+import { Panel } from "./pages/Panel";
 import { supabase } from "./lib/supabase";
 import { estadoDe, PASOS, ProveedorRecorrido, useRecorrido } from "./lib/recorrido";
 
-type Vista = "campanas" | "leads" | "mensajes" | "historial" | "supresiones" | "incidencias" | "cuenta";
+type Vista = "campanas" | "leads" | "mensajes" | "historial" | "supresiones" | "incidencias" | "cuenta" | "panel";
 
 const SECCIONES: { id: Vista; nombre: string; icono: string }[] = [
   { id: "campanas",    nombre: "Campañas",    icono: "◈" },
@@ -48,7 +49,16 @@ function Aplicacion() {
   const [sesion, setSesion] = useState<Session | null>(null);
   const [cargando, setCargando] = useState(true);
   const [recuperando, setRecuperando] = useState(false);
+  const [esAdmin, setEsAdmin] = useState(false);
   const [vista, setVista] = useState<Vista>("campanas");
+
+  // Si es admin, aparece la sección de panel. Que el menú esté o no no
+  // decide nada: las funciones panel_* comprueban es_admin() por su cuenta,
+  // y la clave publicable está en el bundle de todo el mundo.
+  useEffect(() => {
+    if (!sesion) { setEsAdmin(false); return; }
+    supabase.rpc("es_admin").then(({ data }) => setEsAdmin(data === true));
+  }, [sesion]);
 
   useEffect(() => {
     // getSession primero: al recargar, la sesión ya está en localStorage y
@@ -82,7 +92,9 @@ function Aplicacion() {
           <span>Prospector</span>
         </div>
 
-        {SECCIONES.map((s) => (
+        {[...SECCIONES, ...(esAdmin
+          ? [{ id: "panel" as Vista, nombre: "Panel", icono: "▤" }]
+          : [])].map((s) => (
           <button
             key={s.id}
             className={vista === s.id ? "nav-item activa" : "nav-item"}
@@ -114,6 +126,7 @@ function Aplicacion() {
           {vista === "supresiones" && <Supresiones />}
           {vista === "incidencias" && <Incidencias />}
           {vista === "cuenta"      && <Cuenta />}
+          {vista === "panel"       && esAdmin && <Panel />}
         </div>
       </main>
     </div>

@@ -79,7 +79,11 @@ Deno.serve(async (req) => {
 
     let segmentos;
     try {
-      segmentos = await inferirSegmentos(descripcion, vertical, ciudad);
+      // Sin tenant: la demo es pública. Se anota igual, porque el coste es
+      // nuestro y es justo el que nadie ve venir.
+      segmentos = await inferirSegmentos(
+        descripcion, vertical, ciudad, { funcion: "demo-inferir", tenant: null },
+      );
     } catch (e) {
       // El cargo va antes de inferir a propósito: cobrarlo después dejaría la
       // llamada a Claude fuera del techo de gasto. Pero si falla por nuestra

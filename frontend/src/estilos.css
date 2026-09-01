@@ -566,3 +566,51 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e1) 0; width: 
   color: var(--texto-2); font-size: 0.875rem;
 }
 .pasos-arreglo li::marker { color: var(--cian); font-weight: 700; }
+
+/* ---------------- panel de administración ---------------- */
+
+.titulo-seccion {
+  font-size: 0.75rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--texto-3); margin: var(--e3) 0 0;
+}
+
+.rejilla-metricas {
+  display: grid; gap: var(--e4);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.metrica {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: var(--e4) var(--e5);
+  background: var(--superficie); border: 1px solid var(--borde);
+  border-radius: var(--radio-m); position: relative; overflow: hidden;
+}
+.metrica::before {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 2px;
+  background: var(--degradado);
+}
+/* Solo lo que hay que mirar hoy se pone ámbar. Si todo alerta, nada alerta. */
+.metrica-alerta::before { background: var(--aviso); }
+.metrica-rotulo {
+  font-size: 0.6875rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.1em; color: var(--texto-3);
+}
+.metrica-valor { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; }
+.cifra-alerta { color: var(--aviso); font-weight: 600; }
+
+/* Barras en CSS: cuatro series y treinta días no justifican una librería
+   de gráficos que pagarían en cada visita también los que no son admin. */
+.barras {
+  display: flex; align-items: flex-end; gap: 2px;
+  height: 140px; margin-top: var(--e2);
+}
+.barra-hueco {
+  flex: 1; height: 100%; display: flex; align-items: flex-end;
+  border-radius: 3px;
+}
+.barra-hueco:hover { background: var(--superficie-2); }
+.barra {
+  width: 100%; border-radius: 3px 3px 0 0;
+  background: var(--degradado); min-height: 0;
+}
+.barras-pie { display: flex; justify-content: space-between; margin-top: 6px; }

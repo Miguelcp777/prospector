@@ -74,7 +74,10 @@ Deno.serve(async (req) => {
 
         if (falloCtx || !ctx) throw new Error("No se pudo leer el contexto del lead");
 
-        const { asunto, cuerpo } = await redactarMensaje(ctx as Contexto);
+        const { asunto, cuerpo } = await redactarMensaje(
+          ctx as Contexto,
+          { funcion: "redactar", tenant: tarea.tenant_id },
+        );
 
         // Dos pasos a propósito: el token de baja lo genera la base al
         // insertar, así que el pie con el enlace solo se puede componer

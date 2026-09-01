@@ -220,6 +220,75 @@ el resultado, porque esa palabra va literal al prompt.
 columna, en 021). `max_consultas_mes` y `plan` se leen pero no se tocan: son
 el reparto del presupuesto de Places entre clientes.
 
+## Panel de administración
+
+Uso y gasto de todo el servicio, en la sección **Panel**. Solo aparece —y
+solo responde— si quien mira es administrador.
+
+### Dar de alta un administrador
+
+No hay pantalla para esto a propósito: son dos o tres personas en la vida
+del proyecto, y una pantalla de "hazte admin" es superficie que mantener y
+vigilar a cambio de nada.
+
+```sql
+insert into administradores (usuario_id, nota)
+select id, 'Nombre · para qué' from auth.users where email = 'quien@ejemplo.com';
+```
+
+Para quitarlo, `delete from administradores where usuario_id = '...'`.
+
+### Qué protege el panel
+
+**No** que la sección esté escondida en el menú. La clave publicable viaja en
+el bundle y cualquiera puede llamar a las funciones desde la consola del
+navegador. Lo que decide es `es_admin()` dentro de cada `panel_*`.
+Comprobado: sin ser admin, las cuatro funciones devuelven `No autorizado` y
+la tabla `administradores` ni se lee.
+
+La marca de administrador vive en tabla propia, no en `profiles`. Esa tabla
+tiene concesión de UPDATE para `authenticated` —hoy la frena la RLS, que no
+tiene política de escritura— y bastaría con que alguien añadiera una política
+de actualización para que un cliente pudiera hacerse admin solo.
+
+### Qué enseña, y qué no
+
+Agregados. Ni un nombre de lead, ni un correo, ni el cuerpo de un mensaje.
+Para controlar uso y gasto hacen falta números; y somos encargados del
+tratamiento de datos que son de nuestros clientes, no nuestros. Ver
+`docs/compliance.md`.
+
+Por eso **no** hay una política de tipo "el admin ve todas las filas de
+leads": eso dejaría la lectura entre clientes a un JWT de distancia en todas
+las tablas. El cruce ocurre solo dentro de las cuatro funciones.
+
+### Las tarifas hay que ponerlas
+
+`consumo_modelo` mide tokens de verdad —los devuelve Anthropic en cada
+respuesta, no se estiman— pero convertirlos a dinero necesita un precio, y
+ese no lo inventamos:
+
+```sql
+update ajustes set
+  precio_tokens_entrada_millon = 0,   -- lo que diga tu factura, por millón
+  precio_tokens_salida_millon  = 0,
+  precio_places_mil            = 35,  -- USD por 1000 consultas
+  moneda = 'USD';
+```
+
+Mientras estén a cero, el panel enseña el consumo medido y avisa de que falta
+la tarifa, en vez de un importe falso.
+
+### Lo que no mide
+
+- **Visitas y páginas vistas.** No hay analítica: lo que se cuenta son
+  operaciones que cuestan dinero y objetos creados. Si hace falta tráfico
+  web, es otra herramienta.
+- **Places por día.** `consumo_places` se agrega por mes desde 007. En la
+  serie diaria no aparece porque repartirlo entre los días sería inventarlo.
+- **El consumo del modelo antes de hoy.** La medición empieza cuando se
+  desplegó esto; lo gastado antes no está.
+
 ## Incidencias
 
 Cuando algo falla, la app lo guarda, lo diagnostica y prepara el texto para
