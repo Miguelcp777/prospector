@@ -8,6 +8,7 @@
 // ============================================================
 
 import { MODELO } from "./inferencia.ts";
+import { anotarConsumo, type Quien } from "./consumo.ts";
 
 export type ContextoLanding = {
   negocio_nombre: string;
@@ -63,7 +64,10 @@ Devuelve SOLO un JSON con esta forma, sin texto alrededor:
   "cta": "texto del botón, dos o tres palabras"
 }`;
 
-export async function generarLanding(c: ContextoLanding): Promise<Contenido> {
+export async function generarLanding(
+  c: ContextoLanding,
+  quien?: Quien,
+): Promise<Contenido> {
   const publico = c.segmentos.length > 0
     ? c.segmentos.map((s) => `- ${s.nombre}${s.motivo ? `: ${s.motivo}` : ""}`).join("\n")
     : "(sin segmentos definidos)";
@@ -99,6 +103,10 @@ export async function generarLanding(c: ContextoLanding): Promise<Contenido> {
   }
 
   const data = await r.json();
+
+  // La landing también cuesta, y hasta ahora no se contaba en ningún sitio.
+  if (quien) await anotarConsumo(quien.funcion, MODELO, data.usage, quien.tenant, quien.campana);
+
   const texto = (data.content ?? [])
     .filter((b: { type: string }) => b.type === "text")
     .map((b: { text: string }) => b.text)

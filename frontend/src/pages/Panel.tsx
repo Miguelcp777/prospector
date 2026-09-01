@@ -41,6 +41,25 @@ type Dia = {
   enviados: number; tokens: number; demo: number; incidencias: number;
 };
 
+type Coste = {
+  campaign_id: string; campana: string; cliente: string; estado: string; creada: string;
+  leads: number; leads_email: number; mensajes: number; enviados: number;
+  places_consultas: number; coste_places: number;
+  tokens: number; llamadas_modelo: number; coste_modelo: number;
+  coste_total: number; coste_por_lead: number | null;
+  coste_por_lead_email: number | null; coste_por_mensaje: number | null;
+  falta_tarifa: boolean; moneda: string;
+};
+
+type Economia = {
+  campanas_con_gasto: number;
+  coste_medio: number; coste_mediano: number; coste_maximo: number;
+  leads_medios: number; leads_email_medios: number;
+  coste_por_lead: number | null; coste_por_lead_email: number | null;
+  coste_por_mensaje: number | null;
+  gasto_places: number; gasto_modelo: number; pct_places: number; moneda: string;
+};
+
 type FilaIncidencia = {
   id: string; tenant: string; origen: string; operacion: string | null;
   mensaje: string; estado: string; veces: number; ultima_en: string;
@@ -48,11 +67,25 @@ type FilaIncidencia = {
 
 const num = (n: number) => n.toLocaleString("es-ES");
 
+/**
+ * Importes con los decimales que hagan falta.
+ *
+ * Un coste por lead de 0,0026 redondeado a dos decimales es 0,00, y ahí se
+ * pierde justo lo que se venía a mirar. Por debajo de un céntimo, cuatro
+ * decimales.
+ */
+const din = (n: number | null | undefined, moneda: string) =>
+  n === null || n === undefined
+    ? "—"
+    : `${n > 0 && n < 0.01 ? n.toFixed(4) : n.toFixed(2)} ${moneda}`;
+
 export function Panel() {
   const [resumen, setResumen] = useState<Resumen | null>(null);
   const [tenants, setTenants] = useState<FilaTenant[]>([]);
   const [dias, setDias] = useState<Dia[]>([]);
   const [incidencias, setIncidencias] = useState<FilaIncidencia[]>([]);
+  const [costes, setCostes] = useState<Coste[]>([]);
+  const [economia, setEconomia] = useState<Economia | null>(null);
   const [ventana, setVentana] = useState(30);
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -60,17 +93,21 @@ export function Panel() {
   const cargar = useCallback(async () => {
     setCargando(true);
     setError(null);
-    const [r, t, a, i] = await Promise.all([
+    const [r, t, a, i, c, e] = await Promise.all([
       supabase.rpc("panel_resumen"),
       supabase.rpc("panel_tenants"),
       supabase.rpc("panel_actividad", { p_dias: ventana }),
       supabase.rpc("panel_incidencias", { p_limite: 25 }),
+      supabase.rpc("panel_costes_campana", { p_limite: 100 }),
+      supabase.rpc("panel_economia"),
     ]);
     if (r.error) setError(r.error.message);
     setResumen((r.data?.[0] ?? null) as Resumen | null);
     setTenants((t.data ?? []) as FilaTenant[]);
     setDias((a.data ?? []) as Dia[]);
     setIncidencias((i.data ?? []) as FilaIncidencia[]);
+    setCostes((c.data ?? []) as Coste[]);
+    setEconomia((e.data?.[0] ?? null) as Economia | null);
     setCargando(false);
   }, [ventana]);
 
@@ -178,6 +215,96 @@ export function Panel() {
       <p className="menudo">
         Places no sale aquí: su consumo se agrega por mes y no hay dato diario.
         Repartirlo entre los días sería inventarlo.
+      </p>
+
+      {/* ---------------- unidad económica ---------------- */}
+      <h2 className="titulo-seccion">Cuánto cuesta una campaña</h2>
+      {economia && economia.campanas_con_gasto > 0 ? (
+        <>
+          <div className="rejilla-metricas">
+            <Metrica
+              rotulo="Coste mediano por campaña"
+              valor={din(economia.coste_mediano, economia.moneda)}
+              pie={`media ${din(economia.coste_medio, economia.moneda)} · máximo ${din(economia.coste_maximo, economia.moneda)} · ${economia.campanas_con_gasto} campañas con gasto`}
+            />
+            <Metrica
+              rotulo="Coste por lead"
+              valor={din(economia.coste_por_lead, economia.moneda)}
+              pie={`${num(economia.leads_medios)} leads de media por campaña`}
+            />
+            <Metrica
+              rotulo="Coste por lead con correo"
+              valor={din(economia.coste_por_lead_email, economia.moneda)}
+              pie={`${num(economia.leads_email_medios)} de media · son los contactables`}
+            />
+            <Metrica
+              rotulo="Coste por mensaje redactado"
+              valor={din(economia.coste_por_mensaje, economia.moneda)}
+              pie="solo modelo: redactar no consulta Places"
+            />
+          </div>
+          <p className="menudo">
+            El gasto se reparte {economia.pct_places}% Places /{" "}
+            {(100 - economia.pct_places).toFixed(1)}% modelo —{" "}
+            {din(economia.gasto_places, economia.moneda)} y{" "}
+            {din(economia.gasto_modelo, economia.moneda)}. Los «por unidad» son
+            agregados, no medias de medias: una campaña de tres leads no debe
+            pesar lo mismo que una de novecientos.
+          </p>
+        </>
+      ) : (
+        <p className="sutil">
+          Todavía no hay campañas con gasto imputado. El de Places se calcula
+          desde el primer descubrimiento; el del modelo, desde que se desplegó
+          la medición por campaña.
+        </p>
+      )}
+
+      <h2 className="titulo-seccion">Coste campaña a campaña</h2>
+      <div className="tabla-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Campaña</th><th>Cliente</th><th>Leads</th><th>Con correo</th>
+              <th>Mensajes</th><th>Places</th><th>Modelo</th><th>Total</th>
+              <th>Por lead</th><th>Por lead útil</th>
+            </tr>
+          </thead>
+          <tbody>
+            {costes.map((c) => (
+              <tr key={c.campaign_id}>
+                <td>
+                  <strong>{c.campana}</strong>
+                  <div className="menudo">{c.estado} · {c.creada}</div>
+                </td>
+                <td className="sutil">{c.cliente}</td>
+                <td>{num(c.leads)}</td>
+                <td>{num(c.leads_email)}</td>
+                <td>{num(c.mensajes)}</td>
+                <td>
+                  {din(c.coste_places, c.moneda)}
+                  <div className="menudo">{num(c.places_consultas)} consultas</div>
+                </td>
+                <td>
+                  {din(c.coste_modelo, c.moneda)}
+                  <div className="menudo">{num(c.tokens)} tokens</div>
+                  {c.falta_tarifa && (
+                    <div className="cifra-alerta menudo">falta tarifa del modelo</div>
+                  )}
+                </td>
+                <td><strong>{din(c.coste_total, c.moneda)}</strong></td>
+                <td>{din(c.coste_por_lead, c.moneda)}</td>
+                <td>{din(c.coste_por_lead_email, c.moneda)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="menudo">
+        Places se cuenta por consulta pedida, no por lead obtenido: cobra igual
+        aunque vuelva vacía. El modelo solo cuenta desde que existe la medición
+        por campaña, así que las campañas anteriores enseñan su gasto de Places
+        completo y el de modelo a cero.
       </p>
 
       {/* ---------------- clientes ---------------- */}

@@ -43,7 +43,10 @@ Deno.serve(async (req) => {
 
     const segmentos = await inferirSegmentos(
       descripcion, vertical, ciudad,
-      { funcion: "infer-segments", tenant: perfil?.tenant_id ?? null },
+      // campaign_id es opcional en esta función —sirve para probar el prompt
+      // sin persistir— y entonces el consumo queda sin campaña, como debe.
+      { funcion: "infer-segments", tenant: perfil?.tenant_id ?? null,
+        campana: campaign_id ?? null },
     );
 
     // Sin campaign_id devolvemos sin persistir: útil para probar el prompt.

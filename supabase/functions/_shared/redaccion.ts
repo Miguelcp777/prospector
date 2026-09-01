@@ -12,7 +12,7 @@
 // ============================================================
 
 import { MODELO } from "./inferencia.ts";
-import { anotarConsumo } from "./consumo.ts";
+import { anotarConsumo, type Quien } from "./consumo.ts";
 
 export type Contexto = {
   lead_nombre: string;
@@ -98,7 +98,7 @@ Devuelve SOLO un JSON con esta forma, sin texto alrededor:
 
 export async function redactarMensaje(
   c: Contexto,
-  quien?: { funcion: string; tenant?: string | null },
+  quien?: Quien,
 ): Promise<Mensaje> {
   // Las reseñas y la puntuación se le pasan a propósito NO: el prompt dice
   // que no las use, y la forma fiable de que no las use es no dárselas.
@@ -155,7 +155,7 @@ export async function redactarMensaje(
   const data = await r.json();
 
   // Se anota aquí: la llamada se paga aunque el JSON venga mal.
-  if (quien) await anotarConsumo(quien.funcion, MODELO, data.usage, quien.tenant);
+  if (quien) await anotarConsumo(quien.funcion, MODELO, data.usage, quien.tenant, quien.campana);
 
   const texto = (data.content ?? [])
     .filter((b: { type: string }) => b.type === "text")

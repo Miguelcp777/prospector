@@ -9,7 +9,7 @@
 // segmentos y el producto devuelve otros, la demo deja de demostrar nada.
 // ============================================================
 
-import { anotarConsumo } from "./consumo.ts";
+import { anotarConsumo, type Quien } from "./consumo.ts";
 
 export const MODELO = "claude-sonnet-5";
 
@@ -66,7 +66,7 @@ export async function inferirSegmentos(
   ciudad?: string,
   // Quién paga esta llamada. La demo pública no tiene tenant y aun así
   // gasta: por eso se anota igual, con tenant nulo.
-  quien?: { funcion: string; tenant?: string | null },
+  quien?: Quien,
 ): Promise<Segmento[]> {
   const referencia = vertical && TAXONOMIAS[vertical]
     ? `\n\nTaxonomía de referencia para ${vertical}:\n- ${TAXONOMIAS[vertical].join("\n- ")}`
@@ -120,7 +120,7 @@ export async function inferirSegmentos(
 
   // Antes de mirar el contenido: la llamada ya está pagada aunque la
   // respuesta venga mal formada, así que se anota aquí y no al final.
-  if (quien) await anotarConsumo(quien.funcion, MODELO, data.usage, quien.tenant);
+  if (quien) await anotarConsumo(quien.funcion, MODELO, data.usage, quien.tenant, quien.campana);
 
   const texto = data.content
     .filter((b: { type: string }) => b.type === "text")

@@ -300,6 +300,79 @@ exactos: los devuelve Anthropic en cada respuesta.
 - **El consumo del modelo antes de hoy.** La medición empieza cuando se
   desplegó esto; lo gastado antes no está.
 
+## Coste por campaña
+
+La cifra sobre la que se decide el precio de venta. Está en el Panel, en
+«Cuánto cuesta una campaña».
+
+### De dónde sale cada mitad
+
+**Google Places** no necesitó nada nuevo: `jobs.consultas` lo cuenta por job
+desde 002, y cada job pertenece a una campaña. Se cuenta por **consulta
+pedida**, no por lead obtenido, porque Places cobra igual aunque la búsqueda
+vuelva vacía.
+
+**El modelo** sí. `consumo_modelo` se agregaba por tenant, y un cliente con
+cuatro campañas era un solo número. Ahora lleva `campaign_id`, que rellenan
+las cuatro funciones que llaman a un modelo:
+
+| Función | Campaña |
+|---|---|
+| `infer-segments` | la que se está infiriendo (nula si se prueba el prompt sin persistir) |
+| `redactar` | la de la tarea |
+| `generar-landing` | la de la landing — **antes no medía nada** |
+| `demo-inferir` | ninguna: la demo gasta y no tiene campaña |
+
+### Varios proveedores
+
+`tarifas_modelo` lleva proveedor, modelo y fecha de vigencia. Añadir GPT o
+Gemini es una fila, no una migración:
+
+```sql
+insert into tarifas_modelo (proveedor, modelo, desde, entrada_millon, salida_millon)
+values ('openai', 'gpt-5', current_date, 1.25, 10);
+```
+
+El `modelo` es el identificador exacto que manda el código, no el nombre
+comercial: es lo que se guarda en `consumo_modelo.modelo` y por lo que se
+cruza.
+
+`desde` existe porque los precios cambian, y el coste de una campaña de hace
+tres meses tiene que calcularse con el precio que había entonces. Sin eso,
+una bajada de tarifas reescribiría el histórico hacia abajo y la unidad
+económica sobre la que decides el precio se movería sola. Para cambiar un
+precio se inserta una fila nueva con la fecha; no se actualiza la vieja.
+
+Un modelo sin tarifa suma cero, y el panel lo marca como **falta tarifa** en
+esa campaña — un cero sin marca pasaría por gasto real.
+
+### Qué enseña
+
+- Coste **mediano** por campaña además de la media. Cuatro campañas de prueba
+  a cero arrastran la media y hacen parecer barato lo que no lo es.
+- Coste por lead y por **lead con correo**. El segundo es el que importa: un
+  lead sin dirección no se puede contactar.
+- Coste por mensaje redactado, solo del modelo.
+- Reparto Places / modelo, para saber cuál de los dos hay que vigilar.
+
+Los «por unidad» son agregados, no medias de medias: una campaña de tres
+leads no pesa lo mismo que una de novecientos.
+
+### Lo que no cuenta
+
+- **El gasto de modelo anterior al 1 de septiembre de 2026** no tiene
+  campaña: se registró antes de que existiera la columna. Aparece en los
+  totales del cliente pero no en el desglose por campaña.
+- **La demo pública** no se imputa a ninguna campaña, porque no lo es.
+- Es una **estimación por tarifa de lista**. El caché de prompts y el
+  procesamiento por lotes abaratan tokens que aquí se cuentan a precio
+  completo, así que tiende a estimar por encima. Los tokens sí son exactos.
+
+### Por qué el cliente no ve su coste
+
+El desglose vive solo en el panel de administración. Enseñárselo al cliente
+en su propia campaña sería enseñarle el margen.
+
 ## Incidencias
 
 Cuando algo falla, la app lo guarda, lo diagnostica y prepara el texto para

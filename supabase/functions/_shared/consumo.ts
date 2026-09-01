@@ -12,11 +12,20 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 
 type Uso = { input_tokens?: number; output_tokens?: number };
 
+export type Quien = {
+  funcion: string;
+  tenant?: string | null;
+  /** A qué campaña se imputa. Sin esto no hay coste por campaña, que es la
+   *  cifra sobre la que se decide el precio de venta. */
+  campana?: string | null;
+};
+
 export async function anotarConsumo(
   funcion: string,
   modelo: string,
   uso: Uso | undefined,
   tenantId?: string | null,
+  campanaId?: string | null,
 ): Promise<void> {
   if (!uso) return;
 
@@ -34,6 +43,7 @@ export async function anotarConsumo(
       p_entrada: uso.input_tokens ?? 0,
       p_salida: uso.output_tokens ?? 0,
       p_tenant: tenantId ?? null,
+      p_campana: campanaId ?? null,
     });
   } catch (e) {
     console.error("No se pudo anotar el consumo:", e);

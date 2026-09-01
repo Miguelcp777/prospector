@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
 
         const { asunto, cuerpo } = await redactarMensaje(
           ctx as Contexto,
-          { funcion: "redactar", tenant: tarea.tenant_id },
+          { funcion: "redactar", tenant: tarea.tenant_id, campana: tarea.campaign_id },
         );
 
         // Dos pasos a propósito: el token de baja lo genera la base al

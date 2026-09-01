@@ -62,7 +62,10 @@ Deno.serve(async (req) => {
       segmentos: segmentos ?? [],
     };
 
-    const contenido = await generarLanding(contexto);
+    const contenido = await generarLanding(
+      contexto,
+      { funcion: "generar-landing", tenant: campana.tenant_id, campana: campaign_id },
+    );
 
     // Si ya había landing se reescribe el contenido pero se conserva el
     // slug: la URL puede estar ya en un correo enviado.
