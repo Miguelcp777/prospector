@@ -53,6 +53,7 @@ import {
   ZoomOut,
 } from "lucide-react";
 import { toast } from "sonner";
+import { apiFetch } from "@studio/lib/api";
 import { Button } from "@studio/ui/button";
 import {
   Dialog,
@@ -807,23 +808,12 @@ function estimatedCanvasHeight(document: TemplateDocument) {
   );
 }
 
-function guestSession() {
-  const key = "aurevanta-guest-session";
-  let value = window.localStorage.getItem(key);
-  if (!value) {
-    value =
-      globalThis.crypto?.randomUUID?.() ??
-      `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
-    window.localStorage.setItem(key, value);
-  }
-  return value;
-}
-
-function apiFetch(input: RequestInfo | URL, init: RequestInit = {}) {
-  const headers = new Headers(init.headers);
-  headers.set("x-aurevanta-session", guestSession());
-  return fetch(input, { ...init, headers });
-}
+// `guestSession` y el `apiFetch` original vivían aquí. El primero
+// fabricaba una identidad de invitado en localStorage —cualquier cadena
+// valía como usuario— y el segundo llamaba a las rutas de API del proyecto
+// Next. Los dos sobran: ahora la identidad es la sesión de Supabase y las
+// llamadas van a `@studio/lib/api`, que traduce esas mismas rutas a
+// consultas con RLS.
 
 function buildPresets() {
   const presets = TEMPLATE_RECIPES_100.map((recipe, index) => {
@@ -1853,6 +1843,19 @@ export default function StudioClient({ displayName }: StudioProps) {
         if (block.type === "button") block.props.buttonColor = design.primary;
         else if (block.type === "artText") block.props.color = design.accent;
         else if (block.type !== "hero") block.props.textColor = design.text;
+
+        // El hero también, y es el que más se nota.
+        //
+        // Su degradado sale de `props.fallbackStart/End` y solo cae a
+        // `settings.primaryColor/accentColor` si esas props no existen. Las
+        // plantillas del catálogo las traen puestas, así que cambiar el
+        // diseño global movía `settings` y el hero seguía imponiendo las
+        // suyas: el aviso decía "aplicado" y la vista previa no cambiaba un
+        // píxel, que es justo lo que hace desconfiar de una herramienta.
+        if (block.type === "hero") {
+          block.props.fallbackStart = design.primary;
+          block.props.fallbackEnd = design.accent;
+        }
       });
       return current;
     });
