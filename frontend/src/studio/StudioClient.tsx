@@ -16,12 +16,10 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  CircleUserRound,
   ClipboardList,
   CloudUpload,
   Code2,
   Columns2,
-  ContactRound,
   Copy,
   Database,
   Download,
@@ -29,14 +27,11 @@ import {
   FilePlus2,
   GalleryHorizontalEnd,
   GripVertical,
-  History,
   HelpCircle,
   ImageIcon,
   Import,
   LayoutTemplate,
   LoaderCircle,
-  Menu,
-  MessageSquareText,
   Minus,
   Monitor,
   MoreHorizontal,
@@ -54,7 +49,6 @@ import {
   Undo2,
   WandSparkles,
   X,
-  Zap,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
@@ -2892,72 +2886,15 @@ export default function StudioClient({ displayName }: StudioProps) {
     <>
       <Toaster position="bottom-right" richColors />
       <div className={`studio-shell theme-${appTheme} mode-${experienceMode}`}>
-        <aside className="app-sidebar">
-          <div className="brand-lockup">
-            <img
-              src="/assets/aurevanta-labs-official.jpg"
-              alt="Aurevanta Labs"
-            />
-            <span>PROSPECTOR</span>
-          </div>
-          <nav className="main-nav" aria-label="Navegación principal">
-            <span className="nav-caption">PROSPECCIÓN</span>
-            <button>
-              <ContactRound /> Leads
-            </button>
-            <button>
-              <Zap /> Campañas
-            </button>
-            <button>
-              <MessageSquareText /> Mensajes
-            </button>
-            <span className="nav-caption second">CAMPAIGN STUDIO</span>
-            <button
-              className="active"
-              onClick={() => changeWorkflowStep("library")}
-            >
-              <LayoutTemplate /> Plantillas <i>Activo</i>
-            </button>
-            <button onClick={() => setBrandOpen(true)}>
-              <Palette /> Kit de marca
-            </button>
-            <button>
-              <History /> Historial
-            </button>
-            <span className="nav-caption second">ADMINISTRACIÓN</span>
-            <button>
-              <ShieldCheck /> Supresiones
-            </button>
-            <button>
-              <CircleUserRound /> Cuenta
-            </button>
-          </nav>
-          <div className="sidebar-signal">
-            <span className="signal-orbit">
-              <i />
-            </span>
-            <div>
-              <strong>Sistema conectado</strong>
-              <small>Módulo preparado · v0.3.1</small>
-            </div>
-          </div>
-          <div className="user-chip">
-            <div className="avatar">
-              {displayName.slice(0, 1).toUpperCase()}
-            </div>
-            <div>
-              <strong>{displayName.split(" ")[0]}</strong>
-              <small>Espacio privado</small>
-            </div>
-            <MoreHorizontal />
-          </div>
-        </aside>
+        {/* El lateral del studio se quitó al integrarlo: Prospector ya
+            tiene el suyo, y este duplicaba su navegación con botones que no
+            hacían nada. Las dos acciones que sí valían siguen accesibles —
+            "Plantillas" es el paso 01 del flujo de arriba y "Kit de marca"
+            se abre desde el panel de diseño. */}
+
 
         <main className="studio-main">
           <header className="studio-topbar">
-            <div className="mobile-menu">
-              <Menu />
-            </div>
             <div className="title-cluster">
               <div className="breadcrumb">
                 <span>Prospector</span>

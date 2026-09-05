@@ -440,3 +440,41 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .share-url{display:flex;align-items:center;gap:8px;width:100%;margin-bottom:9px;padding:9px;border:1px solid color-mix(in srgb,var(--cyan) 26%,var(--line));border-radius:8px;background:color-mix(in srgb,var(--cyan) 6%,var(--ink-0));color:var(--cyan-bright)}.share-url span{min-width:0;flex:1;overflow:hidden;font-size:10px;white-space:nowrap;text-overflow:ellipsis}.share-url svg{width:14px}
 .block-palette .canvas-layer-entry{grid-column:1/-1;border-color:color-mix(in srgb,var(--violet) 30%,var(--line));background:linear-gradient(135deg,color-mix(in srgb,var(--violet) 10%,var(--ink-2)),color-mix(in srgb,var(--cyan) 7%,var(--ink-2)))}.block-palette .canvas-layer-entry>span{color:var(--violet)}.canvas-base-layer{margin:0 0 8px;border-color:color-mix(in srgb,var(--violet) 28%,var(--line));background:color-mix(in srgb,var(--violet) 7%,var(--ink-2))}.canvas-base-layer .block-select{cursor:pointer}.canvas-base-layer .drag-index{color:var(--violet)}.layer-lock{margin-right:7px;padding:3px 5px;border:1px solid color-mix(in srgb,var(--violet) 25%,var(--line));border-radius:4px;color:var(--violet);font-size:6px;font-weight:900;letter-spacing:.1em}.theme-light .canvas-base-layer{background:rgba(111,72,190,.06)}
 .external-review-shell{min-height:100vh;padding:24px;background:radial-gradient(circle at 8% 4%,rgba(20,210,224,.1),transparent 26%),#050c13;color:#eaf5f7}.external-review-shell>header{display:flex;align-items:center;justify-content:space-between;gap:20px;max-width:1380px;margin:0 auto 20px;padding:15px 18px;border:1px solid rgba(115,175,194,.16);border-radius:14px;background:rgba(9,23,32,.92)}.external-review-shell>header>div{display:flex;align-items:center;gap:14px}.external-review-shell>header img{width:190px;height:44px;object-fit:cover;object-position:left center}.external-review-shell>header span{color:#6b8b96;font-size:11px;letter-spacing:.12em}.external-review-shell>header aside{text-align:right}.external-review-shell>header small,.external-review-shell>header strong{display:block}.external-review-shell>header small{color:#16c9d8;font-size:9px;letter-spacing:.13em}.external-review-shell>header strong{margin-top:4px;font-size:15px}.external-review-grid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:18px;max-width:1380px;margin:auto}.external-campaign{overflow:hidden;border:1px solid rgba(115,175,194,.16);border-radius:14px;background:#0a1822}.external-campaign>div{padding:14px 16px;border-bottom:1px solid rgba(115,175,194,.14)}.external-campaign small,.external-campaign strong,.external-campaign span{display:block}.external-campaign small{color:#60808b;font-size:9px;letter-spacing:.12em}.external-campaign strong{margin-top:5px;font-size:15px}.external-campaign span{margin-top:4px;color:#77939d;font-size:12px}.external-campaign iframe{width:100%;height:calc(100vh - 180px);min-height:640px;border:0;background:#dce5e8}.external-feedback{display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 110px);overflow:auto;padding:16px;border:1px solid rgba(115,175,194,.16);border-radius:14px;background:#0a1822}.external-feedback label>span{display:block;margin-bottom:5px;color:#7895a0;font-size:11px}.external-feedback input,.external-feedback textarea{border-color:rgba(115,175,194,.18);background:#07131c;color:#eaf5f7}.external-status{display:flex;gap:9px;padding:11px;border:1px solid rgba(20,210,224,.18);border-radius:9px;background:rgba(20,210,224,.05);color:#16c9d8}.external-status>svg{width:18px}.external-status strong,.external-status small{display:block}.external-status strong{font-size:12px}.external-status small{margin-top:4px;color:#65818b;font-size:10px}.external-comments{display:grid;gap:7px;max-height:240px;overflow:auto}.external-comments article{padding:9px;border:1px solid rgba(115,175,194,.13);border-radius:8px;background:#07131c}.external-comments strong,.external-comments small{font-size:10px}.external-comments p{margin:5px 0;color:#b8cdd3;font-size:12px;line-height:1.45}.external-comments small{color:#58727c}.external-decisions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.last-decision{padding:10px;border-radius:8px;background:rgba(246,174,62,.09);color:#efbb65}.last-decision.approved{background:rgba(48,196,139,.09);color:#68d7ae}.last-decision strong,.last-decision span{display:block;font-size:11px}.last-decision span{margin-top:4px}.review-portal-state{display:grid;place-items:center;align-content:center;min-height:100vh;background:#050c13;color:#eaf5f7;text-align:center}.review-portal-state svg{width:34px;color:#16c9d8}.review-portal-state h1{margin:12px 0 0}.review-portal-state p{color:#7895a0}@media(max-width:900px){.external-review-grid{grid-template-columns:1fr}.external-feedback{max-height:none}.external-campaign iframe{height:70vh}.external-review-shell>header span{display:none}}@media(max-width:560px){.external-review-shell{padding:10px}.external-review-shell>header{align-items:flex-start}.external-review-shell>header img{width:145px;height:34px}.external-review-shell>header aside strong{font-size:11px}.external-feedback{padding:12px}.external-decisions{grid-template-columns:1fr}}
+
+/* ============================================================
+   Integración con el armazón de Prospector
+   ============================================================
+
+   El studio venía de ser una app entera: rejilla de dos columnas con su
+   propio lateral, alto de pantalla completa y 1.240px de ancho mínimo.
+   Aquí vive dentro del contenido de Prospector, que ya tiene su lateral de
+   240px, así que esas tres medidas están mal por definición.
+
+   Va al final del archivo a propósito: son correcciones sobre el CSS que
+   viene del studio, y tienen que ganarle. Así se ve de un vistazo qué se ha
+   cambiado sin tener que perseguirlo por las 700 líneas de arriba.
+   ============================================================ */
+
+/* Sin el relleno del contenido: el editor llega hasta el borde. La clase la
+   pone App cuando la vista es el studio. */
+.contenido-completo { padding: 0; }
+
+.studio { height: 100%; }
+
+.studio .studio-shell {
+  /* Una sola columna: el lateral del studio ya no existe. */
+  grid-template-columns: minmax(0, 1fr);
+  /* Ni 100dvh ni ancho mínimo de pantalla completa: aquí el alto lo marca
+     el hueco disponible y el ancho ya lo acota el lateral de Prospector. */
+  height: 100dvh;
+  min-width: 0;
+}
+
+/* Las tres variantes por ancho repetían las dos columnas. */
+@media (min-width: 0px) {
+  .studio .studio-shell { grid-template-columns: minmax(0, 1fr); min-width: 0; }
+}
+
+/* Sin lateral propio, el editor queda pegado al de Prospector: una línea
+   para que se vea dónde acaba uno y empieza el otro. */
+.studio .studio-main { border-left: 1px solid var(--borde); }

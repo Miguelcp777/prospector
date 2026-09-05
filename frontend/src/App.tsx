@@ -120,7 +120,15 @@ function Aplicacion() {
         </div>
       </nav>
 
-      <main className="contenido">
+      <main className={vista === "studio" ? "contenido contenido-completo" : "contenido"}>
+        {/* El studio se sale de .ancho a propósito: esa clase limita el
+            contenido a 960px, que es lo correcto para leer una tabla y lo
+            contrario de lo que necesita un editor de dos paneles. */}
+        {vista === "studio" ? (
+          <Suspense fallback={<p className="sutil">Cargando el studio…</p>}>
+            <Studio />
+          </Suspense>
+        ) : (
         <div className="ancho">
           {vista === "campanas"    && <Campanas />}
           {vista === "leads"       && <Leads />}
@@ -130,12 +138,8 @@ function Aplicacion() {
           {vista === "incidencias" && <Incidencias />}
           {vista === "cuenta"      && <Cuenta />}
           {vista === "panel"       && esAdmin && <Panel />}
-          {vista === "studio"      && (
-            <Suspense fallback={<p className="sutil">Cargando el studio…</p>}>
-              <Studio />
-            </Suspense>
-          )}
         </div>
+        )}
       </main>
     </div>
   );
