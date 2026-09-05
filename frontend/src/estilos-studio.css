@@ -93,9 +93,14 @@
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
 
-* { box-sizing: border-box; }
-html, body { height: 100%; overflow: hidden; }
-body { margin: 0; background: var(--ink-0); color: var(--foreground); font-family: var(--font-sans); font-feature-settings: "ss01" 1, "cv01" 1; }
+/* Estas tres reglas venían del studio cuando era una app entera y dueña de
+   la página. Aquí NO pueden tocar html ni body: este archivo se carga al
+   entrar en Plantillas y ya no se descarga, así que un `overflow: hidden`
+   en body dejaba sin scroll a Mensajes, Leads y todo lo demás hasta
+   recargar. Acotar la maqueta no bastaba: había que acotar también los
+   selectores de elemento. */
+.studio, .studio * { box-sizing: border-box; }
+.studio { overflow: hidden; color: var(--foreground); font-family: var(--font-sans); font-feature-settings: "ss01" 1, "cv01" 1; }
 button, input, textarea, select { font: inherit; }
 button { cursor: pointer; }
 button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid color-mix(in srgb, var(--cian) 80%, transparent); outline-offset: 2px; }
