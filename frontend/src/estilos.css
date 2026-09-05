@@ -661,3 +661,26 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e1) 0; width: 
   }
   .nav-grupo-cabeza { display: none; }
 }
+
+/* ---------------- vista previa del correo ---------------- */
+
+.previo { display: flex; flex-direction: column; gap: var(--e3); }
+.previo-barra { display: flex; justify-content: space-between; gap: var(--e4); flex-wrap: wrap; }
+.previo-pestanas { display: flex; gap: 2px; }
+.previo-pestanas button {
+  padding: 6px 12px; border: 1px solid var(--borde); border-radius: var(--radio-s);
+  background: none; color: var(--texto-3);
+  font: inherit; font-size: 0.75rem; font-weight: 500;
+}
+.previo-pestanas button:hover { color: var(--texto-2); }
+.previo-pestanas button.activa {
+  background: var(--acento-suave); border-color: var(--borde-fuerte); color: var(--texto);
+}
+
+/* Fondo claro a propósito: casi todos los clientes de correo pintan sobre
+   blanco, y verlo sobre el oscuro de la app engaña sobre el contraste. */
+.previo-marco {
+  height: 520px; border: 1px solid var(--borde);
+  border-radius: var(--radio-m); background: #fff;
+  display: block; margin: 0 auto;
+}

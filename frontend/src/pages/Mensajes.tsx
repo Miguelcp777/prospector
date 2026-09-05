@@ -28,6 +28,9 @@ type Mensaje = {
   cuerpo: string;
   estado: string;
   creado_en: string;
+  /** El diseño aplicado, si lo hay. Es lo que verá el destinatario. */
+  html: string | null;
+  plantillas: { nombre: string } | null;
   leads: { nombre: string; email: string | null } | null;
 };
 
@@ -61,7 +64,7 @@ export function Mensajes() {
 
     let q = supabase
       .from("messages")
-      .select("id, asunto, cuerpo, estado, creado_en, leads!inner(nombre, email, campaign_id)")
+      .select("id, asunto, cuerpo, estado, creado_en, html, plantillas(nombre), leads!inner(nombre, email, campaign_id)")
       .order("creado_en", { ascending: false })
       .limit(TOPE);
 
@@ -264,6 +267,9 @@ function Tarjeta({
   const [cuerpo, setCuerpo] = useState(cuerpoOriginal);
   const [guardando, setGuardando] = useState(false);
   const [guardado, setGuardado] = useState(false);
+  // Con diseño aplicado se abre en él: es lo que verá el destinatario.
+  const [pestana, setPestana] = useState<"diseno" | "texto">(m.html ? "diseno" : "texto");
+  const [ancho, setAncho] = useState<"escritorio" | "movil">("escritorio");
 
   const cambiado = asunto !== (m.asunto ?? "") || cuerpo !== cuerpoOriginal;
 
@@ -277,11 +283,62 @@ function Tarjeta({
             {m.leads?.email && ` · ${m.leads.email}`}
           </div>
         </div>
-        <span className={`etiqueta ${m.estado}`}>{m.estado}</span>
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          {m.html && <span className="etiqueta lista">con diseño</span>}
+          <span className={`etiqueta ${m.estado}`}>{m.estado}</span>
+        </div>
       </div>
 
       {!abierto && (
         <p className="sutil">{cuerpoOriginal.split("\n")[0].slice(0, 130)}…</p>
+      )}
+
+      {abierto && m.html && (
+        <div className="previo">
+          <div className="previo-barra">
+            <div className="previo-pestanas">
+              <button className={pestana === "diseno" ? "activa" : ""}
+                      onClick={() => setPestana("diseno")}>
+                Diseño{m.plantillas?.nombre ? ` · ${m.plantillas.nombre}` : ""}
+              </button>
+              <button className={pestana === "texto" ? "activa" : ""}
+                      onClick={() => setPestana("texto")}>
+                Texto plano
+              </button>
+            </div>
+            {pestana === "diseno" && (
+              <div className="previo-pestanas">
+                <button className={ancho === "escritorio" ? "activa" : ""}
+                        onClick={() => setAncho("escritorio")}>Escritorio</button>
+                <button className={ancho === "movil" ? "activa" : ""}
+                        onClick={() => setAncho("movil")}>Móvil</button>
+              </div>
+            )}
+          </div>
+
+          {pestana === "diseno" ? (
+            /* En un iframe con sandbox, nunca inyectado en el DOM de la app.
+               Este HTML lo compone un modelo y lleva dentro nombres de
+               negocios traídos de Google Places: es contenido que no
+               controlamos. Metido en la página sería una vía de inyección;
+               aquí no puede ejecutar scripts, ni leer la sesión, ni navegar
+               a ningún sitio. */
+            <iframe
+              className="previo-marco"
+              style={{ width: ancho === "movil" ? 380 : "100%" }}
+              srcDoc={m.html}
+              sandbox=""
+              title={`Vista previa del correo a ${m.leads?.nombre ?? ""}`}
+            />
+          ) : (
+            <pre className="cuerpo">{m.cuerpo}</pre>
+          )}
+
+          <p className="menudo">
+            Así lo verá quien lo reciba. El texto plano se manda igualmente
+            como alternativa, para quien tenga el HTML desactivado.
+          </p>
+        </div>
       )}
 
       {abierto && (

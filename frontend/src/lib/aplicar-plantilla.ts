@@ -119,6 +119,19 @@ function componer(m: MensajeFila, documento: TemplateDocument, asuntoPlantilla: 
   const bloque = doc.blocks.find((b) => b.type === "text");
   if (bloque) bloque.props.content = texto;
 
+  // El titular también, y no es un detalle. El hero es lo primero y lo más
+  // grande que se ve; dejarlo con el texto genérico del catálogo daría un
+  // correo que empieza hablando de nadie y solo se vuelve personal en el
+  // párrafo de debajo. El asunto que escribió el modelo para este lead es
+  // justo la frase que corresponde ahí.
+  const hero = doc.blocks.find((b) => b.type === "hero");
+  if (hero && m.asunto) {
+    hero.props.title = m.asunto;
+    // El cuerpo del hero se vacía: si no, repetiría lo que ya dice el
+    // párrafo, que es el mismo texto.
+    hero.props.body = "";
+  }
+
   return renderEmailHtml(doc, m.asunto ?? asuntoPlantilla, "", {
     "lead.company": m.leads?.nombre ?? "",
     "system.unsubscribe_url": urlBaja,
