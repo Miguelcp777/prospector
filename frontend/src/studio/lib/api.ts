@@ -78,8 +78,17 @@ function error(mensaje: string, estado = 400) {
 }
 
 const TODAVIA_NO =
-  "Esta parte del studio todavía no está conectada. Se conecta en la " +
-  "siguiente entrega; mientras tanto, el resto del editor funciona.";
+  "Esta parte del studio todavía no está conectada. Mientras tanto, el " +
+  "resto del editor funciona.";
+
+// La generación de imágenes no es "falta trabajo": es que hace falta otro
+// proveedor. Anthropic no genera imágenes, así que necesita una clave de un
+// servicio que sí lo haga. Decirlo con el mismo mensaje que el resto haría
+// esperar algo que no va a llegar solo.
+const SIN_PROVEEDOR_DE_IMAGEN =
+  "Generar imágenes necesita un proveedor que las cree, y el modelo que usa " +
+  "Prospector no las genera. Hace falta dar de alta una clave de un servicio " +
+  "de imágenes. Mientras tanto puedes subir las tuyas, que sí funciona.";
 
 // ------------------------------------------------------------
 // Plantillas
@@ -357,11 +366,36 @@ export async function apiFetch(
     if (ruta === "/api/generate" && metodo === "POST")
       return componer(cuerpo as Brief);
 
+    // Las herramientas de texto sí van al modelo, y por eso pasan por una
+    // Edge Function: la clave de Anthropic no puede estar en el navegador.
+    if (ruta === "/api/ai-tools" && metodo === "POST") {
+      const { data, error: fallo } = await supabase.functions.invoke("studio-ia", {
+        body: { action: cuerpo.action, payload: cuerpo },
+      });
+      if (fallo) {
+        // El motivo real viaja en el cuerpo, no en el mensaje del error.
+        // Ver lib/edge.ts, donde está el mismo problema explicado.
+        const ctx = (fallo as { context?: Response }).context;
+        let mensaje = fallo.message;
+        try {
+          const j = JSON.parse(await ctx!.text());
+          mensaje = j.error ?? mensaje;
+        } catch { /* sin cuerpo legible */ }
+        return error(mensaje, 502);
+      }
+      const conError = data as { error?: string } | null;
+      if (conError?.error) return error(conError.error, 502);
+      return json(data);
+    }
+
     // Estado de la integración: el editor lo consulta para saber qué
     // enseñar. Booleanos, nunca claves.
     if (ruta === "/api/integration-readiness") {
       return json({ ai: false, email: false, prospector: true });
     }
+
+    if (ruta === "/api/generate-image")
+      return error(SIN_PROVEEDOR_DE_IMAGEN, 503);
 
     // Lo que aún no está. Con cuerpo JSON y mensaje, no un 404 mudo.
     return error(TODAVIA_NO, 503);
