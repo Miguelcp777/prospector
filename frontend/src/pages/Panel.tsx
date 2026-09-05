@@ -13,6 +13,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { ClaveOpenAI } from "./ClaveOpenAI";
 
 type Resumen = {
   tenants: number; usuarios: number; admins: number;
@@ -216,6 +217,10 @@ export function Panel() {
         Places no sale aquí: su consumo se agrega por mes y no hay dato diario.
         Repartirlo entre los días sería inventarlo.
       </p>
+
+      {/* ---------------- claves de proveedores ---------------- */}
+      <h2 className="titulo-seccion">Proveedores</h2>
+      <ClaveOpenAI />
 
       {/* ---------------- unidad económica ---------------- */}
       <h2 className="titulo-seccion">Cuánto cuesta una campaña</h2>
