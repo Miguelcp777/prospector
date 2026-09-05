@@ -533,12 +533,12 @@ puedan divergir.
 Si algún día hiciera falta volver a escritura, se quita el parámetro. Pero
 entonces vuelve el riesgo de arriba, y ya hay datos que no son tuyos.
 
-Dos reglas que siguen valiendo:
+La regla que queda:
 
-- El repo es la fuente de verdad del esquema. Si aplicas una migración por
-  MCP, que salga de un archivo de `supabase/`, no de SQL improvisado. Si no,
-  la base y el repo divergen y nadie sabe cuál manda.
-- Antes de tener clientes, cambia a `read_only=true`. Es editar un parámetro.
+- El repo es la fuente de verdad del esquema. Todo lo que se ejecute contra la
+  base sale de un archivo de `supabase/`, nunca de SQL improvisado en el
+  editor. En cuanto se escribe algo a mano que no está en un archivo, la base
+  y el repo divergen y ya nadie sabe cuál manda.
 
 ## Estado
 
