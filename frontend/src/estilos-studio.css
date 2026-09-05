@@ -692,3 +692,20 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
    una condición de render que alguien cambie no debe poder colar un
    carril de pasos en el modo profesional. */
 .mode-professional .guia-pasos { display: none; }
+
+/* El paso siguiente, señalado. Con los demás apagados, si el que toca no se
+   distingue de los que faltan, el carril no dice hacia dónde se sigue. */
+.guia-paso.siguiente { color: var(--texto-2); }
+.guia-paso.siguiente .guia-paso-marca {
+  border-color: color-mix(in srgb, var(--cian) 45%, transparent);
+  color: var(--cian);
+}
+.guia-paso.siguiente:hover { background: var(--superficie-2); color: var(--texto); }
+
+/* Los que aún no tocan: apagados y sin cursor de mano. */
+.guia-paso:disabled { opacity: .4; }
+
+/* La barra, siempre abajo y siempre visible. Si algo de arriba crece más de
+   la cuenta, lo que no puede pasar es que el único botón para continuar
+   quede fuera de pantalla. */
+.mode-guided .guia-barra { position: sticky; bottom: 0; z-index: 5; }

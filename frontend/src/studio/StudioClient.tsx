@@ -3131,15 +3131,22 @@ export default function StudioClient({ displayName }: StudioProps) {
             {experienceMode === "guided" && (
               <nav className="guia-pasos" aria-label="Pasos">
                 {PASOS_GUIA.map((paso, i) => {
-                  const actual = i === PASOS_GUIA.indexOf(workflowStep);
-                  const hecho = i < PASOS_GUIA.indexOf(workflowStep);
+                  const aqui = PASOS_GUIA.indexOf(workflowStep);
+                  const actual = i === aqui;
+                  const hecho = i < aqui;
+                  // Atrás siempre, y un paso hacia delante. Pinchar el
+                  // siguiente del carril es lo que todo el mundo hace para
+                  // avanzar; dejarlo muerto convertía el carril en un
+                  // adorno y obligaba a encontrar el botón de abajo.
+                  // Lo que sigue vedado es saltarse pasos de golpe.
+                  const alcanzable = i <= aqui + 1;
                   return (
                     <button
                       key={paso}
-                      className={`guia-paso${actual ? " actual" : ""}${hecho ? " hecho" : ""}`}
-                      // Solo hacia atrás: saltar a un paso que aún no toca
-                      // es exactamente lo que el modo guiado evita.
-                      disabled={!hecho && !actual}
+                      className={`guia-paso${actual ? " actual" : ""}${hecho ? " hecho" : ""}${
+                        i === aqui + 1 ? " siguiente" : ""
+                      }`}
+                      disabled={!alcanzable}
                       onClick={() => changeWorkflowStep(paso)}
                       aria-current={actual ? "step" : undefined}
                     >
