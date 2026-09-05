@@ -538,13 +538,13 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
    El inspector no pinta nada: todavía no hay bloque que inspeccionar. */
 .mode-guided.paso-library .inspector-panel { display: none; }
 .mode-guided.paso-library .workspace-grid {
-  grid-template-columns: 340px minmax(0, 1fr);
+  grid-template-columns: var(--carril) 340px minmax(0, 1fr);
 }
 
 /* 02 · Editar contenido — el único paso que necesita los tres: los bloques
    que se pueden añadir, el correo, y las propiedades del bloque elegido. */
 .mode-guided.paso-content .workspace-grid {
-  grid-template-columns: 258px minmax(0, 1fr) 340px;
+  grid-template-columns: var(--carril) 258px minmax(0, 1fr) 340px;
 }
 
 /* 03 y 04 · Diseño y Personalizar — no se añaden bloques, se ajustan.
@@ -553,7 +553,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .mode-guided.paso-variables .palette-panel { display: none; }
 .mode-guided.paso-design .workspace-grid,
 .mode-guided.paso-variables .workspace-grid {
-  grid-template-columns: minmax(0, 1fr) 360px;
+  grid-template-columns: var(--carril) minmax(0, 1fr) 360px;
 }
 
 /* 05 · Revisar — el correo solo, a toda pantalla. Es el momento de mirarlo
@@ -561,7 +561,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .mode-guided.paso-review .palette-panel,
 .mode-guided.paso-review .inspector-panel { display: none; }
 .mode-guided.paso-review .workspace-grid {
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: var(--carril) minmax(0, 1fr);
 }
 
 /* Las pestañas de cada panel sobran en guiado: el paso ya decidió cuál
@@ -615,3 +615,70 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 /* El lienzo tiene que poder encoger, o la rejilla lo desborda. */
 .studio-main { min-height: 0; }
 .guia-barra { flex-shrink: 0; }
+
+/* El carril de pasos ------------------------------------------------ */
+
+.mode-guided { --carril: 176px; }
+
+.guia-pasos {
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 18px 12px;
+  border-right: 1px solid var(--line);
+  background: var(--ink-1);
+}
+
+.guia-paso {
+  display: grid; grid-template-columns: 26px 1fr;
+  align-items: center; gap: 10px;
+  padding: 10px 9px;
+  border: 1px solid transparent; border-radius: 9px;
+  background: none; color: var(--texto-3);
+  font: inherit; font-size: 12px; text-align: left;
+  cursor: pointer;
+}
+.guia-paso:disabled { cursor: default; }
+
+/* La marca: número mientras no toca, número resaltado cuando toca, y
+   check cuando ya se pasó. Es lo único que hace falta para saber dónde
+   estás sin leer nada. */
+.guia-paso-marca {
+  display: grid; place-items: center;
+  width: 26px; height: 26px;
+  border: 1px solid var(--line); border-radius: 8px;
+  font-size: 10px; font-weight: 700; letter-spacing: .02em;
+}
+.guia-paso-marca svg { width: 13px; height: 13px; }
+.guia-paso-nombre { line-height: 1.25; }
+
+.guia-paso.hecho { color: var(--texto-2); }
+.guia-paso.hecho .guia-paso-marca {
+  border-color: color-mix(in srgb, var(--exito) 40%, transparent);
+  background: var(--exito-suave);
+  color: var(--exito);
+}
+.guia-paso.hecho:hover { background: var(--superficie-2); color: var(--texto); }
+
+.guia-paso.actual { background: var(--acento-suave); color: var(--texto); font-weight: 600; }
+.guia-paso.actual .guia-paso-marca {
+  background: var(--degradado); border-color: transparent; color: #08060f;
+}
+
+/* Lo que en guiado sobra de la cabecera.
+   El carril ya dice en qué paso estás, así que el recorrido horizontal de
+   arriba es la misma información dos veces. Y la barra de acciones —Nueva,
+   Importar HTML, Acciones— son atajos de quien ya sabe lo que hace: en
+   guiado invitan a salirse del camino. */
+.mode-guided .workflow-bar { display: none; }
+
+/* De la barra de comandos se queda solo "Crear con IA", que sí es una
+   forma legítima de empezar el paso 1. "Nueva", "Importar HTML" y
+   "Acciones" son atajos de quien ya sabe lo que hace: en guiado invitan a
+   salirse del camino antes de haberlo recorrido. */
+.mode-guided .studio-commandbar > *:not(.ai-command) { display: none; }
+.mode-guided.paso-library .studio-commandbar { display: flex; }
+.mode-guided:not(.paso-library) .studio-commandbar { display: none; }
+
+/* El carril solo existe en guiado. Lo decide el JSX, pero también aquí:
+   una condición de render que alguien cambie no debe poder colar un
+   carril de pasos en el modo profesional. */
+.mode-professional .guia-pasos { display: none; }

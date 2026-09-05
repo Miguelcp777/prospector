@@ -3130,6 +3130,35 @@ export default function StudioClient({ displayName }: StudioProps) {
           </div>
 
           <section className="workspace-grid">
+            {/* El carril de pasos del modo guiado.
+                Va aquí y no arriba porque en vertical caben el nombre y el
+                estado de cada paso, y porque así está siempre a la vista
+                sin robarle alto al correo. */}
+            {experienceMode === "guided" && (
+              <nav className="guia-pasos" aria-label="Pasos">
+                {PASOS_GUIA.map((paso, i) => {
+                  const actual = i === PASOS_GUIA.indexOf(workflowStep);
+                  const hecho = i < PASOS_GUIA.indexOf(workflowStep);
+                  return (
+                    <button
+                      key={paso}
+                      className={`guia-paso${actual ? " actual" : ""}${hecho ? " hecho" : ""}`}
+                      // Solo hacia atrás: saltar a un paso que aún no toca
+                      // es exactamente lo que el modo guiado evita.
+                      disabled={!hecho && !actual}
+                      onClick={() => changeWorkflowStep(paso)}
+                      aria-current={actual ? "step" : undefined}
+                    >
+                      <span className="guia-paso-marca">
+                        {hecho ? <Check /> : String(i + 1).padStart(2, "0")}
+                      </span>
+                      <span className="guia-paso-nombre">{NOMBRE_PASO[paso]}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+            )}
+
             <aside className="palette-panel" data-tour="blocks">
               <Tabs
                 value={workflowStep === "library" ? "library" : "blocks"}
