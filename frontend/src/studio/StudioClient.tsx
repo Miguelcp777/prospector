@@ -3157,6 +3157,49 @@ export default function StudioClient({ displayName }: StudioProps) {
                     </button>
                   );
                 })}
+
+                {/* La navegación, pegada a los pasos.
+                    Estaba en una barra a lo ancho del pie, lejos del
+                    recorrido y justo encima de la marca de agua de Netlify,
+                    que tapaba el botón de continuar. */}
+                <div className="guia-mando">
+                  {PASOS_GUIA.indexOf(workflowStep) < PASOS_GUIA.length - 1 ? (
+                    <button
+                      className="guia-siguiente"
+                      onClick={() =>
+                        changeWorkflowStep(PASOS_GUIA[PASOS_GUIA.indexOf(workflowStep) + 1])
+                      }
+                    >
+                      Siguiente <ChevronRight />
+                    </button>
+                  ) : (
+                    <button className="guia-siguiente" onClick={saveTemplate} disabled={saving}>
+                      <Save /> {saving ? "Guardando…" : "Guardar"}
+                    </button>
+                  )}
+
+                  <button
+                    className="guia-atras"
+                    disabled={PASOS_GUIA.indexOf(workflowStep) === 0}
+                    onClick={() =>
+                      changeWorkflowStep(PASOS_GUIA[PASOS_GUIA.indexOf(workflowStep) - 1])
+                    }
+                  >
+                    <ChevronLeft /> Atrás
+                  </button>
+
+                  {/* Deshacer y rehacer a la vista: "puedes volver atrás y
+                      rehacer" es la promesa del modo guiado, y una promesa
+                      que solo cumple quien conoce el atajo no la cumple. */}
+                  <div className="guia-rehacer">
+                    <button onClick={undo} disabled={!history.length} title="Deshacer">
+                      <Undo2 />
+                    </button>
+                    <button onClick={redo} disabled={!future.length} title="Rehacer">
+                      <Redo2 />
+                    </button>
+                  </div>
+                </div>
               </nav>
             )}
 
@@ -5837,53 +5880,6 @@ export default function StudioClient({ displayName }: StudioProps) {
             </aside>
           </section>
 
-          {/* La barra de pasos del modo guiado.
-              En profesional no aparece: ahí se salta de un paso a otro por
-              la cabecera y no hay un recorrido que seguir. */}
-          {experienceMode === "guided" && (
-            <nav className="guia-barra">
-              <button
-                className="guia-atras"
-                disabled={PASOS_GUIA.indexOf(workflowStep) === 0}
-                onClick={() =>
-                  changeWorkflowStep(PASOS_GUIA[PASOS_GUIA.indexOf(workflowStep) - 1])
-                }
-              >
-                <ChevronLeft /> Atrás
-              </button>
-
-              <span className="guia-donde">
-                Paso {PASOS_GUIA.indexOf(workflowStep) + 1} de {PASOS_GUIA.length}
-                <strong>{NOMBRE_PASO[workflowStep]}</strong>
-              </span>
-
-              <div className="guia-acciones">
-                {/* Deshacer, aquí y no escondido en un atajo: "volver atrás y
-                    rehacer" es la promesa del modo guiado. */}
-                <button onClick={undo} disabled={!history.length} title="Deshacer">
-                  <Undo2 />
-                </button>
-                <button onClick={redo} disabled={!future.length} title="Rehacer">
-                  <Redo2 />
-                </button>
-
-                {PASOS_GUIA.indexOf(workflowStep) < PASOS_GUIA.length - 1 ? (
-                  <button
-                    className="guia-siguiente"
-                    onClick={() =>
-                      changeWorkflowStep(PASOS_GUIA[PASOS_GUIA.indexOf(workflowStep) + 1])
-                    }
-                  >
-                    Siguiente <ChevronRight />
-                  </button>
-                ) : (
-                  <button className="guia-siguiente" onClick={saveTemplate} disabled={saving}>
-                    <Save /> {saving ? "Guardando…" : "Guardar plantilla"}
-                  </button>
-                )}
-              </div>
-            </nav>
-          )}
         </main>
 
         <CampaignCommandCenter
