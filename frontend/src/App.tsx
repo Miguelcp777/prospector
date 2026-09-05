@@ -10,7 +10,7 @@
 // concreta, tocará cambiarlo.
 // ============================================================
 
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { Acceso } from "./pages/Acceso";
 import { NuevaContrasena } from "./pages/NuevaContrasena";
@@ -22,15 +22,18 @@ import { Supresiones } from "./pages/Supresiones";
 import { Cuenta } from "./pages/Cuenta";
 import { Incidencias } from "./pages/Incidencias";
 import { Panel } from "./pages/Panel";
+
+const Studio = lazy(() => import("./pages/Studio"));
 import { supabase } from "./lib/supabase";
 import { estadoDe, PASOS, ProveedorRecorrido, useRecorrido } from "./lib/recorrido";
 
-type Vista = "campanas" | "leads" | "mensajes" | "historial" | "supresiones" | "incidencias" | "cuenta" | "panel";
+type Vista = "campanas" | "leads" | "mensajes" | "historial" | "supresiones" | "incidencias" | "cuenta" | "panel" | "studio";
 
 const SECCIONES: { id: Vista; nombre: string; icono: string }[] = [
   { id: "campanas",    nombre: "Campañas",    icono: "◈" },
   { id: "leads",       nombre: "Leads",       icono: "◉" },
   { id: "mensajes",    nombre: "Mensajes",    icono: "✉" },
+  { id: "studio",      nombre: "Plantillas",  icono: "▧" },
   { id: "historial",   nombre: "Historial",   icono: "◔" },
   { id: "supresiones", nombre: "Supresiones", icono: "⊘" },
   { id: "incidencias", nombre: "Incidencias", icono: "⚠" },
@@ -127,6 +130,11 @@ function Aplicacion() {
           {vista === "incidencias" && <Incidencias />}
           {vista === "cuenta"      && <Cuenta />}
           {vista === "panel"       && esAdmin && <Panel />}
+          {vista === "studio"      && (
+            <Suspense fallback={<p className="sutil">Cargando el studio…</p>}>
+              <Studio />
+            </Suspense>
+          )}
         </div>
       </main>
     </div>
