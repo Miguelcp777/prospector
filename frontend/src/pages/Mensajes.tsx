@@ -15,6 +15,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { aplicarPlantilla, type Resultado } from "../lib/aplicar-plantilla";
 
 const TOPE = 200;
 const SEPARADOR = "\n—\n";
@@ -39,10 +40,19 @@ export function Mensajes() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [plantillas, setPlantillas] = useState<{ id: string; nombre: string }[]>([]);
+  const [plantillaElegida, setPlantillaElegida] = useState("");
+  const [vistiendo, setVistiendo] = useState(false);
+  const [resultado, setResultado] = useState<Resultado | null>(null);
+
   useEffect(() => {
     supabase.from("campaigns").select("id, nombre, ciudad")
       .order("creado_en", { ascending: false })
       .then(({ data }) => setCampanas((data ?? []) as Campana[]));
+
+    supabase.from("plantillas").select("id, nombre")
+      .order("actualizado_en", { ascending: false })
+      .then(({ data }) => setPlantillas(data ?? []));
   }, []);
 
   const cargar = useCallback(async () => {
@@ -83,6 +93,27 @@ export function Mensajes() {
       .eq("id", id);
     if (fallo) { setError(fallo.message); return; }
     await cargar();
+  }
+
+  /**
+   * Vestir los borradores de la campaña con una plantilla del studio.
+   *
+   * Solo con una campaña elegida: aplicar un diseño a "todas" mezclaría
+   * clientes distintos y estilos que no tienen nada que ver entre sí.
+   */
+  async function vestir() {
+    if (!elegida || !plantillaElegida) return;
+    setError(null);
+    setResultado(null);
+    setVistiendo(true);
+    try {
+      setResultado(await aplicarPlantilla(elegida, plantillaElegida));
+      await cargar();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo aplicar la plantilla");
+    } finally {
+      setVistiendo(false);
+    }
   }
 
   async function guardar(id: string, asunto: string, cuerpo: string, pie: string) {
@@ -133,6 +164,50 @@ export function Mensajes() {
         <input placeholder="Buscar por asunto, negocio o correo"
                value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
       </div>
+
+      {/* Aparece solo con una campaña elegida: el diseño se aplica a una
+          campaña, no a mensajes sueltos de varias. */}
+      {elegida && plantillas.length > 0 && (
+        <div className="tarjeta">
+          <div>
+            <h2>Aplicar un diseño</h2>
+            <p className="sutil">
+              El texto de cada mensaje —el que escribió el modelo para ese
+              lead— entra dentro de la plantilla que elijas. Solo se visten
+              los borradores: lo ya enviado no se toca.
+            </p>
+          </div>
+
+          <div className="rejilla">
+            <select value={plantillaElegida}
+                    onChange={(e) => setPlantillaElegida(e.target.value)}>
+              <option value="">Elige una plantilla…</option>
+              {plantillas.map((p) => (
+                <option key={p.id} value={p.id}>{p.nombre}</option>
+              ))}
+            </select>
+            <button className="primario" onClick={vestir}
+                    disabled={!plantillaElegida || vistiendo}>
+              {vistiendo ? "Aplicando…" : "Aplicar a esta campaña"}
+            </button>
+          </div>
+
+          {resultado && (
+            <>
+              <p className="caja-aviso">
+                {resultado.vestidos} mensaje{resultado.vestidos === 1 ? "" : "s"} con
+                diseño
+                {resultado.saltados > 0 && ` · ${resultado.saltados} sin tocar`}
+              </p>
+              {resultado.motivos.length > 0 && (
+                <ul className="pasos-arreglo">
+                  {resultado.motivos.slice(0, 5).map((m, i) => <li key={i}>{m}</li>)}
+                </ul>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
       {cargando && <p className="sutil">Cargando…</p>}
 
