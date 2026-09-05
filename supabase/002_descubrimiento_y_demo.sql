@@ -333,6 +333,10 @@ revoke execute on function sumar_consulta(uuid)              from public, anon, 
 revoke execute on function registrar_uso_demo(text,int,int)  from public, anon, authenticated;
 revoke execute on function limpiar_demo_usos()               from public, anon, authenticated;
 
+-- Se la concedemos abajo a authenticated, que es quien la necesita. Su propio
+-- chequeo de tenant ya frena a anon, pero no hay motivo para exponerla.
+revoke execute on function encolar_descubrimiento(uuid)      from public, anon;
+
 -- Y ahora hay que devolvérselo a quien sí las necesita.
 --
 -- El REVOKE de arriba no es inocuo: service_role no tiene concesión propia

@@ -36,7 +36,18 @@ Deno.serve(async (req) => {
     const { data: user } = await supabase.auth.getUser();
     if (!user?.user) return json(req, { error: "No autenticado." }, 401);
 
-    const segmentos = await inferirSegmentos(descripcion, vertical, ciudad);
+    // El tenant de quien llama, para poder repartir el gasto por cliente en
+    // el panel. Si no hay perfil, la RLS ya habría frenado todo lo demás.
+    const { data: perfil } = await supabase
+      .from("profiles").select("tenant_id").eq("id", user.user.id).single();
+
+    const segmentos = await inferirSegmentos(
+      descripcion, vertical, ciudad,
+      // campaign_id es opcional en esta función —sirve para probar el prompt
+      // sin persistir— y entonces el consumo queda sin campaña, como debe.
+      { funcion: "infer-segments", tenant: perfil?.tenant_id ?? null,
+        campana: campaign_id ?? null },
+    );
 
     // Sin campaign_id devolvemos sin persistir: útil para probar el prompt.
     if (!campaign_id) return json(req, { segmentos });

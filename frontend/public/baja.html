@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Cancelar el envío de correos</title>
+<!--
+  Página de baja. Estática y sin dependencias a propósito: la abre alguien
+  que ya no quiere saber de nosotros, y lo último que debe encontrarse es
+  una pantalla que tarda o falla.
+
+  El GET no da de baja. Los antivirus de correo y los previsualizadores
+  abren los enlaces de los mensajes antes de que nadie los pulse; si el
+  enlace ejecutara, daríamos de baja a quien no lo pidió.
+-->
+<style>
+  :root { color-scheme: light dark; }
+  body { margin:0; min-height:100vh; display:grid; place-items:center; padding:24px;
+         font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;
+         background:#f6f7f9; color:#1a1d23; }
+  @media (prefers-color-scheme: dark) { body { background:#0f1115; color:#e6e8ec; } }
+  main { max-width:460px; width:100%; background:#fff; border:1px solid #e2e5ea;
+         border-radius:12px; padding:28px; }
+  @media (prefers-color-scheme: dark) { main { background:#171a21; border-color:#262b36; } }
+  h1 { font-size:1.3rem; margin:0 0 12px; }
+  p { margin:0 0 12px; }
+  .sutil { color:#6b7280; font-size:0.9rem; }
+  button { background:#5b8cff; color:#0b0d12; border:0; border-radius:8px;
+           padding:12px 18px; font:inherit; font-weight:600; cursor:pointer; width:100%; }
+  button:disabled { opacity:0.6; cursor:progress; }
+</style>
+</head>
+<body>
+<main id="app"><p class="sutil">Un momento…</p></main>
+<script>
+  var API = "https://tpfjeumrvdbciktmaaii.supabase.co/functions/v1/baja";
+  var app = document.getElementById("app");
+  var token = new URLSearchParams(location.search).get("t");
+
+  function pinta(titulo, cuerpo) {
+    app.innerHTML = "<h1></h1>" + cuerpo;
+    app.querySelector("h1").textContent = titulo;
+  }
+
+  if (!token) {
+    pinta("Enlace incompleto",
+      '<p>Este enlace no trae la referencia necesaria. Revisa que lo hayas copiado entero.</p>');
+  } else {
+    pinta("Cancelar el envío de correos",
+      '<p>Vas a pedir que no volvamos a escribirte a la dirección asociada a este mensaje.</p>' +
+      '<p class="sutil">La baja es inmediata y no hace falta dar ningún motivo.</p>' +
+      '<button id="ok">Confirmar la baja</button>');
+
+    document.getElementById("ok").addEventListener("click", function (e) {
+      e.target.disabled = true;
+      e.target.textContent = "Dando de baja…";
+
+      fetch(API + "?t=" + encodeURIComponent(token), { method: "POST" })
+        .then(function (r) { return r.json().then(function (d) { return { s: r.status, d: d }; }); })
+        .then(function (res) {
+          if (res.s === 404) {
+            pinta("Enlace no válido",
+              '<p>Este enlace no corresponde a ningún envío nuestro. Si sigues recibiendo correos, respóndenos y lo resolvemos a mano.</p>');
+            return;
+          }
+          if (!res.d.ok) {
+            pinta("No hemos podido completar la baja",
+              '<p>Ha fallado algo por nuestra parte. Vuelve a intentarlo en unos minutos.</p>');
+            return;
+          }
+          var dir = document.createElement("strong");
+          dir.textContent = res.d.email || "";
+          pinta("Baja confirmada",
+            "<p>" + (res.d.ya_estaba
+              ? dir.outerHTML + " ya estaba dada de baja. No vas a recibir nada más."
+              : "Hecho. " + dir.outerHTML + " ya no recibirá más correos nuestros.") + "</p>" +
+            '<p class="sutil">La baja se aplica a partir de ahora. Si tenías un envío ya en camino, puede que llegue uno último.</p>');
+        })
+        .catch(function () {
+          pinta("No hemos podido completar la baja",
+            '<p>Parece un problema de conexión. Vuelve a intentarlo en unos minutos.</p>');
+        });
+    });
+  }
+</script>
+</body>
+</html>

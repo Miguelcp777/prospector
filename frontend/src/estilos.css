@@ -1,0 +1,616 @@
+/* ============================================================
+   Sistema visual de Prospector.
+
+   Oscuro por diseño, no por preferencia del sistema: el degradado cian →
+   violeta → magenta sobre fondo casi negro es la identidad, y en claro no
+   funciona. Por eso no hay bloque prefers-color-scheme.
+
+   Todo sale de las variables de :root. Ningún componente inventa un color.
+   ============================================================ */
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
+:root {
+  /* Espaciado en múltiplos de 4: todo encaja con todo. */
+  --e1: 4px;  --e2: 8px;  --e3: 12px; --e4: 16px;
+  --e5: 24px; --e6: 32px; --e7: 48px; --e8: 64px;
+
+  --radio-s: 10px;
+  --radio-m: 14px;
+  --radio-l: 20px;
+
+  /* Casi negro con tinte violeta, no gris neutro: es lo que hace que el
+     degradado se lea como luz y no como pintura. */
+  --fondo:        #08060f;
+  --superficie:   #100d1c;
+  --superficie-2: #171327;
+  --borde:        rgba(255, 255, 255, 0.07);
+  --borde-fuerte: rgba(255, 255, 255, 0.14);
+
+  --texto:   #f4f2fb;
+  --texto-2: #a29dba;
+  --texto-3: #6d6789;
+
+  --cian:    #22d3ee;
+  --violeta: #8b5cf6;
+  --magenta: #ec4899;
+
+  --degradado: linear-gradient(100deg, #22d3ee 0%, #6366f1 38%, #a855f7 66%, #ec4899 100%);
+
+  /* El acento plano, para lo que no puede llevar degradado: enlaces,
+     bordes de foco, iconos. */
+  --acento:       #22d3ee;
+  --acento-suave: rgba(34, 211, 238, 0.12);
+
+  --exito:       #34d399;
+  --exito-suave: rgba(52, 211, 153, 0.12);
+  --aviso:       #fbbf24;
+  --aviso-suave: rgba(251, 191, 36, 0.12);
+  --error:       #fb7185;
+  --error-suave: rgba(251, 113, 133, 0.12);
+
+  --sombra-m: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --brillo:   0 0 40px rgba(139, 92, 246, 0.25);
+
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* El resplandor de fondo. Fijo y detrás de todo: da profundidad sin moverse
+   al hacer scroll ni robarle contraste al texto. */
+body::before {
+  content: "";
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(900px 500px at 12% -5%,  rgba(99, 102, 241, 0.16), transparent 60%),
+    radial-gradient(700px 400px at 92% 8%,   rgba(236, 72, 153, 0.11), transparent 60%),
+    radial-gradient(800px 600px at 50% 110%, rgba(34, 211, 238, 0.07), transparent 60%);
+}
+.armazon, .centro { position: relative; z-index: 1; }
+
+h1, h2, h3 { margin: 0; line-height: 1.2; letter-spacing: -0.025em; }
+h1 { font-size: 1.75rem;  font-weight: 700; }
+h2 { font-size: 1.125rem; font-weight: 650; }
+h3 { font-size: 0.9375rem; font-weight: 600; }
+p  { margin: 0; }
+
+a { color: var(--cian); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* Palabra con degradado dentro de un titular. */
+.destacado {
+  background: var(--degradado);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Micro-etiqueta en versales: sección, estado, categoría. */
+.rotulo {
+  display: inline-flex; align-items: center; gap: var(--e2);
+  font-size: 0.6875rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.14em;
+  color: var(--cian);
+}
+.rotulo::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--cian); box-shadow: 0 0 8px var(--cian);
+}
+
+/* ---------------- armazón ---------------- */
+
+/* Columna, no grid: con place-items cada hijo se centra en su propia fila y
+   el logotipo de entrada quedaba flotando lejos de la tarjeta. */
+.centro {
+  min-height: 100vh; padding: var(--e5);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+
+.armazon { display: flex; min-height: 100vh; align-items: flex-start; }
+
+.lateral {
+  width: 240px; flex-shrink: 0;
+  padding: var(--e5) var(--e3);
+  display: flex; flex-direction: column; gap: 2px;
+  position: sticky; top: 0; height: 100vh;
+  border-right: 1px solid var(--borde);
+  background: rgba(16, 13, 28, 0.6);
+  backdrop-filter: blur(12px);
+}
+
+.marca {
+  display: flex; align-items: center; gap: var(--e3);
+  font-weight: 800; font-size: 1rem;
+  letter-spacing: 0.02em; text-transform: uppercase;
+  padding: 0 var(--e3) var(--e6);
+}
+/* El isotipo ya trae su propio degradado: aquí solo se le da el halo que
+   tenía el marcador de posición, para que no quede plano sobre el fondo. */
+.marca-logo {
+  width: 30px; height: 30px; flex-shrink: 0;
+  object-fit: contain;
+  filter: drop-shadow(0 0 12px rgba(139, 92, 246, 0.45));
+}
+
+/* De quién es el producto. Abajo y discreto: el cliente viene a por
+   Prospector, no a por nosotros. */
+.pie-marca {
+  padding: var(--e4) var(--e3) var(--e2);
+  margin-top: var(--e3);
+  border-top: 1px solid var(--borde);
+}
+/* Ancho completo del lateral: el logotipo de cabecera lleva mucho aire a la
+   derecha, y por debajo de ~180px la palabra deja de leerse. */
+.pie-marca img { width: 100%; height: auto; display: block; opacity: 0.55; }
+.pie-marca:hover img { opacity: 0.8; }
+
+
+.nav-item {
+  display: flex; align-items: center; gap: var(--e3);
+  padding: 9px var(--e3);
+  border: 0; border-radius: var(--radio-s);
+  background: none; color: var(--texto-2);
+  font: inherit; font-weight: 500;
+  cursor: pointer; width: 100%;
+  transition: background .15s, color .15s;
+  /* El botón genérico centra su contenido, y aquí eso dejaba cada etiqueta
+     empezando en un sitio distinto. text-align no lo arregla: en un
+     contenedor flex no lo mira nadie. */
+  justify-content: flex-start;
+}
+.nav-item:hover { background: var(--superficie-2); color: var(--texto); }
+.nav-item.activa {
+  background: var(--acento-suave); color: var(--texto);
+  box-shadow: inset 2px 0 0 var(--cian);
+}
+/* Ancho fijo, como .recorrido-marca: los iconos no miden lo mismo (◈ ✉ ◑) y
+   sin esto las etiquetas quedan escalonadas aunque el bloque esté alineado. */
+.nav-item span[aria-hidden] {
+  color: var(--cian); font-size: 0.875rem;
+  width: 18px; flex-shrink: 0; text-align: center;
+}
+.nav-fin { margin-top: auto; }
+
+.contenido { flex: 1; min-width: 0; padding: var(--e7) var(--e6); }
+.ancho { max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--e5); }
+
+@media (max-width: 860px) {
+  .armazon { flex-direction: column; }
+  .lateral {
+    width: 100%; height: auto; position: static;
+    flex-direction: row; align-items: center; gap: var(--e1);
+    overflow-x: auto; padding: var(--e2) var(--e3);
+    border-right: 0; border-bottom: 1px solid var(--borde);
+  }
+  .marca { padding: 0 var(--e4) 0 var(--e2); }
+  .marca span { display: none; }
+  .nav-item { width: auto; white-space: nowrap; }
+  .nav-item.activa { box-shadow: none; }
+  .nav-fin { margin-top: 0; margin-left: auto; }
+  /* El lateral es una barra horizontal aquí: el logotipo a ancho completo no
+     cabe. Queda el isotipo de la izquierda, que ya lleva la marca. */
+  .pie-marca { display: none; }
+  .contenido { padding: var(--e5) var(--e4); }
+}
+
+/* ---------------- cabeceras ---------------- */
+
+.cabecera {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--e4); flex-wrap: wrap;
+}
+.cabecera-texto { display: flex; flex-direction: column; gap: var(--e2); }
+.panel { display: flex; flex-direction: column; gap: var(--e5); }
+
+/* ---------------- tarjetas ---------------- */
+
+.tarjeta, .fila {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-m);
+  padding: var(--e5);
+  display: flex; flex-direction: column; gap: var(--e3);
+}
+
+.lista { display: flex; flex-direction: column; gap: var(--e3); }
+
+.fila-cabeza {
+  display: flex; justify-content: space-between;
+  align-items: flex-start; gap: var(--e4);
+}
+.fila-cifras {
+  display: flex; gap: var(--e5); flex-wrap: wrap;
+  font-size: 0.875rem; color: var(--texto-2);
+}
+.fila-cifras strong { color: var(--texto); font-weight: 650; }
+
+/* ---------------- botones ---------------- */
+
+button, .boton {
+  font: inherit; font-weight: 600;
+  border: 1px solid transparent; border-radius: var(--radio-s);
+  padding: 10px 18px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--e2);
+  transition: filter .15s, background .15s, border-color .15s, transform .1s;
+  text-decoration: none;
+}
+button:disabled, .boton:disabled { opacity: .4; cursor: not-allowed; }
+button:active:not(:disabled) { transform: translateY(1px); }
+
+/* Texto oscuro sobre el degradado: es lo único que mantiene el contraste
+   contra el cian, que es muy claro. */
+.primario {
+  background: var(--degradado);
+  color: #08060f; font-weight: 700;
+  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+}
+.primario:hover:not(:disabled) { filter: brightness(1.12); }
+
+.secundario {
+  background: var(--superficie-2); color: var(--texto);
+  border-color: var(--borde-fuerte);
+}
+.secundario:hover:not(:disabled) { background: #1f1a33; border-color: var(--cian); }
+
+.fantasma { background: none; color: var(--texto-2); padding: 7px 12px; }
+.fantasma:hover:not(:disabled) { background: var(--superficie-2); color: var(--texto); }
+
+/* Gastar dinero no debe parecer inocuo. */
+.peligro { background: none; color: var(--error); border-color: var(--error); }
+.peligro:hover:not(:disabled) { background: var(--error-suave); }
+
+.acciones { display: flex; gap: var(--e2); flex-wrap: wrap; align-items: center; }
+
+/* Tarjeta pulsable. Va después de la regla de button a propósito: si no, el
+   centrado de los botones gana y el contenido sale centrado. */
+.tarjeta-enlace {
+  cursor: pointer; text-align: left; width: 100%;
+  font: inherit; color: inherit;
+  display: flex; flex-direction: column; align-items: stretch;
+  justify-content: flex-start; gap: var(--e3);
+  padding: var(--e5);
+  background: var(--superficie); border: 1px solid var(--borde);
+  border-radius: var(--radio-m);
+  transition: border-color .15s, background .15s;
+}
+.tarjeta-enlace:hover { border-color: var(--borde-fuerte); background: var(--superficie-2); }
+
+/* ---------------- formularios ---------------- */
+
+.campo { display: flex; flex-direction: column; gap: 6px; }
+.campo > span {
+  font-size: 0.6875rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--texto-3);
+}
+
+input, textarea, select {
+  font: inherit; width: 100%;
+  padding: 11px 14px;
+  background: #0c0917;
+  border: 1px solid var(--borde-fuerte);
+  border-radius: var(--radio-s);
+  color: var(--texto);
+}
+input::placeholder, textarea::placeholder { color: var(--texto-3); }
+input:focus, textarea:focus, select:focus {
+  outline: none; border-color: var(--cian);
+  box-shadow: 0 0 0 3px var(--acento-suave);
+}
+textarea { resize: vertical; line-height: 1.6; }
+.rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--e3); }
+
+/* ---------------- textos auxiliares ---------------- */
+
+.sutil  { color: var(--texto-2); font-size: 0.875rem; }
+.menudo { color: var(--texto-3); font-size: 0.8125rem; }
+.error  { color: var(--error); font-size: 0.875rem; }
+.aviso  { color: var(--aviso); font-size: 0.875rem; }
+
+/* Barra lateral de color en vez de recuadro completo: menos ruido y la
+   misma jerarquía. */
+.caja-error, .caja-aviso {
+  border-radius: var(--radio-s);
+  padding: var(--e3) var(--e4);
+  font-size: 0.875rem;
+  border-left: 3px solid;
+}
+.caja-error { background: var(--error-suave); border-color: var(--error); color: #fecdd3; }
+.caja-aviso { background: var(--aviso-suave); border-color: var(--aviso); color: #fde68a; }
+
+/* ---------------- etiquetas de estado ---------------- */
+
+.etiqueta {
+  display: inline-flex; align-items: center;
+  padding: 4px 11px; border-radius: 999px;
+  font-size: 0.6875rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  white-space: nowrap;
+  background: var(--superficie-2); color: var(--texto-2);
+  border: 1px solid var(--borde);
+}
+.etiqueta.lista, .etiqueta.enviado, .etiqueta.publicada {
+  background: var(--exito-suave); color: var(--exito); border-color: transparent;
+}
+.etiqueta.buscando { background: var(--acento-suave); color: var(--cian); border-color: transparent; }
+.etiqueta.error    { background: var(--error-suave); color: var(--error); border-color: transparent; }
+.etiqueta.inferido, .etiqueta.alta {
+  background: var(--aviso-suave); color: var(--aviso); border-color: transparent;
+}
+.etiqueta.media { background: rgba(168, 85, 247, 0.14); color: #c4b5fd; border-color: transparent; }
+
+/* ---------------- cifras ---------------- */
+
+.cifras { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--e3); }
+.cifra {
+  background: var(--superficie); border: 1px solid var(--borde);
+  border-radius: var(--radio-m); padding: var(--e4) var(--e5);
+  display: flex; flex-direction: column; gap: 2px;
+  position: relative; overflow: hidden;
+}
+/* Filo superior con el degradado: firma visual barata y consistente. */
+.cifra::before {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 2px;
+  background: var(--degradado); opacity: .7;
+}
+.cifra strong {
+  font-size: 1.875rem; font-weight: 750;
+  letter-spacing: -0.03em; line-height: 1.1;
+}
+.cifra span {
+  color: var(--texto-3); font-size: 0.6875rem;
+  text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600;
+}
+
+/* ---------------- recorrido por pasos ---------------- */
+
+.pasos { display: flex; flex-direction: column; }
+.paso { display: flex; gap: var(--e5); }
+
+.paso-carril { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+.paso-linea { flex: 1; width: 2px; background: var(--borde); margin: var(--e2) 0; }
+.paso:last-child .paso-linea { display: none; }
+
+.paso-numero {
+  width: 34px; height: 34px; border-radius: 11px;
+  display: grid; place-items: center;
+  font-size: 0.75rem; font-weight: 700; letter-spacing: 0.02em;
+  background: var(--superficie-2); color: var(--texto-3);
+  border: 1px solid var(--borde);
+}
+.paso.hecho .paso-numero {
+  background: var(--exito-suave); color: var(--exito);
+  border-color: rgba(52, 211, 153, 0.4);
+}
+.paso.actual .paso-numero {
+  background: var(--degradado); color: #08060f;
+  border-color: transparent; box-shadow: var(--brillo);
+}
+.paso.hecho .paso-linea { background: rgba(52, 211, 153, 0.35); }
+
+.paso-cuerpo { flex: 1; min-width: 0; padding-bottom: var(--e6); }
+.paso:last-child .paso-cuerpo { padding-bottom: 0; }
+
+.paso-titulo {
+  display: flex; align-items: center; gap: var(--e2);
+  flex-wrap: wrap; margin-bottom: var(--e1);
+}
+.paso-titulo h3 { color: var(--texto-3); }
+.paso.hecho .paso-titulo h3, .paso.actual .paso-titulo h3 { color: var(--texto); }
+
+.paso-detalle { margin-top: var(--e4); display: flex; flex-direction: column; gap: var(--e3); }
+
+/* Un paso que aún no toca se ve, pero se ve que no toca. */
+.paso.futuro .paso-cuerpo { opacity: .45; }
+
+/* ---------------- barra de progreso ---------------- */
+
+.progreso { display: flex; flex-direction: column; gap: 6px; }
+.barra-progreso { height: 6px; background: var(--superficie-2); border-radius: 3px; overflow: hidden; }
+.barra-progreso > div { height: 100%; background: var(--degradado); transition: width .3s; }
+
+/* ---------------- tablas ---------------- */
+
+.tabla-scroll {
+  overflow-x: auto;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-m);
+}
+table { border-collapse: collapse; width: 100%; font-size: 0.875rem; }
+th {
+  text-align: left; padding: 11px var(--e4);
+  color: var(--texto-3); font-weight: 600; font-size: 0.6875rem;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  background: var(--superficie-2); border-bottom: 1px solid var(--borde);
+  white-space: nowrap; position: sticky; top: 0;
+}
+td { padding: var(--e3) var(--e4); border-bottom: 1px solid var(--borde); vertical-align: top; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover { background: var(--superficie-2); }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* El número siempre visible: el color acompaña, no sustituye. */
+.score {
+  display: inline-block; min-width: 38px; text-align: center;
+  padding: 4px 9px; border-radius: 8px;
+  font-weight: 700; font-size: 0.8125rem; font-variant-numeric: tabular-nums;
+}
+.score.alto  { background: var(--exito-suave); color: var(--exito); }
+.score.medio { background: var(--aviso-suave); color: var(--aviso); }
+.score.bajo  { background: var(--superficie-2); color: var(--texto-3); }
+
+/* Un email dado de baja se ve, pero se ve que no sirve. */
+.tachado { text-decoration: line-through; color: var(--error); font-size: 0.8125rem; }
+
+/* ---------------- entrada y registro ---------------- */
+
+/* Ancho completo, como el botón de entrar: las dos vías son igual de
+   válidas y una a media caja parecería la de segunda. */
+.boton-google { width: 100%; }
+.boton-google svg { flex-shrink: 0; }
+
+/* La raya con la palabra en medio. Dos rayas que crecen a los lados, no una
+   sola tapada por el texto: así no depende del color de fondo, y la tarjeta
+   de acceso lo tiene translúcido. */
+.separador-o {
+  display: flex; align-items: center; gap: var(--e3);
+  margin: var(--e2) 0;
+  color: var(--texto-3); font-size: 0.75rem;
+  text-transform: uppercase; letter-spacing: 0.08em;
+}
+.separador-o::before, .separador-o::after {
+  content: ""; flex: 1; height: 1px; background: var(--borde);
+}
+
+.enlace {
+  background: none; border: 0; padding: 0;
+  color: var(--cian); font: inherit; font-weight: 600;
+  cursor: pointer; width: auto;
+}
+.enlace:hover { text-decoration: underline; }
+hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e1) 0; width: 100%; }
+
+/* ---------------- segmentos, landing, mensajes ---------------- */
+
+.fila.descartada { opacity: .45; }
+.queries { display: flex; gap: 6px; flex-wrap: wrap; }
+.queries code {
+  background: #0c0917; border: 1px solid var(--borde);
+  border-radius: 7px; padding: 4px 9px;
+  font-size: 0.75rem; color: var(--texto-2);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+.bloque-landing { padding-left: var(--e4); border-left: 2px solid var(--borde-fuerte); }
+.datos { display: grid; grid-template-columns: auto 1fr; gap: var(--e2) var(--e5); margin: 0; }
+.datos dt {
+  color: var(--texto-3); font-size: 0.6875rem;
+  text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600;
+}
+.datos dd { margin: 0; }
+.cuerpo {
+  white-space: pre-wrap; font: inherit;
+  background: #0c0917; border: 1px solid var(--borde);
+  border-radius: var(--radio-s); padding: var(--e4); margin: 0; overflow-x: auto;
+  color: var(--texto-2);
+}
+
+/* ---------------- recorrido en el lateral ---------------- */
+
+/* Aparece solo con una campaña abierta. Sirve para no perder el hilo al
+   salir a Leads o Mensajes: desde cualquier pantalla se ve por dónde iba la
+   campaña en la que estabas. */
+.recorrido {
+  margin-top: var(--e5);
+  padding-top: var(--e4);
+  border-top: 1px solid var(--borde);
+  display: flex; flex-direction: column; gap: 2px;
+}
+
+.recorrido-cabeza {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 0 var(--e3) var(--e3);
+}
+.recorrido-cabeza strong {
+  font-size: 0.8125rem; font-weight: 650;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.recorrido-paso {
+  display: flex; align-items: center; gap: var(--e3);
+  padding: 5px var(--e3);
+  font-size: 0.8125rem; color: var(--texto-3);
+  border-radius: var(--radio-s);
+}
+
+.recorrido-marca {
+  width: 18px; height: 18px; border-radius: 6px; flex-shrink: 0;
+  display: grid; place-items: center;
+  font-size: 0.625rem; font-weight: 700;
+  background: var(--superficie-2); color: var(--texto-3);
+  border: 1px solid var(--borde);
+}
+
+.recorrido-paso.hecho { color: var(--texto-2); }
+.recorrido-paso.hecho .recorrido-marca {
+  background: var(--exito-suave); color: var(--exito);
+  border-color: rgba(52, 211, 153, 0.35);
+}
+
+.recorrido-paso.actual { color: var(--texto); font-weight: 600; background: var(--acento-suave); }
+.recorrido-paso.actual .recorrido-marca {
+  background: var(--degradado); color: #08060f; border-color: transparent;
+}
+
+/* En móvil el lateral es una barra horizontal: el recorrido no cabe. */
+@media (max-width: 860px) { .recorrido { display: none; } }
+
+/* ---------------- incidencias ---------------- */
+
+.pasos-arreglo {
+  margin: 0; padding-left: 1.15rem;
+  display: flex; flex-direction: column; gap: 6px;
+  color: var(--texto-2); font-size: 0.875rem;
+}
+.pasos-arreglo li::marker { color: var(--cian); font-weight: 700; }
+
+/* ---------------- panel de administración ---------------- */
+
+.titulo-seccion {
+  font-size: 0.75rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--texto-3); margin: var(--e3) 0 0;
+}
+
+.rejilla-metricas {
+  display: grid; gap: var(--e4);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.metrica {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: var(--e4) var(--e5);
+  background: var(--superficie); border: 1px solid var(--borde);
+  border-radius: var(--radio-m); position: relative; overflow: hidden;
+}
+.metrica::before {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 2px;
+  background: var(--degradado);
+}
+/* Solo lo que hay que mirar hoy se pone ámbar. Si todo alerta, nada alerta. */
+.metrica-alerta::before { background: var(--aviso); }
+.metrica-rotulo {
+  font-size: 0.6875rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.1em; color: var(--texto-3);
+}
+.metrica-valor { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; }
+.cifra-alerta { color: var(--aviso); font-weight: 600; }
+
+/* Barras en CSS: cuatro series y treinta días no justifican una librería
+   de gráficos que pagarían en cada visita también los que no son admin. */
+.barras {
+  display: flex; align-items: flex-end; gap: 2px;
+  height: 140px; margin-top: var(--e2);
+}
+.barra-hueco {
+  flex: 1; height: 100%; display: flex; align-items: flex-end;
+  border-radius: 3px;
+}
+.barra-hueco:hover { background: var(--superficie-2); }
+.barra {
+  width: 100%; border-radius: 3px 3px 0 0;
+  background: var(--degradado); min-height: 0;
+}
+.barras-pie { display: flex; justify-content: space-between; margin-top: 6px; }

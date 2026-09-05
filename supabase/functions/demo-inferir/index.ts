@@ -50,9 +50,12 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    // Se calcula una vez: hace falta para cobrar y, si algo falla, para devolver.
+    const ipHash = await hashIp(req);
+
     const { data: cuota, error: errorCuota } = await supabase
       .rpc("registrar_uso_demo", {
-        p_ip_hash: await hashIp(req),
+        p_ip_hash: ipHash,
         p_max_ip: MAX_POR_IP,
         p_max_dia: MAX_POR_DIA,
       })
@@ -74,7 +77,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    const segmentos = await inferirSegmentos(descripcion, vertical, ciudad);
+    let segmentos;
+    try {
+      // Sin tenant: la demo es pública. Se anota igual, porque el coste es
+      // nuestro y es justo el que nadie ve venir.
+      segmentos = await inferirSegmentos(
+        descripcion, vertical, ciudad, { funcion: "demo-inferir", tenant: null },
+      );
+    } catch (e) {
+      // El cargo va antes de inferir a propósito: cobrarlo después dejaría la
+      // llamada a Claude fuera del techo de gasto. Pero si falla por nuestra
+      // parte, el intento no tiene por qué gastárselo el visitante.
+      await supabase.rpc("devolver_uso_demo", { p_ip_hash: ipHash });
+      throw e;
+    }
 
     return json(req, { segmentos, restantes: cuota.restantes_ip });
   } catch (e) {

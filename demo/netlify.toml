@@ -9,3 +9,12 @@
     X-Frame-Options = "SAMEORIGIN"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+
+# El README son notas internas: costes por visitante, topes de cuota y la
+# checklist de rebranding. No debe servirse en el dominio público, y como
+# existe como archivo estático hace falta force para que la regla gane.
+[[redirects]]
+  from = "/README.md"
+  to = "/"
+  status = 301
+  force = true

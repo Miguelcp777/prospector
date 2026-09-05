@@ -27,3 +27,12 @@ data/exports/
 # Claude Code — overrides personales
 CLAUDE.local.md
 .claude/settings.local.json
+
+# Supabase CLI — estado local del link, no del repo
+supabase/.temp/
+
+# Local Netlify folder
+.netlify
+
+# Vite / TypeScript — artefactos de build
+*.tsbuildinfo

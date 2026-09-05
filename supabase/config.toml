@@ -12,3 +12,32 @@ verify_jwt = false
 # La despierta pg_cron, no una persona. Se autentica con WORKER_SECRETO.
 [functions.descubrir]
 verify_jwt = false
+
+# El worker de enriquecimiento. Como descubrir: lo despierta el cron, no una
+# persona, y lo autentica WORKER_SECRETO.
+[functions.enriquecer]
+verify_jwt = false
+
+# La página de baja. Pública por definición: quien la abre no es usuario
+# nuestro. Lo que la protege es que el token del enlace no se adivina.
+[functions.baja]
+verify_jwt = false
+
+# El redactor. Como los otros workers: lo despierta el cron y lo autentica
+# WORKER_SECRETO.
+[functions.redactar]
+verify_jwt = false
+
+# Genera el texto de la landing. Escribe en la campaña de un tenant, así que
+# exige usuario.
+[functions.generar-landing]
+verify_jwt = true
+
+# La landing pública. La abre cualquiera que reciba el enlace.
+[functions.landing]
+verify_jwt = false
+
+# Lee el texto de un PDF de oferta. Escribe en el recurso de un tenant, así
+# que exige usuario.
+[functions.leer-documento]
+verify_jwt = true

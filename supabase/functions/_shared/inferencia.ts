@@ -9,6 +9,8 @@
 // segmentos y el producto devuelve otros, la demo deja de demostrar nada.
 // ============================================================
 
+import { anotarConsumo, type Quien } from "./consumo.ts";
+
 export const MODELO = "claude-sonnet-5";
 
 export type Segmento = {
@@ -62,6 +64,9 @@ export async function inferirSegmentos(
   descripcion: string,
   vertical?: string,
   ciudad?: string,
+  // Quién paga esta llamada. La demo pública no tiene tenant y aun así
+  // gasta: por eso se anota igual, con tenant nulo.
+  quien?: Quien,
 ): Promise<Segmento[]> {
   const referencia = vertical && TAXONOMIAS[vertical]
     ? `\n\nTaxonomía de referencia para ${vertical}:\n- ${TAXONOMIAS[vertical].join("\n- ")}`
@@ -86,11 +91,37 @@ export async function inferirSegmentos(
   });
 
   if (!r.ok) {
-    console.error("Anthropic devolvió", r.status, await r.text());
-    throw new ErrorInferencia(502, "No se pudo completar la inferencia. Inténtalo de nuevo.");
+    // El motivo va al mensaje, no solo al log. Un 502 a secas obliga a mirar
+    // los logs del proveedor, y esos no siempre están: el día que hizo falta,
+    // el API de logs de Supabase estaba caído.
+    //
+    // Se expone el tipo de error y el código HTTP, nunca el cuerpo entero:
+    // basta para distinguir la clave, el saldo y el modelo.
+    const cuerpo = await r.text();
+    let tipo = "", detalle = "";
+    try {
+      const j = JSON.parse(cuerpo);
+      tipo = j?.error?.type ?? "";
+      detalle = j?.error?.message ?? "";
+    } catch { /* no era JSON */ }
+    console.error("Anthropic devolvió", r.status, cuerpo.slice(0, 500));
+    throw new ErrorInferencia(
+      502,
+      `El proveedor del modelo rechazó la petición (HTTP ${r.status}` +
+        `${tipo ? " · " + tipo : ""})` +
+        // El mensaje del proveedor es lo único que distingue "modelo que no
+        // existe" de "parámetro mal puesto". Recortado, y con las claves
+        // tachadas por si algún día las cita de vuelta.
+        `${detalle ? ": " + detalle.replace(/sk-ant-[\w-]+/g, "sk-ant-***").slice(0, 200) : ""}`,
+    );
   }
 
   const data = await r.json();
+
+  // Antes de mirar el contenido: la llamada ya está pagada aunque la
+  // respuesta venga mal formada, así que se anota aquí y no al final.
+  if (quien) await anotarConsumo(quien.funcion, MODELO, data.usage, quien.tenant, quien.campana);
+
   const texto = data.content
     .filter((b: { type: string }) => b.type === "text")
     .map((b: { text: string }) => b.text)
