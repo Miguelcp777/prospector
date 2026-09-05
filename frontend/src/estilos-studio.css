@@ -690,3 +690,18 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 
 /* El carril crece un poco para que "Siguiente" quepa sin partirse. */
 .mode-guided { --carril: 196px; }
+
+/* La maqueta del modo guiado ---------------------------------------- */
+
+/* `studio-main` es una rejilla con filas contadas a mano —74px, 78px, 50px
+   y el resto—. En guiado los hijos visibles cambian según el paso, y contar
+   filas para colocarlos es lo que hizo que la zona de trabajo se quedara
+   con 50px y el resto en negro.
+   En columna flexible no hay nada que contar: cada hijo ocupa lo suyo y el
+   espacio de trabajo se queda con lo que sobre. */
+.mode-guided .studio-main {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.mode-guided .studio-main > .workspace-grid { flex: 1; min-height: 0; }
