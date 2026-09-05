@@ -21,6 +21,7 @@
 import { supabase } from "../../lib/supabase";
 import { renderEmailHtml, renderEmailText } from "./email-renderer";
 import type { StoredTemplate, TemplateDocument } from "./template-types";
+import { generarDocumento, guidedCopy, type Brief } from "./generacion";
 
 /** Fila de `plantillas` tal y como la devuelve Postgres. */
 type FilaPlantilla = {
@@ -196,18 +197,109 @@ async function listarImagenes() {
     .eq("tipo", "imagen").order("creado_en", { ascending: false }).limit(200);
   if (fallo) return error(fallo.message, 500);
 
-  const assets = (data ?? []).map((r) => ({
+  const assets = await Promise.all((data ?? []).map(async (r) => ({
     id: r.id as string,
-    // El bucket es privado: la URL se firma al vuelo más abajo.
-    url: r.ruta as string,
+    // El bucket es privado: sin firmar, el navegador no puede pintarla.
+    url: await urlFirmada(r.ruta as string),
     filename: r.nombre as string,
     source: r.origen as string,
     altText: (r.texto_alt as string) ?? "",
     width: r.ancho as number | null,
     height: r.alto as number | null,
     createdAt: r.creado_en as string,
-  }));
+  })));
   return json({ assets });
+}
+
+// ------------------------------------------------------------
+// Componer un correo desde el brief
+//
+// Sin red y sin claves: `guidedCopy` escribe el texto de forma
+// determinista y el catálogo monta el documento. En el original la IA solo
+// SUSTITUÍA el texto cuando había clave de OpenAI; todo lo demás siempre
+// fue local. Por eso esto funciona hoy, al instante y gratis.
+// ------------------------------------------------------------
+
+function componer(brief: Brief) {
+  const copy = guidedCopy(brief);
+  const documento = generarDocumento(brief, copy);
+  return json({
+    document: documento,
+    subject: copy.subject,
+    preheader: copy.preheader,
+    mode: "guided-preview",
+  });
+}
+
+// ------------------------------------------------------------
+// Subir una imagen · bucket `recursos` (017), carpeta por tenant
+//
+// La ruta empieza por el tenant porque las políticas de storage comprueban
+// `(storage.foldername(name))[1] = auth_tenant_id()::text`: el aislamiento
+// entre clientes está en el nombre del archivo, no en el código de aquí.
+// ------------------------------------------------------------
+
+const TIPOS_IMAGEN = ["image/png", "image/jpeg", "image/webp"];
+const MAX_BYTES = 8 * 1024 * 1024;
+
+async function subirImagen(form: FormData) {
+  const archivo = form.get("file");
+  if (!(archivo instanceof File)) return error("No llegó ningún archivo");
+  if (!TIPOS_IMAGEN.includes(archivo.type))
+    return error("Formato no admitido: solo PNG, JPEG o WebP");
+  if (archivo.size > MAX_BYTES)
+    return error("La imagen pasa de 8 MB");
+
+  const { data: perfil } = await supabase.from("profiles").select("tenant_id").single();
+  if (!perfil?.tenant_id) return error("Sin cuenta activa", 401);
+
+  const ext = archivo.type.split("/")[1].replace("jpeg", "jpg");
+  const ruta = `${perfil.tenant_id}/studio/${crypto.randomUUID()}.${ext}`;
+
+  const { error: falloSubida } = await supabase.storage
+    .from("recursos").upload(ruta, archivo, { contentType: archivo.type });
+  if (falloSubida) return error(falloSubida.message, 500);
+
+  // Las medidas se leen aquí: el editor las necesita para maquetar y en el
+  // servidor habría que decodificar la imagen para saberlas.
+  let ancho: number | null = null, alto: number | null = null;
+  try {
+    const bitmap = await createImageBitmap(archivo);
+    ancho = bitmap.width; alto = bitmap.height;
+    bitmap.close();
+  } catch { /* formato que el navegador no decodifica */ }
+
+  const { data: fila, error: falloFila } = await supabase.from("recursos").insert({
+    tipo: "imagen",
+    nombre: archivo.name.slice(0, 200),
+    ruta,
+    mime: archivo.type,
+    tamano: archivo.size,
+    ancho, alto,
+    origen: "subida",
+    texto_alt: String(form.get("altText") ?? "").slice(0, 300),
+  }).select("id, nombre, ruta, origen, texto_alt, ancho, alto, creado_en").single();
+
+  if (falloFila) {
+    // La fila es la que manda: sin ella el archivo queda huérfano y nadie
+    // lo va a encontrar nunca. Se retira.
+    await supabase.storage.from("recursos").remove([ruta]);
+    return error(falloFila.message, 500);
+  }
+
+  const url = await urlFirmada(ruta);
+  return json({ asset: {
+    id: fila.id, url, filename: fila.nombre, source: fila.origen,
+    altText: fila.texto_alt, width: fila.ancho, height: fila.alto,
+    createdAt: fila.creado_en,
+  }, url });
+}
+
+/** El bucket es privado: cada uso necesita su enlace firmado. */
+async function urlFirmada(ruta: string) {
+  const { data } = await supabase.storage.from("recursos")
+    .createSignedUrl(ruta, 60 * 60 * 8);
+  return data?.signedUrl ?? "";
 }
 
 // ------------------------------------------------------------
@@ -256,7 +348,14 @@ export async function apiFetch(
       return await guardarKit(cuerpo.brandKit ?? cuerpo);
     }
 
-    if (ruta === "/api/assets" && metodo === "GET") return await listarImagenes();
+    if (ruta === "/api/assets") {
+      if (metodo === "GET") return await listarImagenes();
+      if (metodo === "POST" && init.body instanceof FormData)
+        return await subirImagen(init.body);
+    }
+
+    if (ruta === "/api/generate" && metodo === "POST")
+      return componer(cuerpo as Brief);
 
     // Estado de la integración: el editor lo consulta para saber qué
     // enseñar. Booleanos, nunca claves.
