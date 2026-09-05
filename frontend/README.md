@@ -73,7 +73,6 @@ con un dominio sin buzón. Haz un alta con tu email real para cerrar eso.
 - Recuperación de contraseña (`resetPasswordForEmail`)
 - Invitar miembros a un tenant existente — hoy cada alta crea un tenant nuevo
 - Las tres pantallas del MVP: onboarding, campañas, leads
-- Despliegue: aún no está en Netlify. La demo y la app son sitios distintos
 
 ## Desplegada
 
@@ -88,6 +87,14 @@ Desde el CLI, con el `dist` ya construido:
 npm run build
 netlify deploy --prod --dir dist --site 98841a18-d890-4247-8427-4d3ba57abb88
 ```
+
+El `--site` **no es opcional**. Sin él, el CLI busca hacia arriba un
+`.netlify/state.json`, y el que había en la raíz del repo apuntaba al sitio de
+la demo: un despliegue desde aquí publicaba la aplicación encima del
+escaparate público. Pasó el 5 de septiembre de 2026 y se deshizo restaurando
+el despliegue anterior de `prospector-demo`. Ese estado de la raíz ya no
+existe, pero `.netlify/` está en `.gitignore`, así que en otra máquina puede
+volver a aparecer.
 
 Si conectas el repositorio a Netlify, pon `frontend` como base directory y
 define allí `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`: el build
