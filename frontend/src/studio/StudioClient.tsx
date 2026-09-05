@@ -573,23 +573,23 @@ const DESIGN_PROPS = new Set([
 ]);
 const MEDIA_OPTIONS = [
   {
-    url: "/assets/aurevanta-command-center-hero.webp",
-    full: "/assets/aurevanta-command-center-hero-4k.webp",
+    url: "/imagenes/aurevanta-command-center-hero.webp",
+    full: "/imagenes/aurevanta-command-center-hero-4k.webp",
     label: "AI Command Center",
   },
   {
-    url: "/assets/ai-campaign.webp",
-    full: "/assets/ai-campaign-4k.webp",
+    url: "/imagenes/ai-campaign.webp",
+    full: "/imagenes/ai-campaign-4k.webp",
     label: "Inteligencia B2B",
   },
   {
-    url: "/assets/industrial-cleaning.webp",
-    full: "/assets/industrial-cleaning-4k.webp",
+    url: "/imagenes/industrial-cleaning.webp",
+    full: "/imagenes/industrial-cleaning-4k.webp",
     label: "Impacto industrial",
   },
   {
-    url: "/assets/sports-physio.webp",
-    full: "/assets/sports-physio-4k.webp",
+    url: "/imagenes/sports-physio.webp",
+    full: "/imagenes/sports-physio-4k.webp",
     label: "Movimiento y salud",
   },
 ];
@@ -855,7 +855,7 @@ function buildPresets() {
     subject: "{{lead.first_name}}, convierte ideas en campañas memorables",
     preheader:
       "Diseño, imagen 4K y personalización comercial coordinados por IA.",
-    image: "/assets/aurevanta-command-center-hero.webp",
+    image: "/imagenes/aurevanta-command-center-hero.webp",
     accent: "#03d9ff",
     document: buildOpeningShowcaseDocument(),
     objective: "presentar una experiencia de campaña premium",
@@ -6865,9 +6865,9 @@ export default function StudioClient({ displayName }: StudioProps) {
                   generatedImagePreview?.url ??
                     (imageTarget === "background"
                       ? document.settings.backgroundImageUrl ||
-                        "/assets/ai-campaign.webp"
+                        "/imagenes/ai-campaign.webp"
                       : (selectedBlock?.props.imageUrl ??
-                        "/assets/ai-campaign.webp")),
+                        "/imagenes/ai-campaign.webp")),
                 )}
                 alt={
                   generatedImagePreview

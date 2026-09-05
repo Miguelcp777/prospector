@@ -21,11 +21,22 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
 
-# Los assets llevan hash en el nombre, así que se pueden cachear para siempre.
+# Los assets del bundle llevan hash en el nombre, así que se pueden cachear
+# para siempre: al cambiar el contenido cambia la URL.
 [[headers]]
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+
+# Las imágenes del catálogo del studio NO llevan hash: el nombre es fijo y el
+# código las pide por él. Un año de caché inmutable sobre un nombre estable
+# significa que sustituir una foto no llegaría a quien ya la tiene. Una semana
+# con revalidación es suficiente para lo que son —fotos de catálogo que casi
+# nunca cambian— y deja la puerta abierta a cambiarlas.
+[[headers]]
+  for = "/imagenes/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800, must-revalidate"
 
 # index.html no: es quien apunta a los assets nuevos tras cada despliegue.
 [[headers]]
