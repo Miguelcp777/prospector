@@ -409,6 +409,17 @@ export async function apiFetch(
       return json(data);
     }
 
+    // El troceado del hosting anterior. No se implementa a propósito: ver el
+    // comentario de DIRECT_UPLOAD_BYTES en upload-policy.ts. Si algo vuelve a
+    // llegar aquí es que ese tope se ha bajado, y el mensaje tiene que decirlo
+    // en vez del genérico "todavía no está conectada".
+    if (ruta.startsWith("/api/assets/chunk"))
+      return error(
+        "La subida por partes no existe en esta versión. Si ves esto, " +
+        "DIRECT_UPLOAD_BYTES ha bajado por debajo del tamaño de la imagen.",
+        501,
+      );
+
     // Lo que aún no está. Con cuerpo JSON y mensaje, no un 404 mudo.
     return error(TODAVIA_NO, 503);
   } catch (e) {
