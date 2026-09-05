@@ -111,6 +111,17 @@ import {
 } from "@studio/lib/upload-policy";
 
 type StudioProps = { displayName: string };
+
+/** El recorrido del modo guiado, en orden. */
+const PASOS_GUIA: WorkflowStep[] = ["library", "content", "design", "variables", "review"];
+
+const NOMBRE_PASO: Record<WorkflowStep, string> = {
+  library: "Elegir plantilla",
+  content: "Editar contenido",
+  design: "Diseño y marca",
+  variables: "Personalizar",
+  review: "Revisar y guardar",
+};
 type Device = "desktop" | "mobile";
 type AppTheme = "dark" | "light" | "ocean" | "emerald" | "violet";
 type ExperienceMode = "guided" | "professional";
@@ -2888,7 +2899,10 @@ export default function StudioClient({ displayName }: StudioProps) {
   return (
     <>
       <Toaster position="bottom-right" richColors />
-      <div className={`studio-shell theme-${appTheme} mode-${experienceMode}`}>
+      {/* `paso-*` es lo que permite al modo guiado enseñar solo las
+          herramientas del paso en el que estás. Sin ella, "guiado" y
+          "profesional" pintaban exactamente lo mismo. */}
+      <div className={`studio-shell theme-${appTheme} mode-${experienceMode} paso-${workflowStep}`}>
         {/* El lateral del studio se quitó al integrarlo: Prospector ya
             tiene el suyo, y este duplicaba su navegación con botones que no
             hacían nada. Las dos acciones que sí valían siguen accesibles —
@@ -5792,6 +5806,54 @@ export default function StudioClient({ displayName }: StudioProps) {
               </Tabs>
             </aside>
           </section>
+
+          {/* La barra de pasos del modo guiado.
+              En profesional no aparece: ahí se salta de un paso a otro por
+              la cabecera y no hay un recorrido que seguir. */}
+          {experienceMode === "guided" && (
+            <nav className="guia-barra">
+              <button
+                className="guia-atras"
+                disabled={PASOS_GUIA.indexOf(workflowStep) === 0}
+                onClick={() =>
+                  changeWorkflowStep(PASOS_GUIA[PASOS_GUIA.indexOf(workflowStep) - 1])
+                }
+              >
+                <ChevronLeft /> Atrás
+              </button>
+
+              <span className="guia-donde">
+                Paso {PASOS_GUIA.indexOf(workflowStep) + 1} de {PASOS_GUIA.length}
+                <strong>{NOMBRE_PASO[workflowStep]}</strong>
+              </span>
+
+              <div className="guia-acciones">
+                {/* Deshacer, aquí y no escondido en un atajo: "volver atrás y
+                    rehacer" es la promesa del modo guiado. */}
+                <button onClick={undo} disabled={!history.length} title="Deshacer">
+                  <Undo2 />
+                </button>
+                <button onClick={redo} disabled={!future.length} title="Rehacer">
+                  <Redo2 />
+                </button>
+
+                {PASOS_GUIA.indexOf(workflowStep) < PASOS_GUIA.length - 1 ? (
+                  <button
+                    className="guia-siguiente"
+                    onClick={() =>
+                      changeWorkflowStep(PASOS_GUIA[PASOS_GUIA.indexOf(workflowStep) + 1])
+                    }
+                  >
+                    Siguiente <ChevronRight />
+                  </button>
+                ) : (
+                  <button className="guia-siguiente" onClick={saveTemplate} disabled={saving}>
+                    <Save /> {saving ? "Guardando…" : "Guardar plantilla"}
+                  </button>
+                )}
+              </div>
+            </nav>
+          )}
         </main>
 
         <CampaignCommandCenter

@@ -127,7 +127,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .signal-orbit { position: relative; width: 23px; height: 23px; border: 1px solid color-mix(in srgb, var(--cian) 22%, transparent); border-radius: 50%; }.signal-orbit::before { content: ""; position: absolute; inset: 5px; border: 1px solid color-mix(in srgb, var(--cian) 35%, transparent); border-radius: 50%; }.signal-orbit i { position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; transform: translate(-50%,-50%); border-radius: 50%; background: var(--cyan-bright); box-shadow: 0 0 9px var(--cyan); }
 .user-chip { display: grid; grid-template-columns: 30px 1fr 14px; align-items: center; gap: 9px; margin-top: 10px; padding: 11px 8px 0; border-top: 1px solid var(--line); }.avatar { display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid color-mix(in srgb, var(--violeta) 35%, transparent); border-radius: 50%; background: linear-gradient(145deg, var(--superficie-2), var(--superficie-2)); color: var(--texto); font-size: 11px; }.user-chip > svg { width: 13px; color: var(--texto-3); }
 
-.studio-main { display: grid; grid-template-rows: 68px 43px minmax(0,1fr); min-width: 0; min-height: 0; background: var(--fondo); }
+.studio-main { display: grid; grid-template-rows: 68px 43px minmax(0,1fr) auto; min-width: 0; min-height: 0; background: var(--fondo); }
 .studio-topbar { display: flex; align-items: center; padding: 0 19px 0 23px; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--fondo) 97%, transparent); }
 .mobile-menu { display: none; }.title-cluster { min-width: 0; }.breadcrumb { display: flex; align-items: center; gap: 4px; height: 17px; color: var(--texto-3); font-size: 9px; }.breadcrumb svg { width: 9px; }.breadcrumb strong { color: var(--texto-2); font-weight: 500; }
 .name-row { display: flex; align-items: center; gap: 10px; }.name-row input { width: min(390px, 30vw); padding: 2px 0; border: 0; background: transparent; color: var(--texto); font-size: 17px; font-weight: 600; letter-spacing: -.02em; }.name-row input:focus { outline: 0; }.save-state { padding: 3px 7px; border: 1px solid color-mix(in srgb, var(--cian) 20%, transparent); border-radius: 20px; color: var(--cian); font-size: 8px; letter-spacing: .04em; }.save-state.dirty { border-color: color-mix(in srgb, var(--aviso) 20%, transparent); color: var(--aviso); }
@@ -189,7 +189,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .sidebar-signal strong, .user-chip strong { font-size: 11px; }
 .sidebar-signal small, .user-chip small { font-size: 9px; }
 
-.studio-main { grid-template-rows: 74px 78px 50px minmax(0, 1fr); }
+.studio-main { grid-template-rows: 74px 78px 50px minmax(0, 1fr) auto; }
 .studio-topbar { padding: 0 24px; }
 .breadcrumb { font-size: 10px; }
 .name-row input { width: min(470px, 36vw); font-size: 20px; }
@@ -519,3 +519,99 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   --radius-lg: var(--radio-l);
   --radius-xl: var(--radio-l);
 }
+
+/* ============================================================
+   Modo guiado
+   ============================================================
+
+   Hasta ahora "guiado" y "profesional" pintaban lo mismo: la única regla
+   que distinguía los modos cambiaba un `max-height`. La promesa era otra —
+   ir paso a paso viendo solo las herramientas de ese paso — y esto la
+   cumple.
+
+   La idea: el lienzo con el correo está SIEMPRE, y a su lado solo el panel
+   que hace falta ahora. Cuanto menos se enseñe, más grande se ve el correo,
+   que es lo que se ha venido a mirar.
+   ============================================================ */
+
+/* 01 · Elegir plantilla — la biblioteca, ancha, y el correo al lado.
+   El inspector no pinta nada: todavía no hay bloque que inspeccionar. */
+.mode-guided.paso-library .inspector-panel { display: none; }
+.mode-guided.paso-library .workspace-grid {
+  grid-template-columns: 340px minmax(0, 1fr);
+}
+
+/* 02 · Editar contenido — el único paso que necesita los tres: los bloques
+   que se pueden añadir, el correo, y las propiedades del bloque elegido. */
+.mode-guided.paso-content .workspace-grid {
+  grid-template-columns: 258px minmax(0, 1fr) 340px;
+}
+
+/* 03 y 04 · Diseño y Personalizar — no se añaden bloques, se ajustan.
+   Fuera la paleta y el correo se lleva el sitio. */
+.mode-guided.paso-design .palette-panel,
+.mode-guided.paso-variables .palette-panel { display: none; }
+.mode-guided.paso-design .workspace-grid,
+.mode-guided.paso-variables .workspace-grid {
+  grid-template-columns: minmax(0, 1fr) 360px;
+}
+
+/* 05 · Revisar — el correo solo, a toda pantalla. Es el momento de mirarlo
+   como lo mirará quien lo reciba, sin nada alrededor. */
+.mode-guided.paso-review .palette-panel,
+.mode-guided.paso-review .inspector-panel { display: none; }
+.mode-guided.paso-review .workspace-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Las pestañas de cada panel sobran en guiado: el paso ya decidió cuál
+   toca, y dejarlas invita a saltárselo. */
+.mode-guided .panel-tabs > [role="tablist"] { display: none; }
+
+/* La barra de pasos ------------------------------------------------- */
+
+.guia-barra {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--e4);
+  padding: 12px 18px;
+  border-top: 1px solid var(--line);
+  background: var(--ink-1);
+}
+
+.guia-barra button {
+  display: inline-flex; align-items: center; gap: 7px;
+  height: 36px; padding: 0 14px;
+  border: 1px solid var(--line); border-radius: 9px;
+  background: transparent; color: var(--texto-2);
+  font: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer;
+}
+.guia-barra button:hover:not(:disabled) { border-color: var(--borde-fuerte); color: var(--texto); }
+.guia-barra button:disabled { opacity: .35; cursor: not-allowed; }
+.guia-barra svg { width: 15px; height: 15px; }
+
+.guia-siguiente {
+  background: var(--degradado) !important;
+  border-color: transparent !important;
+  color: #08060f !important;
+  font-weight: 700 !important;
+}
+
+.guia-donde {
+  display: flex; flex-direction: column; gap: 1px;
+  color: var(--texto-3); font-size: 10px;
+  letter-spacing: .12em; text-transform: uppercase;
+  text-align: center;
+}
+.guia-donde strong {
+  color: var(--texto); font-size: 13px;
+  letter-spacing: -.01em; text-transform: none;
+}
+
+.guia-acciones { display: flex; align-items: center; gap: 7px; }
+/* Deshacer y rehacer, cuadrados y sin texto: son gestos, no decisiones. */
+.guia-acciones > button:not(.guia-siguiente) { width: 36px; padding: 0; justify-content: center; }
+
+/* El lienzo tiene que poder encoger, o la rejilla lo desborda. */
+.studio-main { min-height: 0; }
+.guia-barra { flex-shrink: 0; }
