@@ -4046,6 +4046,59 @@ export default function StudioClient({ displayName }: StudioProps) {
                             accept="image/png,image/jpeg,image/webp"
                             onChange={handleImageInputChange}
                           />
+                          {selectedBlock.type === "hero" && (
+                            <>
+                              <div
+                                className="property-field"
+                                style={{ marginTop: 16 }}
+                              >
+                                <label>{PROP_LABELS.imageFit}</label>
+                                <select
+                                  className="studio-select"
+                                  value={
+                                    selectedBlock.props.imageFit === "contain"
+                                      ? "contain"
+                                      : "cover"
+                                  }
+                                  onChange={(event) =>
+                                    updateBlockProp(
+                                      "imageFit",
+                                      event.target.value,
+                                    )
+                                  }
+                                >
+                                  <option value="cover">
+                                    Rellenar (recorta lo que sobra)
+                                  </option>
+                                  <option value="contain">
+                                    Entera (deja franja a los lados)
+                                  </option>
+                                </select>
+                              </div>
+                              <div className="property-field">
+                                <label>{PROP_LABELS.imagePosition}</label>
+                                <select
+                                  className="studio-select"
+                                  value={String(
+                                    selectedBlock.props.imagePosition ??
+                                      "center",
+                                  )}
+                                  onChange={(event) =>
+                                    updateBlockProp(
+                                      "imagePosition",
+                                      event.target.value,
+                                    )
+                                  }
+                                >
+                                  <option value="center">Centro</option>
+                                  <option value="left">Izquierda</option>
+                                  <option value="right">Derecha</option>
+                                  <option value="top">Arriba</option>
+                                  <option value="bottom">Abajo</option>
+                                </select>
+                              </div>
+                            </>
+                          )}
                         </div>
                       )}
                       <div className="inspector-section fields-section block-layout-section">
@@ -4548,45 +4601,12 @@ export default function StudioClient({ displayName }: StudioProps) {
                                   />
                                 </label>
                               );
-                            if (key === "imageFit")
-                              return (
-                                <div className="property-field" key={key}>
-                                  <label>{PROP_LABELS[key]}</label>
-                                  <select
-                                    className="studio-select"
-                                    value={String(value)}
-                                    onChange={(event) =>
-                                      updateBlockProp(key, event.target.value)
-                                    }
-                                  >
-                                    <option value="cover">
-                                      Rellenar (recorta lo que sobra)
-                                    </option>
-                                    <option value="contain">
-                                      Entera (deja franja a los lados)
-                                    </option>
-                                  </select>
-                                </div>
-                              );
-                            if (key === "imagePosition")
-                              return (
-                                <div className="property-field" key={key}>
-                                  <label>{PROP_LABELS[key]}</label>
-                                  <select
-                                    className="studio-select"
-                                    value={String(value)}
-                                    onChange={(event) =>
-                                      updateBlockProp(key, event.target.value)
-                                    }
-                                  >
-                                    <option value="left">Izquierda</option>
-                                    <option value="center">Centro</option>
-                                    <option value="right">Derecha</option>
-                                    <option value="top">Arriba</option>
-                                    <option value="bottom">Abajo</option>
-                                  </select>
-                                </div>
-                              );
+                            // imageFit e imagePosition se pintan arriba, en
+                            // la sección IMAGEN. Aquí caerían detrás de todo
+                            // el bloque de posición y tamaño, a un scroll que
+                            // nadie hace.
+                            if (key === "imageFit" || key === "imagePosition")
+                              return null;
                             if (
                               [
                                 "buttonStyle",
