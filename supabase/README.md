@@ -510,30 +510,38 @@ borra esa decisión y vuelve a preguntar.
 > estado "pendiente de aprobación" como "needs authentication", lo que hace
 > perder un buen rato buscando un problema de credenciales que no existe.
 
-### Está en modo lectura
+### Está en modo escritura, a propósito y con fecha de caducidad
 
-La URL lleva `read_only=true` desde el 5 de septiembre de 2026, que es cuando
-entraron los primeros clientes reales. Antes no lo llevaba, y era lo
-razonable: con el esquema sin ejecutar y ningún lead dentro, poder aplicar
-migraciones desde aquí ahorraba mucho. Con datos de otros dentro deja de
-compensar.
+La URL no lleva `read_only=true`. Estuvo puesto unas horas el 5 de septiembre
+de 2026 y se quitó el mismo día, para poder aplicar las migraciones del
+traslado del Campaign Studio (025 en adelante) sin ir al SQL Editor en cada
+iteración. Es una decisión de velocidad tomada a sabiendas, no un descuido.
 
-Supabase recomienda no conectar este MCP a producción con escritura. El
-riesgo que citan es inyección de prompt: contenido que el modelo lee — el
-nombre de un negocio traído de Places, por ejemplo — y que puede llevar
-instrucciones dentro. Con permiso de escritura, esas instrucciones alcanzan a
-la base.
+**Lo que se acepta al dejarlo así.** Supabase recomienda no conectar este MCP
+a producción con escritura. El riesgo que citan es inyección de prompt:
+contenido que el modelo lee y que puede llevar instrucciones dentro. Este
+proyecto es un caso de libro — mete en prompts nombres de negocios traídos de
+Google Places, texto extraído de webs ajenas y mensajes de error. Con permiso
+de escritura, unas instrucciones metidas ahí alcanzan una base que ya tiene
+datos de seis clientes.
 
-**Consecuencia práctica: las migraciones ya no se aplican por MCP.** Van al
-SQL Editor, pegando el archivo de `supabase/` — que es como estaba
-documentado desde el principio. El repo era ya la fuente de verdad del
-esquema; ahora además es el único camino, que es una forma cómoda de que no
-puedan divergir.
+**Cuándo volver a lectura:** al terminar el traslado del studio. Es quitar el
+parámetro:
 
-Si algún día hiciera falta volver a escritura, se quita el parámetro. Pero
-entonces vuelve el riesgo de arriba, y ya hay datos que no son tuyos.
+```
+https://mcp.supabase.com/mcp?project_ref=tpfjeumrvdbciktmaaii&read_only=true
+```
 
-La regla que queda:
+El cambio no surte efecto hasta reiniciar Claude Code en la carpeta.
+
+Las dos reglas mientras esté en escritura:
+
+- Toda migración sale de un archivo de `supabase/` numerado, nunca de SQL
+  escrito sobre la marcha. Es lo que impide que la base y el repo diverjan.
+- Nada de escrituras sobre datos de clientes. Esquema sí; sus leads, sus
+  campañas y sus mensajes, no.
+
+Y la de siempre:
 
 - El repo es la fuente de verdad del esquema. Todo lo que se ejecute contra la
   base sale de un archivo de `supabase/`, nunca de SQL improvisado en el
