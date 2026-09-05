@@ -39,6 +39,7 @@ endpoints: el esquema es la fuente de verdad.
 - Fases y criterios de validación: @docs/roadmap.md
 - Riesgo legal y decisiones de producto derivadas: @docs/compliance.md
 - Decisiones técnicas: @docs/decisiones/
+- Campaign Studio, por qué está sin conectar: @docs/decisiones/0003-campaign-studio-aparcado.md
 - Esquema y RLS: @supabase/schema.sql
 - Descubrimiento troceado y cuota de la demo: @supabase/002_descubrimiento_y_demo.sql
 - Puesta en marcha del backend: @supabase/README.md
