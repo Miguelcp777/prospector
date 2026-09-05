@@ -29,15 +29,52 @@ import { estadoDe, PASOS, ProveedorRecorrido, useRecorrido } from "./lib/recorri
 
 type Vista = "campanas" | "leads" | "mensajes" | "historial" | "supresiones" | "incidencias" | "cuenta" | "panel" | "studio";
 
-const SECCIONES: { id: Vista; nombre: string; icono: string }[] = [
-  { id: "campanas",    nombre: "Campañas",    icono: "◈" },
-  { id: "leads",       nombre: "Leads",       icono: "◉" },
-  { id: "mensajes",    nombre: "Mensajes",    icono: "✉" },
-  { id: "studio",      nombre: "Plantillas",  icono: "▧" },
-  { id: "historial",   nombre: "Historial",   icono: "◔" },
-  { id: "supresiones", nombre: "Supresiones", icono: "⊘" },
-  { id: "incidencias", nombre: "Incidencias", icono: "⚠" },
-  { id: "cuenta",      nombre: "Cuenta",      icono: "◐" },
+type Seccion = { id: Vista; nombre: string; icono: string; nota: string };
+type Grupo = { id: string; nombre: string; icono: string; secciones: Seccion[] };
+
+/**
+ * El lateral, repartido en los dos oficios que hay aquí.
+ *
+ * Nueve entradas planas no dicen en qué orden se hacen las cosas ni qué va
+ * con qué. Son dos trabajos distintos: encontrar a quién escribir, y
+ * escribirle. Cada grupo lleva sus pantallas en el orden en que se recorren.
+ *
+ * Lo de abajo no es ninguno de los dos —la cuenta, los fallos, el panel— y
+ * por eso queda suelto: meterlo a la fuerza en un grupo lo escondería.
+ */
+const GRUPOS: Grupo[] = [
+  {
+    id: "prospeccion",
+    nombre: "Prospección",
+    icono: "◈",
+    secciones: [
+      { id: "campanas", nombre: "Campañas", icono: "◈",
+        nota: "Describir el negocio, inferir segmentos y buscar" },
+      { id: "leads", nombre: "Leads", icono: "◉",
+        nota: "Lo que ha encontrado la búsqueda" },
+    ],
+  },
+  {
+    id: "email",
+    nombre: "Email marketing",
+    icono: "✉",
+    secciones: [
+      { id: "studio", nombre: "Plantillas", icono: "▧",
+        nota: "Diseñar el correo: bloques, imágenes y marca" },
+      { id: "mensajes", nombre: "Mensajes", icono: "✎",
+        nota: "Los borradores, para revisarlos antes de enviar" },
+      { id: "historial", nombre: "Historial", icono: "◔",
+        nota: "A quién se escribió y cuándo" },
+      { id: "supresiones", nombre: "Supresiones", icono: "⊘",
+        nota: "Bajas y exclusiones, obligatorias en todo envío" },
+    ],
+  },
+];
+
+/** Ni prospección ni envío: el estado del servicio y quién eres. */
+const SUELTAS: Seccion[] = [
+  { id: "incidencias", nombre: "Incidencias", icono: "⚠", nota: "Lo que ha fallado" },
+  { id: "cuenta", nombre: "Cuenta", icono: "◐", nota: "Tu negocio" },
 ];
 
 export default function App() {
@@ -95,18 +132,31 @@ function Aplicacion() {
           <span>Prospector</span>
         </div>
 
-        {[...SECCIONES, ...(esAdmin
-          ? [{ id: "panel" as Vista, nombre: "Panel", icono: "▤" }]
-          : [])].map((s) => (
-          <button
-            key={s.id}
-            className={vista === s.id ? "nav-item activa" : "nav-item"}
-            onClick={() => setVista(s.id)}
-          >
-            <span aria-hidden="true">{s.icono}</span>
-            {s.nombre}
-          </button>
+        {GRUPOS.map((g) => (
+          <GrupoLateral
+            key={g.id}
+            grupo={g}
+            vista={vista}
+            alElegir={setVista}
+          />
         ))}
+
+        <div className="nav-sueltas">
+          {[...SUELTAS, ...(esAdmin
+            ? [{ id: "panel" as Vista, nombre: "Panel", icono: "▤",
+                 nota: "Uso y gasto de todo el servicio" }]
+            : [])].map((s) => (
+            <button
+              key={s.id}
+              className={vista === s.id ? "nav-item activa" : "nav-item"}
+              onClick={() => setVista(s.id)}
+              title={s.nota}
+            >
+              <span aria-hidden="true">{s.icono}</span>
+              {s.nombre}
+            </button>
+          ))}
+        </div>
 
         <RecorridoLateral />
 
@@ -157,6 +207,76 @@ function Aplicacion() {
  * campaña, y un atajo que salte al paso 4 sin haber pasado por el 3 rompe
  * justo lo que el recorrido intenta ordenar.
  */
+/**
+ * Un grupo del lateral, plegable.
+ *
+ * Se pliega porque con nueve entradas abiertas el lateral vuelve a ser una
+ * lista larga, que es justo lo que se venía a arreglar. Y se recuerda entre
+ * sesiones: quien solo hace prospección no tiene por qué volver a cerrar
+ * email marketing cada vez que entra.
+ *
+ * Con una excepción: el grupo que contiene la pantalla abierta se abre
+ * siempre. Un menú que esconde dónde estás desorienta más que uno largo.
+ */
+function GrupoLateral({
+  grupo, vista, alElegir,
+}: {
+  grupo: Grupo;
+  vista: Vista;
+  alElegir: (v: Vista) => void;
+}) {
+  const contieneLaVista = grupo.secciones.some((s) => s.id === vista);
+  const clave = `prospector.grupo.${grupo.id}`;
+
+  const [abierto, setAbierto] = useState(() => {
+    try {
+      const guardado = localStorage.getItem(clave);
+      return guardado === null ? true : guardado === "1";
+    } catch {
+      return true;
+    }
+  });
+
+  function alternar() {
+    const siguiente = !abierto;
+    setAbierto(siguiente);
+    try { localStorage.setItem(clave, siguiente ? "1" : "0"); } catch { /* sin almacén */ }
+  }
+
+  const desplegado = abierto || contieneLaVista;
+
+  return (
+    <div className={`nav-grupo${desplegado ? " abierto" : ""}`}>
+      <button className="nav-grupo-cabeza" onClick={alternar}
+              aria-expanded={desplegado}>
+        <span aria-hidden="true" className="nav-grupo-icono">{grupo.icono}</span>
+        <span className="nav-grupo-nombre">{grupo.nombre}</span>
+        {/* Punto en vez de flecha cuando la pantalla abierta está dentro y
+            el grupo se ha forzado: la flecha diría que se puede cerrar. */}
+        <span aria-hidden="true" className="nav-grupo-flecha">
+          {contieneLaVista && !abierto ? "•" : desplegado ? "⌄" : "›"}
+        </span>
+      </button>
+
+      {desplegado && (
+        <div className="nav-grupo-hijos">
+          {grupo.secciones.map((s) => (
+            <button
+              key={s.id}
+              className={vista === s.id ? "nav-item activa" : "nav-item"}
+              onClick={() => alElegir(s.id)}
+              title={s.nota}
+            >
+              <span aria-hidden="true">{s.icono}</span>
+              {s.nombre}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function RecorridoLateral() {
   const { recorrido } = useRecorrido();
   if (!recorrido) return null;

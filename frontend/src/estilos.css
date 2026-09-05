@@ -614,3 +614,50 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e1) 0; width: 
   background: var(--degradado); min-height: 0;
 }
 .barras-pie { display: flex; justify-content: space-between; margin-top: 6px; }
+
+/* ---------------- lateral en grupos ---------------- */
+
+.nav-grupo { display: flex; flex-direction: column; }
+.nav-grupo + .nav-grupo { margin-top: var(--e2); }
+
+.nav-grupo-cabeza {
+  display: flex; align-items: center; gap: var(--e3);
+  width: 100%; padding: 9px var(--e3);
+  border: 0; border-radius: var(--radio-s);
+  background: none; color: var(--texto-3);
+  font: inherit; font-size: 0.6875rem; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  cursor: pointer; justify-content: flex-start;
+  transition: color .15s;
+}
+.nav-grupo-cabeza:hover { color: var(--texto-2); }
+/* Misma columna que los iconos de las entradas: el lateral entero se lee
+   como una sola rejilla. */
+.nav-grupo-icono { width: 18px; flex-shrink: 0; text-align: center; }
+.nav-grupo-nombre { flex: 1; text-align: left; }
+.nav-grupo-flecha { color: var(--texto-3); font-size: 0.75rem; }
+.nav-grupo.abierto .nav-grupo-cabeza { color: var(--texto-2); }
+
+/* Los hijos se sangran y llevan una guía: sin ella, plegar y desplegar no
+   se entiende como jerarquía sino como que aparecen y desaparecen cosas. */
+.nav-grupo-hijos {
+  display: flex; flex-direction: column; gap: 2px;
+  margin-left: calc(var(--e3) + 9px);
+  padding-left: 9px;
+  border-left: 1px solid var(--borde);
+}
+.nav-grupo-hijos .nav-item.activa { box-shadow: inset 2px 0 0 var(--cian); }
+
+.nav-sueltas {
+  display: flex; flex-direction: column; gap: 2px;
+  margin-top: var(--e4); padding-top: var(--e3);
+  border-top: 1px solid var(--borde);
+}
+
+@media (max-width: 860px) {
+  /* En la barra horizontal no hay sitio para jerarquía: se aplana. */
+  .nav-grupo, .nav-grupo-hijos, .nav-sueltas {
+    flex-direction: row; margin: 0; padding: 0; border: 0;
+  }
+  .nav-grupo-cabeza { display: none; }
+}
