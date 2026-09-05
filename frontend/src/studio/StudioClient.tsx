@@ -109,6 +109,7 @@ import {
   MAX_STORED_IMAGE_BYTES,
   UPLOAD_CHUNK_BYTES,
 } from "@studio/lib/upload-policy";
+import { normalizarRutaRecurso } from "@studio/lib/rutas-recurso";
 
 type StudioProps = { displayName: string };
 
@@ -600,6 +601,12 @@ const FONT_CATALOG = FONT_CATALOG_100;
 
 function cloneDocument(document: TemplateDocument) {
   const next = structuredClone(document);
+  // Las plantillas guardadas antes del traslado llevan dentro la ruta vieja
+  // del catálogo. Se corrige al abrirlas: el panel de diseño pinta esta URL
+  // en un <img> directo, sin pasar por el renderizador.
+  next.settings.backgroundImageUrl = normalizarRutaRecurso(
+    next.settings.backgroundImageUrl,
+  );
   for (const variable of DEFAULT_VARIABLES)
     if (!next.variables.some((item) => item.key === variable.key))
       next.variables.push(structuredClone(variable));
@@ -619,6 +626,9 @@ function cloneDocument(document: TemplateDocument) {
     privacyConfigured: true,
   };
   next.blocks = next.blocks.map((block) => {
+    for (const clave of ["imageUrl", "logoUrl", "backgroundImageUrl"])
+      if (block.props[clave] !== undefined)
+        block.props[clave] = normalizarRutaRecurso(block.props[clave]);
     const legacyAlign = String(block.props.align || "left");
     const layout = {
       blockWidth: 100,

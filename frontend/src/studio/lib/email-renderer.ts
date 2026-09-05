@@ -5,6 +5,7 @@ import {
 } from "./template-types";
 import { matchesCondition } from "./campaign-enhancements";
 import { mobileDocument } from "./studio-finalization";
+import { normalizarRutaRecurso } from "./rutas-recurso";
 
 export type MergeData = Record<string, string | number | undefined>;
 
@@ -73,9 +74,10 @@ function colorWithAlpha(value: unknown, alpha: number) {
 }
 
 function safeUrl(value: unknown, data: MergeData) {
-  const interpolated = String(value ?? "").replace(
-    /{{\s*([\w.]+)\s*}}/g,
-    (_m, key) => String(data[key] ?? DEFAULT_DATA[key] ?? "#"),
+  const interpolated = normalizarRutaRecurso(
+    String(value ?? "").replace(/{{\s*([\w.]+)\s*}}/g, (_m, key) =>
+      String(data[key] ?? DEFAULT_DATA[key] ?? "#"),
+    ),
   );
   if (interpolated.startsWith("/") || interpolated.startsWith("#"))
     return escapeHtml(interpolated);
