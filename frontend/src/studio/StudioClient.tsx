@@ -2913,13 +2913,7 @@ export default function StudioClient({ displayName }: StudioProps) {
         <main className="studio-main">
           <header className="studio-topbar">
             <div className="title-cluster">
-              <div className="breadcrumb">
-                <span>Prospector</span>
-                <ChevronRight />
-                <span>Plantillas</span>
-                <ChevronRight />
-                <strong>{name}</strong>
-              </div>
+              {/* La miga de pan decía lo que el menú de Prospector ya dice. */}
               <div className="name-row">
                 <input
                   aria-label="Nombre de plantilla"

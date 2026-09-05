@@ -127,7 +127,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .signal-orbit { position: relative; width: 23px; height: 23px; border: 1px solid color-mix(in srgb, var(--cian) 22%, transparent); border-radius: 50%; }.signal-orbit::before { content: ""; position: absolute; inset: 5px; border: 1px solid color-mix(in srgb, var(--cian) 35%, transparent); border-radius: 50%; }.signal-orbit i { position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; transform: translate(-50%,-50%); border-radius: 50%; background: var(--cyan-bright); box-shadow: 0 0 9px var(--cyan); }
 .user-chip { display: grid; grid-template-columns: 30px 1fr 14px; align-items: center; gap: 9px; margin-top: 10px; padding: 11px 8px 0; border-top: 1px solid var(--line); }.avatar { display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid color-mix(in srgb, var(--violeta) 35%, transparent); border-radius: 50%; background: linear-gradient(145deg, var(--superficie-2), var(--superficie-2)); color: var(--texto); font-size: 11px; }.user-chip > svg { width: 13px; color: var(--texto-3); }
 
-.studio-main { display: grid; grid-template-rows: 68px 43px minmax(0,1fr) auto; min-width: 0; min-height: 0; background: var(--fondo); }
+.studio-main { display: grid; grid-template-rows: 68px 43px minmax(0,1fr); min-width: 0; min-height: 0; background: var(--fondo); }
 .studio-topbar { display: flex; align-items: center; padding: 0 19px 0 23px; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--fondo) 97%, transparent); }
 .mobile-menu { display: none; }.title-cluster { min-width: 0; }.breadcrumb { display: flex; align-items: center; gap: 4px; height: 17px; color: var(--texto-3); font-size: 9px; }.breadcrumb svg { width: 9px; }.breadcrumb strong { color: var(--texto-2); font-weight: 500; }
 .name-row { display: flex; align-items: center; gap: 10px; }.name-row input { width: min(390px, 30vw); padding: 2px 0; border: 0; background: transparent; color: var(--texto); font-size: 17px; font-weight: 600; letter-spacing: -.02em; }.name-row input:focus { outline: 0; }.save-state { padding: 3px 7px; border: 1px solid color-mix(in srgb, var(--cian) 20%, transparent); border-radius: 20px; color: var(--cian); font-size: 8px; letter-spacing: .04em; }.save-state.dirty { border-color: color-mix(in srgb, var(--aviso) 20%, transparent); color: var(--aviso); }
@@ -189,7 +189,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .sidebar-signal strong, .user-chip strong { font-size: 11px; }
 .sidebar-signal small, .user-chip small { font-size: 9px; }
 
-.studio-main { grid-template-rows: 74px 78px 50px minmax(0, 1fr) auto; }
+.studio-main { grid-template-rows: 74px 78px 50px minmax(0, 1fr); }
 .studio-topbar { padding: 0 24px; }
 .breadcrumb { font-size: 10px; }
 .name-row input { width: min(470px, 36vw); font-size: 20px; }
@@ -612,9 +612,19 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 /* Deshacer y rehacer, cuadrados y sin texto: son gestos, no decisiones. */
 .guia-acciones > button:not(.guia-siguiente) { width: 36px; padding: 0; justify-content: center; }
 
-/* El lienzo tiene que poder encoger, o la rejilla lo desborda. */
-.studio-main { min-height: 0; }
-.guia-barra { flex-shrink: 0; }
+/* En guiado, `studio-main` pasa de rejilla a columna flexible.
+   La rejilla tenía filas contadas a mano —74px, 78px, 50px, el resto— y al
+   añadir la barra de pasos el reparto se corrió una posición: la zona de
+   trabajo se quedó con los 50px de una fila que no era suya y la barra se
+   llevó todo el alto. Con flex no hay que contar nada: cada hijo ocupa lo
+   suyo y el espacio de trabajo se queda con lo que sobre. */
+.mode-guided .studio-main {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.mode-guided .studio-main > .workspace-grid { flex: 1; min-height: 0; }
+.mode-guided .guia-barra { flex-shrink: 0; }
 
 /* El carril de pasos ------------------------------------------------ */
 
