@@ -490,6 +490,7 @@ const PROP_LABELS: Record<string, string> = {
   minHeight: "Altura del hero",
   verticalAlign: "Posición vertical",
   imagePosition: "Encuadre de imagen",
+  imageFit: "Ajuste de la imagen",
   paddingX: "Margen lateral",
   widthPercent: "Tamaño de imagen",
   blockWidth: "Ancho del bloque",
@@ -663,6 +664,7 @@ function cloneDocument(document: TemplateDocument) {
           align: "left",
           verticalAlign: "center",
           imagePosition: "center",
+          imageFit: "cover",
           paddingX: 38,
           ...block.props,
           blockRadius:
@@ -4545,6 +4547,26 @@ export default function StudioClient({ displayName }: StudioProps) {
                                     }
                                   />
                                 </label>
+                              );
+                            if (key === "imageFit")
+                              return (
+                                <div className="property-field" key={key}>
+                                  <label>{PROP_LABELS[key]}</label>
+                                  <select
+                                    className="studio-select"
+                                    value={String(value)}
+                                    onChange={(event) =>
+                                      updateBlockProp(key, event.target.value)
+                                    }
+                                  >
+                                    <option value="cover">
+                                      Rellenar (recorta lo que sobra)
+                                    </option>
+                                    <option value="contain">
+                                      Entera (deja franja a los lados)
+                                    </option>
+                                  </select>
+                                </div>
                               );
                             if (key === "imagePosition")
                               return (

@@ -235,6 +235,14 @@ function renderBlock(
       ].includes(String(props.imagePosition))
         ? String(props.imagePosition)
         : "center";
+      // Cómo se ajusta la imagen a la caja del hero. Hasta ahora estaba
+      // clavado a "cover": una foto de 3000 px en una caja de 680×360 se
+      // ampliaba hasta llenarla y se veía un recorte del centro. "contain"
+      // la enseña entera y deja el fondo del bloque a los lados.
+      //
+      // El fondo del documento ya tenía este control desde siempre; el hero
+      // era el único sitio donde no se podía elegir.
+      const imageFit = props.imageFit === "contain" ? "contain" : "cover";
       const family = escapeHtml(props.fontFamily || doc.settings.fontFamily);
       const transform = [
         "none",
@@ -248,6 +256,15 @@ function renderBlock(
       const heroBackground = hasImage
         ? `linear-gradient(90deg,rgba(4,12,22,.96),rgba(4,12,22,.32)),url('${image}')`
         : `radial-gradient(circle at 80% 18%,rgba(255,255,255,.24),transparent 25%),${fallback}`;
+      // Son dos capas: el degradado que oscurece para que se lea el texto, y
+      // la imagen. El degradado se estira siempre a la caja entera —también
+      // sobre la franja que "contain" deja libre, para que no haya un salto
+      // de tono— y solo la imagen usa el ajuste elegido.
+      //
+      // `no-repeat` no es un detalle: sin él, "contain" no deja franja, la
+      // rellena repitiendo la foto en mosaico.
+      const heroSize = hasImage ? `100% 100%,${imageFit}` : "cover";
+      const heroPosition = hasImage ? `center,${imagePosition}` : imagePosition;
       const blockAlign = ["left", "center", "right"].includes(
         String(props.blockAlign),
       )
@@ -303,7 +320,7 @@ function renderBlock(
           ? "transparent"
           : safeColor(props.backgroundColor, "#071019");
       return cell(
-        `<table role="presentation" width="${width}%" align="${blockAlign}" cellspacing="0" cellpadding="0" style="width:${width}%;max-width:100%;margin:${margin};border-collapse:separate;background:${surfaceColor};border:${borderWidth}px solid ${safeColor(props.borderColor, "#dbe3ea")};border-radius:${blockRadius}px;box-shadow:${shadow};transform:rotate(${rotation}deg) skewX(${skew}deg);overflow:hidden;"><tr><td valign="${vertical}" style="height:${height}px;padding:0;${overlay ? `background-image:${heroBackground};background-position:${imagePosition};background-size:cover;` : ""}">${overlay ? "" : hasImage ? `<img src="${image}" width="560" alt="${interpolate(props.imageAlt, data)}" style="display:block;width:100%;height:auto;border:0;">` : `<div style="height:${Math.round(height * 0.72)}px;background:${fallback};"></div>`}<div class="hero-copy" style="padding:34px ${paddingX}px;text-align:${align};font-family:${family};text-transform:${transform};"><div style="font-size:11px;font-weight:700;letter-spacing:.17em;color:#ffffff;margin-bottom:14px;">${interpolate(props.eyebrow, data)}</div><h1 style="margin:0 0 16px;font-size:${Math.min(72, Math.max(18, Number(props.titleFontSize) || 34))}px;line-height:${Math.min(2, Math.max(0.8, Number(props.lineHeight) || 1.08))};font-weight:${Number(props.fontWeight) || 700};letter-spacing:${Number(props.letterSpacing) || 0}px;color:${safeColor(props.textColor, "#ffffff")};">${interpolate(props.title, data)}</h1>${String(props.body || "").trim() ? `<p style="margin:${align === "center" ? "0 auto" : align === "right" ? "0 0 0 auto" : "0"};max-width:460px;font-size:${Math.min(36, Math.max(10, Number(props.bodyFontSize) || 17))}px;line-height:1.6;color:${safeColor(props.textColor, "#d8e3ec")};">${interpolate(props.body, data)}</p>` : ""}</div></td></tr></table>`,
+        `<table role="presentation" width="${width}%" align="${blockAlign}" cellspacing="0" cellpadding="0" style="width:${width}%;max-width:100%;margin:${margin};border-collapse:separate;background:${surfaceColor};border:${borderWidth}px solid ${safeColor(props.borderColor, "#dbe3ea")};border-radius:${blockRadius}px;box-shadow:${shadow};transform:rotate(${rotation}deg) skewX(${skew}deg);overflow:hidden;"><tr><td valign="${vertical}" style="height:${height}px;padding:0;${overlay ? `background-image:${heroBackground};background-position:${heroPosition};background-size:${heroSize};background-repeat:no-repeat;` : ""}">${overlay ? "" : hasImage ? `<img src="${image}" width="560" alt="${interpolate(props.imageAlt, data)}" style="display:block;width:100%;height:auto;border:0;">` : `<div style="height:${Math.round(height * 0.72)}px;background:${fallback};"></div>`}<div class="hero-copy" style="padding:34px ${paddingX}px;text-align:${align};font-family:${family};text-transform:${transform};"><div style="font-size:11px;font-weight:700;letter-spacing:.17em;color:#ffffff;margin-bottom:14px;">${interpolate(props.eyebrow, data)}</div><h1 style="margin:0 0 16px;font-size:${Math.min(72, Math.max(18, Number(props.titleFontSize) || 34))}px;line-height:${Math.min(2, Math.max(0.8, Number(props.lineHeight) || 1.08))};font-weight:${Number(props.fontWeight) || 700};letter-spacing:${Number(props.letterSpacing) || 0}px;color:${safeColor(props.textColor, "#ffffff")};">${interpolate(props.title, data)}</h1>${String(props.body || "").trim() ? `<p style="margin:${align === "center" ? "0 auto" : align === "right" ? "0 0 0 auto" : "0"};max-width:460px;font-size:${Math.min(36, Math.max(10, Number(props.bodyFontSize) || 17))}px;line-height:1.6;color:${safeColor(props.textColor, "#d8e3ec")};">${interpolate(props.body, data)}</p>` : ""}</div></td></tr></table>`,
         `${top}px ${edge}px ${bottom}px`,
         block.id,
       );
