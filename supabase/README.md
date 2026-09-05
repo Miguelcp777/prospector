@@ -510,22 +510,30 @@ borra esa decisión y vuelve a preguntar.
 > estado "pendiente de aprobación" como "needs authentication", lo que hace
 > perder un buen rato buscando un problema de credenciales que no existe.
 
-### Está en modo escritura
+### Está en modo lectura
 
-La URL no lleva `read_only=true`, así que Claude puede aplicar migraciones y
-modificar datos. Es lo útil ahora, con el esquema sin ejecutar y sin un solo
-lead dentro. Deja de serlo en cuanto haya datos de clientes:
+La URL lleva `read_only=true` desde el 5 de septiembre de 2026, que es cuando
+entraron los primeros clientes reales. Antes no lo llevaba, y era lo
+razonable: con el esquema sin ejecutar y ningún lead dentro, poder aplicar
+migraciones desde aquí ahorraba mucho. Con datos de otros dentro deja de
+compensar.
 
-```
-https://mcp.supabase.com/mcp?project_ref=tpfjeumrvdbciktmaaii&read_only=true
-```
+Supabase recomienda no conectar este MCP a producción con escritura. El
+riesgo que citan es inyección de prompt: contenido que el modelo lee — el
+nombre de un negocio traído de Places, por ejemplo — y que puede llevar
+instrucciones dentro. Con permiso de escritura, esas instrucciones alcanzan a
+la base.
 
-Supabase recomienda no conectar este MCP a producción. El riesgo que citan es
-inyección de prompt: contenido que el modelo lee — el nombre de un negocio
-traído de Places, por ejemplo — y que puede contener instrucciones. Con
-permiso de escritura, esas instrucciones alcanzan a la base.
+**Consecuencia práctica: las migraciones ya no se aplican por MCP.** Van al
+SQL Editor, pegando el archivo de `supabase/` — que es como estaba
+documentado desde el principio. El repo era ya la fuente de verdad del
+esquema; ahora además es el único camino, que es una forma cómoda de que no
+puedan divergir.
 
-Dos reglas mientras esté en escritura:
+Si algún día hiciera falta volver a escritura, se quita el parámetro. Pero
+entonces vuelve el riesgo de arriba, y ya hay datos que no son tuyos.
+
+Dos reglas que siguen valiendo:
 
 - El repo es la fuente de verdad del esquema. Si aplicas una migración por
   MCP, que salga de un archivo de `supabase/`, no de SQL improvisado. Si no,
