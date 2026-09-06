@@ -579,9 +579,11 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 
 .guia-pasos {
   display: flex; flex-direction: column; gap: 3px;
-  /* Arriba va más que a los lados: el primer paso quedaba pegado a la barra
-     de título y el carril parecía cortado. */
-  padding: 30px 12px 18px;
+  /* Las columnas de al lado abren con una franja de pestañas de 45 px y una
+     línea debajo; su contenido empieza ahí. El carril no tiene esa franja,
+     así que sin este hueco su primer paso arranca mucho más arriba que todo
+     lo demás y se pega a la barra de título. 45 de la franja + 11 de aire. */
+  padding: 56px 12px 18px;
   border-right: 1px solid var(--line);
   background: var(--ink-1);
 }
