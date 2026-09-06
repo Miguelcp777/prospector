@@ -49,7 +49,8 @@ export function Mensajes({ alIrA }: { alIrA?: (vista: "studio") => void }) {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [plantillas, setPlantillas] = useState<{ id: string; nombre: string }[]>([]);
+  type PlantillaFila = { id: string; nombre: string; respetar_diseno: boolean };
+  const [plantillas, setPlantillas] = useState<PlantillaFila[]>([]);
   const [plantillaElegida, setPlantillaElegida] = useState("");
   const [falloPlantillas, setFalloPlantillas] = useState<string | null>(null);
   const [vistiendo, setVistiendo] = useState(false);
@@ -63,12 +64,12 @@ export function Mensajes({ alIrA }: { alIrA?: (vista: "studio") => void }) {
     // El fallo se guarda aparte: sin esto, no poder leer las plantillas se
     // ve exactamente igual que no tener ninguna, y son dos problemas
     // distintos con dos arreglos distintos.
-    supabase.from("plantillas").select("id, nombre")
+    supabase.from("plantillas").select("id, nombre, respetar_diseno")
       .neq("estado", "archivada")
       .order("actualizado_en", { ascending: false })
       .then(({ data, error: fallo }) => {
         if (fallo) setFalloPlantillas(fallo.message);
-        setPlantillas(data ?? []);
+        setPlantillas((data ?? []) as PlantillaFila[]);
       });
   }, []);
 
@@ -118,6 +119,25 @@ export function Mensajes({ alIrA }: { alIrA?: (vista: "studio") => void }) {
    * Solo con una campaña elegida: aplicar un diseño a "todas" mezclaría
    * clientes distintos y estilos que no tienen nada que ver entre sí.
    */
+  /**
+   * Declara que el copy de una plantilla es propio y no relleno de catálogo.
+   *
+   * Va en la plantilla y no en la campaña: lo que se afirma es sobre el
+   * diseño —"esto lo he leído y es mío"—, y aplicarlo a diez campañas no lo
+   * vuelve menos cierto. Ver migración 037.
+   */
+  async function cambiarRespetar(valor: boolean) {
+    if (!plantillaElegida) return;
+    setError(null);
+    const { error: fallo } = await supabase
+      .from("plantillas")
+      .update({ respetar_diseno: valor })
+      .eq("id", plantillaElegida);
+    if (fallo) { setError(fallo.message); return; }
+    setPlantillas((ps) =>
+      ps.map((p) => (p.id === plantillaElegida ? { ...p, respetar_diseno: valor } : p)));
+  }
+
   async function vestir() {
     if (!elegida || !plantillaElegida) return;
     setError(null);
@@ -240,6 +260,31 @@ export function Mensajes({ alIrA }: { alIrA?: (vista: "studio") => void }) {
             </button>
           </div>
 
+          {/* Por defecto se asume catálogo, y el catálogo trae copy de
+              muestra que no va dirigido a nadie. Encender esto es afirmar
+              lo contrario, así que el aviso dice qué se está afirmando. */}
+          {plantillaElegida && (
+            <label className="toggle">
+              <input
+                type="checkbox"
+                checked={
+                  plantillas.find((p) => p.id === plantillaElegida)
+                    ?.respetar_diseno ?? false
+                }
+                onChange={(e) => void cambiarRespetar(e.target.checked)}
+              />
+              <span>
+                <strong>Respetar el diseño tal cual</strong>
+                <small>
+                  Conserva todos los bloques y el titular como los guardaste.
+                  Enciéndelo solo si has revisado el texto: las plantillas
+                  del catálogo traen copy de muestra —«Hola María», el pie de
+                  otra empresa— y con esto activado sale tal cual al lead.
+                </small>
+              </span>
+            </label>
+          )}
+
           {resultado && (
             <>
               <p className="caja-aviso">
@@ -247,6 +292,15 @@ export function Mensajes({ alIrA }: { alIrA?: (vista: "studio") => void }) {
                 diseño
                 {resultado.saltados > 0 && ` · ${resultado.saltados} sin tocar`}
               </p>
+              {resultado.bloquesQuitados.length > 0 && (
+                <p className="menudo">
+                  Se han quitado del diseño estos bloques por traer texto que
+                  no es de este lead: <strong>
+                    {resultado.bloquesQuitados.join(", ")}
+                  </strong>. Si ese texto lo escribiste tú, marca «Respetar
+                  el diseño tal cual» y vuelve a aplicar.
+                </p>
+              )}
               {resultado.motivos.length > 0 && (
                 <ul className="pasos-arreglo">
                   {resultado.motivos.slice(0, 5).map((m, i) => <li key={i}>{m}</li>)}

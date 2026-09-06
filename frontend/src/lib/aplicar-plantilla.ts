@@ -22,6 +22,14 @@ export type Resultado = {
   vestidos: number;
   saltados: number;
   motivos: string[];
+  /**
+   * Tipos de bloque que el filtro ha quitado del diseño.
+   *
+   * Existe porque el fallo original no era borrarlos —eso era correcto—
+   * sino borrarlos en silencio: quien diseña una plantilla de nueve
+   * bloques y recibe un correo de cinco no tiene forma de saber por qué.
+   */
+  bloquesQuitados: string[];
 };
 
 type MensajeFila = {
@@ -44,7 +52,7 @@ export async function aplicarPlantilla(
 ): Promise<Resultado> {
   const { data: plantilla, error: falloP } = await supabase
     .from("plantillas")
-    .select("id, documento, asunto, preencabezado, version")
+    .select("id, documento, asunto, preencabezado, version, respetar_diseno")
     .eq("id", plantillaId)
     .single();
   if (falloP || !plantilla) throw new Error(falloP?.message ?? "Plantilla no encontrada");
@@ -79,14 +87,37 @@ export async function aplicarPlantilla(
     dominio?: string | null;
   };
 
+  // El botón del diseño apunta a {{campaign.cta_url}}, y hasta ahora nadie
+  // le daba valor: por eso se borraba siempre. La landing de la campaña sí
+  // es un sitio al que llevar.
+  //
+  // Solo si está PUBLICADA. `landing_publica` no sirve las que no lo están
+  // (migración 015), así que enlazar un borrador es volver exactamente al
+  // botón que no lleva a ningún sitio, pero disimulado.
+  const { data: landing } = await supabase
+    .from("landings")
+    .select("slug, publicada")
+    .eq("campaign_id", campanaId)
+    .maybeSingle();
+  const urlLanding =
+    landing?.publicada && landing.slug
+      ? `${location.origin}/landing.html?s=${landing.slug}`
+      : "";
+
+  const respetar = Boolean(
+    (plantilla as { respetar_diseno?: boolean }).respetar_diseno,
+  );
+
   const filas = (mensajes ?? []) as unknown as MensajeFila[];
-  const resultado: Resultado = { vestidos: 0, saltados: 0, motivos: [] };
+  const resultado: Resultado = {
+    vestidos: 0, saltados: 0, motivos: [], bloquesQuitados: [],
+  };
 
   for (const m of filas) {
     try {
       const html = componer(
         m, plantilla.documento as TemplateDocument, plantilla.asunto,
-        negocio, identidad,
+        negocio, identidad, respetar, urlLanding, resultado,
       );
 
       // La garantía, comprobada aquí y otra vez por el trigger al enviar.
@@ -140,6 +171,12 @@ export async function aplicarPlantilla(
  *
  * Sobreviven los que llevan lo real (la marca, el titular, el mensaje, la
  * llamada a la acción, el pie legal) y los que no llevan texto.
+ *
+ * Esta lista solo manda cuando la plantilla NO está marcada como
+ * `respetar_diseno`. Esa marca es alguien afirmando que ha leído el copy y
+ * es suyo — ver migración 037. Sin ella se sigue asumiendo catálogo, que es
+ * lo prudente: el copy de muestra dentro de un correo real a un despacho de
+ * abogados es el fallo que este filtro existe para evitar.
  */
 const BLOQUES_QUE_QUEDAN = new Set([
   "brand", "hero", "text", "button", "footer", "divider", "spacer", "image",
@@ -165,8 +202,14 @@ type Identidad = {
   dominio?: string | null;
 };
 
+/** Apunta un tipo de bloque descartado, sin repetirlo. */
+function anotarQuitado(r: Resultado, tipo: string) {
+  if (!r.bloquesQuitados.includes(tipo)) r.bloquesQuitados.push(tipo);
+}
+
 function datosReales(
   m: MensajeFila, urlBaja: string, negocio: string, ident: Identidad,
+  urlLanding: string,
 ) {
   // El nombre configurado manda sobre el del tenant: es el que el cliente
   // ha decidido que aparezca firmando, y puede no ser su razón social.
@@ -180,7 +223,7 @@ function datosReales(
     "lead.company": m.leads?.nombre ?? "",
     "lead.segment": "",
     "campaign.offer": "",
-    "campaign.cta_url": "",
+    "campaign.cta_url": urlLanding,
     "sender.name": firma,
     "sender.company": firma,
     "sender.legal_name": firma,
@@ -200,6 +243,11 @@ function componer(
   asuntoPlantilla: string,
   negocio: string,
   ident: Identidad,
+  /** La plantilla está declarada como propia: se conserva entera. */
+  respetar: boolean,
+  /** Adónde apunta el botón, o "" si la campaña no tiene landing publicada. */
+  urlLanding: string,
+  resultado: Resultado,
 ) {
   const corte = m.cuerpo.indexOf(SEPARADOR);
   const texto = (corte === -1 ? m.cuerpo : m.cuerpo.slice(0, corte)).trim();
@@ -219,15 +267,17 @@ function componer(
   // que se va a personalizar. Las plantillas del catálogo traen varios —la
   // que probaste tenía dos heros y dos bloques de texto— y los segundos
   // arrastran copy de muestra que nadie escribió para este lead.
-  const vistos = new Set<string>();
-  doc.blocks = doc.blocks.filter((b) => {
-    if (!BLOQUES_QUE_QUEDAN.has(b.type)) return false;
-    if (b.type === "text" || b.type === "hero") {
-      if (vistos.has(b.type)) return false;
-      vistos.add(b.type);
-    }
-    return true;
-  });
+  if (!respetar) {
+    const vistos = new Set<string>();
+    doc.blocks = doc.blocks.filter((b) => {
+      const esUnico = b.type === "text" || b.type === "hero";
+      const queda =
+        BLOQUES_QUE_QUEDAN.has(b.type) && !(esUnico && vistos.has(b.type));
+      if (queda && esUnico) vistos.add(b.type);
+      if (!queda) anotarQuitado(resultado, b.type);
+      return queda;
+    });
+  }
 
   // Si la plantilla no traía bloque de texto —muchas del catálogo son solo
   // titular, columnas y botón— se crea uno. Rechazar el mensaje por eso
@@ -250,8 +300,11 @@ function componer(
   // correo que empieza hablando de nadie y solo se vuelve personal en el
   // párrafo de debajo. El asunto que escribió el modelo para este lead es
   // justo la frase que corresponde ahí.
+  //
+  // Con `respetar_diseno` no se toca: el titular que guardó el cliente es
+  // suyo, y sustituirlo sería la misma sorpresa que borrarle los bloques.
   const hero = doc.blocks.find((b) => b.type === "hero");
-  if (hero && m.asunto) {
+  if (!respetar && hero && m.asunto) {
     hero.props.title = m.asunto;
     // El antetítulo del catálogo —"INTELIGENCIA CREATIVA · CRECIMIENTO
     // REAL"— es de la plantilla, no de este correo.
@@ -270,10 +323,20 @@ function componer(
   const firma = ident.nombre_remitente?.trim() || negocio;
   if (marca && firma) marca.props.label = firma;
 
-  // El botón de la plantilla apunta a {{campaign.cta_url}}, y hoy no hay
-  // ninguna configurada. Un botón grande que no lleva a ningún sitio es
-  // peor que no tenerlo: la llamada a la acción ya va escrita en el texto.
-  doc.blocks = doc.blocks.filter((b) => b.type !== "button");
+  // El botón apunta a {{campaign.cta_url}}, que ahora vale la landing de la
+  // campaña. Si la campaña no tiene landing publicada seguimos quitándolo:
+  // un botón grande que no lleva a ningún sitio es peor que no tenerlo, y
+  // la llamada a la acción ya va escrita en el texto.
+  //
+  // Esto no depende de `respetar_diseno`. Que el copy sea tuyo no arregla
+  // un enlace vacío.
+  if (!urlLanding) {
+    doc.blocks = doc.blocks.filter((b) => {
+      if (b.type !== "button") return true;
+      anotarQuitado(resultado, "button");
+      return false;
+    });
+  }
 
   // El pie de la plantilla ofrece "Política de privacidad" y "Gestionar
   // preferencias". No hay ninguna de las dos —docs/compliance.md las tiene
@@ -295,5 +358,5 @@ function componer(
   }
 
   return renderEmailHtml(doc, m.asunto ?? asuntoPlantilla, "",
-                         datosReales(m, urlBaja, negocio, ident));
+                         datosReales(m, urlBaja, negocio, ident, urlLanding));
 }
