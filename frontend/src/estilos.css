@@ -784,6 +784,25 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e1) 0; width: 
 .sesion ~ .nav-fin { margin-top: 0; }
 
 
+/* ---------------- interruptor de módulo ---------------- */
+
+/* Una casilla con su explicación al lado. El texto de debajo importa: el
+   nombre de un módulo no dice qué secciones se lleva por delante. */
+.toggle {
+  display: flex; align-items: flex-start; gap: var(--e3);
+  padding: var(--e3);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-s);
+  background: var(--superficie);
+  cursor: pointer;
+}
+.toggle:hover { border-color: var(--borde-fuerte); }
+.toggle input { width: 17px; height: 17px; flex-shrink: 0; margin-top: 2px; accent-color: var(--acento); }
+.toggle strong { display: block; color: var(--texto); font-size: 0.8125rem; }
+.toggle small  { display: block; margin-top: 3px; color: var(--texto-3); font-size: 0.6875rem; line-height: 1.4; }
+.toggle:has(input:checked) { border-color: var(--acento); background: var(--acento-suave); }
+
+
 /* ============================================================
    Modo claro
    ============================================================

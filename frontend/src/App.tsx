@@ -183,6 +183,10 @@ function Aplicacion() {
   const [cargando, setCargando] = useState(true);
   const [recuperando, setRecuperando] = useState(false);
   const [esAdmin, setEsAdmin] = useState(false);
+  // Qué módulos tiene contratado este cliente. Se empieza con los dos
+  // puestos para que el menú no parpadee mientras se resuelve: quitar
+  // secciones y volver a ponerlas se lee como un fallo.
+  const [modulos, setModulos] = useState({ prospeccion: true, email: true });
   const [vista, setVista] = useState<Vista>("campanas");
 
   // Si es admin, aparece la sección de panel. Que el menú esté o no no
@@ -191,6 +195,21 @@ function Aplicacion() {
   useEffect(() => {
     if (!sesion) { setEsAdmin(false); return; }
     supabase.rpc("es_admin").then(({ data }) => setEsAdmin(data === true));
+
+    // Esconder una sección no la desactiva: la clave publicable va en el
+    // bundle y las funciones se llaman desde la consola. Lo que de verdad
+    // apaga un módulo son los triggers de la 029 sobre `jobs` y
+    // `plantillas`. Esto es solo para no enseñar lo que no se ha vendido.
+    supabase.from("tenants")
+      .select("modulo_prospeccion, modulo_email")
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) return;
+        setModulos({
+          prospeccion: data.modulo_prospeccion !== false,
+          email: data.modulo_email !== false,
+        });
+      });
   }, [sesion]);
 
   useEffect(() => {
@@ -217,6 +236,16 @@ function Aplicacion() {
 
   if (!sesion) return <Acceso />;
 
+  // Un módulo se puede apagar con la pantalla abierta. Sin esto, el menú
+  // deja de ofrecer la sección pero el contenido sigue puesto.
+  const DE_PROSPECCION: Vista[] = ["campanas", "leads"];
+  const DE_EMAIL: Vista[] = ["studio", "mensajes", "historial", "supresiones"];
+  const vistaValida =
+    (DE_PROSPECCION.includes(vista) && !modulos.prospeccion) ||
+    (DE_EMAIL.includes(vista) && !modulos.email)
+      ? (modulos.prospeccion ? "campanas" : modulos.email ? "studio" : "cuenta")
+      : vista;
+
   return (
     <div className="armazon">
       <nav className="lateral">
@@ -225,7 +254,11 @@ function Aplicacion() {
           <span>Prospector</span>
         </div>
 
-        {GRUPOS.map((g) => (
+        {GRUPOS.filter((g) =>
+          g.id === "prospeccion" ? modulos.prospeccion
+          : g.id === "email" ? modulos.email
+          : true,
+        ).map((g) => (
           <GrupoLateral
             key={g.id}
             grupo={g}
@@ -267,24 +300,24 @@ function Aplicacion() {
         </div>
       </nav>
 
-      <main className={vista === "studio" ? "contenido contenido-completo" : "contenido"}>
+      <main className={vistaValida === "studio" ? "contenido contenido-completo" : "contenido"}>
         {/* El studio se sale de .ancho a propósito: esa clase limita el
             contenido a 960px, que es lo correcto para leer una tabla y lo
             contrario de lo que necesita un editor de dos paneles. */}
-        {vista === "studio" ? (
+        {vistaValida === "studio" ? (
           <Suspense fallback={<p className="sutil">Cargando el studio…</p>}>
             <Studio />
           </Suspense>
         ) : (
         <div className="ancho">
-          {vista === "campanas"    && <Campanas />}
-          {vista === "leads"       && <Leads />}
-          {vista === "mensajes"    && <Mensajes alIrA={setVista} />}
-          {vista === "historial"   && <Historial />}
-          {vista === "supresiones" && <Supresiones />}
-          {vista === "incidencias" && <Incidencias />}
-          {vista === "cuenta"      && <Cuenta />}
-          {vista === "panel"       && esAdmin && <Panel />}
+          {vistaValida === "campanas"    && <Campanas />}
+          {vistaValida === "leads"       && <Leads />}
+          {vistaValida === "mensajes"    && <Mensajes alIrA={setVista} />}
+          {vistaValida === "historial"   && <Historial />}
+          {vistaValida === "supresiones" && <Supresiones />}
+          {vistaValida === "incidencias" && <Incidencias />}
+          {vistaValida === "cuenta"      && <Cuenta />}
+          {vistaValida === "panel"       && esAdmin && <Panel />}
         </div>
         )}
       </main>
