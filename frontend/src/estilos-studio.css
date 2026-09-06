@@ -194,8 +194,17 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .sidebar-signal strong, .user-chip strong { font-size: 11px; }
 .sidebar-signal small, .user-chip small { font-size: 9px; }
 
-.studio-main { grid-template-rows: 74px 78px 50px minmax(0, 1fr); }
-.studio-topbar { padding: 0 24px; }
+/* La primera fila la marca la barra lateral de la app, no el studio.
+   Allí el logo empieza a 20px (padding de .app-sidebar) y su bloque mide
+   86px (.brand-lockup), así que la línea de debajo cae en 106 y el centro
+   de la imagen —58px de alto— en 49.
+
+   La barra del studio medía 74 sin padding vertical: sus botones quedaban
+   centrados en 37, doce por encima del logo, y las dos líneas horizontales
+   a distinta altura. 106 de alto con 8 de padding abajo deja el contenido
+   centrado en 49 y la línea en 106: las dos cosas alineadas. */
+.studio-main { grid-template-rows: 106px 78px 50px minmax(0, 1fr); }
+.studio-topbar { min-height: 106px; padding: 0 24px 8px; }
 .breadcrumb { font-size: 10px; }
 .name-row input { width: min(470px, 36vw); font-size: 20px; }
 .save-state { padding: 4px 8px; font-size: 9px; }
