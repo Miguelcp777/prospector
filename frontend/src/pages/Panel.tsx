@@ -16,6 +16,7 @@ import { supabase } from "../lib/supabase";
 import { ClaveOpenAI } from "./ClaveOpenAI";
 import { PanelClientes } from "./PanelClientes";
 import { PanelSalud } from "./PanelSalud";
+import { PanelUsuarios } from "./PanelUsuarios";
 
 type Resumen = {
   tenants: number; usuarios: number; admins: number;
@@ -82,6 +83,22 @@ const din = (n: number | null | undefined, moneda: string) =>
     ? "—"
     : `${n > 0 && n < 0.01 ? n.toFixed(4) : n.toFixed(2)} ${moneda}`;
 
+type Seccion =
+  | "resumen" | "salud" | "usuarios" | "clientes" | "costes"
+  | "incidencias" | "ajustes";
+
+/** El orden importa: primero si algo está roto, luego quién lo usa, luego
+ *  cuánto cuesta. Lo de configurar va al final porque casi nunca se toca. */
+const SECCIONES: { id: Seccion; nombre: string; icono: string }[] = [
+  { id: "resumen",     nombre: "Resumen",     icono: "◉" },
+  { id: "salud",       nombre: "Salud",       icono: "♥" },
+  { id: "usuarios",    nombre: "Usuarios",    icono: "◐" },
+  { id: "clientes",    nombre: "Clientes",    icono: "◈" },
+  { id: "costes",      nombre: "Costes",      icono: "€" },
+  { id: "incidencias", nombre: "Incidencias", icono: "⚠" },
+  { id: "ajustes",     nombre: "Ajustes",     icono: "▤" },
+];
+
 export function Panel() {
   const [resumen, setResumen] = useState<Resumen | null>(null);
   const [tenants, setTenants] = useState<FilaTenant[]>([]);
@@ -90,6 +107,7 @@ export function Panel() {
   const [costes, setCostes] = useState<Coste[]>([]);
   const [economia, setEconomia] = useState<Economia | null>(null);
   const [ventana, setVentana] = useState(30);
+  const [seccion, setSeccion] = useState<Seccion>("resumen");
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
 
@@ -149,6 +167,21 @@ export function Panel() {
         </div>
       </div>
 
+      {/* Secciones. Antes esto era una sola columna de dos mil píxeles y
+          llegar a Incidencias eran seis rodadas de rueda. Cada sección se
+          pinta sola: lo que no se mira, no se monta ni se consulta. */}
+      <nav className="panel-secciones">
+        {SECCIONES.map((s) => (
+          <button key={s.id}
+                  className={seccion === s.id ? "activa" : ""}
+                  onClick={() => setSeccion(s.id)}>
+            <span aria-hidden="true">{s.icono}</span>
+            {s.nombre}
+          </button>
+        ))}
+      </nav>
+
+      {seccion === "resumen" && (<>
       {/* ---------------- gasto ---------------- */}
       <h2 className="titulo-seccion">Gasto del mes en curso</h2>
       <div className="rejilla-metricas">
@@ -220,14 +253,20 @@ export function Panel() {
         Repartirlo entre los días sería inventarlo.
       </p>
 
-      {/* ---------------- claves de proveedores ---------------- */}
-      <h2 className="titulo-seccion">Proveedores</h2>
-      <PanelSalud />
+      </>)}
 
-      <PanelClientes />
+      {seccion === "salud" && <PanelSalud />}
 
-      <ClaveOpenAI />
+      {seccion === "usuarios" && <PanelUsuarios />}
 
+      {seccion === "clientes" && <PanelClientes />}
+
+      {seccion === "ajustes" && (<>
+        <h2 className="titulo-seccion">Proveedores</h2>
+        <ClaveOpenAI />
+      </>)}
+
+      {seccion === "costes" && (<>
       {/* ---------------- unidad económica ---------------- */}
       <h2 className="titulo-seccion">Cuánto cuesta una campaña</h2>
       {economia && economia.campanas_con_gasto > 0 ? (
@@ -318,6 +357,9 @@ export function Panel() {
         completo y el de modelo a cero.
       </p>
 
+      </>)}
+
+      {seccion === "clientes" && (<>
       {/* ---------------- clientes ---------------- */}
       <h2 className="titulo-seccion">Por cliente</h2>
       <div className="tabla-scroll">
@@ -355,6 +397,9 @@ export function Panel() {
         </table>
       </div>
 
+      </>)}
+
+      {seccion === "incidencias" && (<>
       {/* ---------------- incidencias de todos ---------------- */}
       <h2 className="titulo-seccion">Incidencias de todos los clientes</h2>
       {incidencias.length === 0 ? (
@@ -389,6 +434,7 @@ export function Panel() {
           </table>
         </div>
       )}
+      </>)}
     </div>
   );
 }

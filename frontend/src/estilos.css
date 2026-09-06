@@ -816,6 +816,30 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e1) 0; width: 
 .tarjeta-interior + .tarjeta-interior { margin-top: var(--e2); }
 
 
+/* ---------------- secciones del panel ---------------- */
+
+/* Antes el panel era una columna de dos mil píxeles y llegar a Incidencias
+   eran seis rodadas de rueda. Ahora cada sección se pinta sola. */
+.panel-secciones {
+  display: flex; flex-wrap: wrap; gap: var(--e1);
+  margin-bottom: var(--e5);
+  padding: var(--e1);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-m);
+  background: var(--superficie);
+}
+.panel-secciones button {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 13px;
+  border: 0; border-radius: var(--radio-s);
+  background: none; color: var(--texto-2);
+  font-size: 0.8125rem; font-weight: 600;
+}
+.panel-secciones button:hover { background: var(--superficie-2); color: var(--texto); }
+.panel-secciones button.activa { background: var(--acento-suave); color: var(--acento); }
+.panel-secciones button span { font-size: 0.875rem; }
+
+
 /* ============================================================
    Modo claro
    ============================================================
