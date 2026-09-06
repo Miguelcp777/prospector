@@ -29,6 +29,58 @@ import { estadoDe, PASOS, ProveedorRecorrido, useRecorrido } from "./lib/recorri
 import { guardarTema, temaGuardado, type Tema } from "./lib/tema";
 
 /**
+ * Quién está dentro.
+ *
+ * Antes la app no lo decía en ninguna parte: se entraba y la pantalla era
+ * la misma para todo el mundo. Con varias cuentas del mismo negocio —y con
+ * el modo administrador, que ve datos de otros— saber con cuál estás es
+ * parte de poder fiarte de lo que ves.
+ *
+ * El nombre sale de Google si lo hay; si no, del correo. Nunca queda vacío.
+ */
+function Conectado({ sesion, esAdmin }: { sesion: Session; esAdmin: boolean }) {
+  const [negocio, setNegocio] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.from("profiles").select("tenants(nombre)").single()
+      .then(({ data }) =>
+        setNegocio(
+          (data as { tenants?: { nombre?: string } } | null)?.tenants?.nombre ?? null,
+        ),
+      );
+  }, [sesion.user.id]);
+
+  const meta = sesion.user.user_metadata as { full_name?: string; name?: string };
+  // El correo entero no cabe y además no es un nombre. La parte de delante
+  // de la arroba se parece más a cómo se llama la gente a sí misma.
+  const nombre =
+    meta?.full_name ?? meta?.name ?? sesion.user.email?.split("@")[0] ?? "Tu cuenta";
+
+  const hora = new Date().getHours();
+  const saludo =
+    hora < 6 ? "Buenas noches" : hora < 14 ? "Buenos días"
+    : hora < 21 ? "Buenas tardes" : "Buenas noches";
+
+  return (
+    <div className="sesion">
+      <div className="sesion-estado">
+        <span className="sesion-punto" aria-hidden="true" />
+        Conectado
+        {esAdmin && <span className="etiqueta media">admin</span>}
+      </div>
+      {/* El saludo en su propia línea: junto al nombre no cabía en los
+          240px de la barra y lo que se cortaba era el nombre, que es lo
+          único que hay que poder leer entero. */}
+      <span className="sesion-saludo">{saludo},</span>
+      <strong className="sesion-nombre" title={sesion.user.email ?? ""}>
+        {nombre}
+      </strong>
+      {negocio && <span className="sesion-negocio">{negocio}</span>}
+    </div>
+  );
+}
+
+/**
  * El interruptor de tema.
  *
  * Enseña a dónde vas, no dónde estás: en oscuro dice "Modo claro". Un
@@ -200,6 +252,8 @@ function Aplicacion() {
         </div>
 
         <RecorridoLateral />
+
+        <Conectado sesion={sesion} esAdmin={esAdmin} />
 
         <BotonTema />
 

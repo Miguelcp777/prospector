@@ -177,6 +177,14 @@ a:hover { text-decoration: underline; }
 /* Ancho completo del lateral: el logotipo de cabecera lleva mucho aire a la
    derecha, y por debajo de ~180px la palabra deja de leerse. */
 .pie-marca img { width: 100%; height: auto; display: block; opacity: 0.55; }
+
+/* El logo es casi blanco —brillo medio 200 sobre 255, medido leyendo sus
+   píxeles— así que sobre fondo claro y al 55% desaparecía. `brightness(0)`
+   lo pasa a silueta negra: pierde el color del isotipo, pero es un crédito
+   al pie y una silueta es un tratamiento normal. La alternativa buena es
+   una versión oscura del archivo, que no existe. */
+:root[data-tema="claro"] .pie-marca img { filter: brightness(0); opacity: 0.42; }
+:root[data-tema="claro"] .pie-marca:hover img { opacity: 0.62; }
 .pie-marca:hover img { opacity: 0.8; }
 
 
@@ -706,6 +714,67 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e1) 0; width: 
   border-radius: var(--radio-m); background: #fff;
   display: block; margin: 0 auto;
 }
+
+/* ---------------- quién está dentro ---------------- */
+
+/* Va al pie de la barra, junto al tema y a Salir: es la zona de cuenta.
+   Arriba competiría con la marca por la misma mirada. */
+.sesion {
+  margin-top: auto;
+  display: flex; flex-direction: column; gap: 3px;
+  padding: var(--e3);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-s);
+  background: var(--superficie);
+}
+
+.sesion-estado {
+  display: flex; align-items: center; gap: 6px;
+  color: var(--exito);
+  font-size: 0.625rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.12em;
+}
+
+/* El punto es la señal que se lee sin leer. El halo lo separa del fondo
+   sin necesidad de que parpadee: una animación permanente en la esquina de
+   la pantalla cansa y no aporta nada. */
+.sesion-punto {
+  width: 7px; height: 7px; flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--exito);
+  box-shadow: 0 0 0 3px var(--exito-suave);
+}
+
+/* --texto-2 y no --texto-3: el terciario se queda en 3.60:1 sobre el fondo
+   oscuro, por debajo del 4.5 legible. Es un problema del token, que arrastra
+   toda la app, pero no es motivo para añadir dos líneas más que suspenden.
+   La jerarquía la marcan el tamaño y el peso. */
+.sesion-saludo {
+  color: var(--texto-2);
+  font-size: 0.6875rem; line-height: 1.2;
+}
+
+.sesion-nombre {
+  color: var(--texto);
+  font-size: 0.8125rem; font-weight: 600; line-height: 1.3;
+  /* Un nombre largo no puede empujar el ancho de la barra. */
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.sesion-negocio {
+  color: var(--texto-2);
+  font-size: 0.6875rem;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* La etiqueta de admin cabe en la misma línea que el estado. */
+.sesion-estado .etiqueta { margin-left: auto; font-size: 0.5625rem; padding: 1px 6px; }
+
+/* Salir tenía el `margin-top: auto` que lo mandaba al fondo. Ahora ese
+   papel lo hace .sesion, y dejar los dos repartiría el hueco entre ambos en
+   vez de agrupar el pie: saldría un espacio en medio. */
+.sesion ~ .nav-fin { margin-top: 0; }
+
 
 /* ============================================================
    Modo claro
