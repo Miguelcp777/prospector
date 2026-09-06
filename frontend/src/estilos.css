@@ -29,7 +29,16 @@
 
   --texto:   #f4f2fb;
   --texto-2: #a29dba;
-  --texto-3: #6d6789;
+  /* Era #6d6789 y se quedaba en 3.60:1 sobre tarjeta —3.15 sobre la
+     superficie más clara—, por debajo del 4.5 legible. Y no es texto
+     decorativo: lo llevan los placeholders, las etiquetas de los campos,
+     .menudo y los rótulos de las tablas.
+
+     Subido conservando el matiz violeta (mismas proporciones R:G:B, x1.30),
+     hasta 4.95:1 en el peor fondo y 5.66 sobre tarjeta. Sigue claramente
+     por debajo de --texto-2, así que la jerarquía de tres niveles se
+     mantiene. */
+  --texto-3: #8e86b2;
 
   --cian:    #22d3ee;
   --violeta: #8b5cf6;
@@ -745,10 +754,9 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e1) 0; width: 
   box-shadow: 0 0 0 3px var(--exito-suave);
 }
 
-/* --texto-2 y no --texto-3: el terciario se queda en 3.60:1 sobre el fondo
-   oscuro, por debajo del 4.5 legible. Es un problema del token, que arrastra
-   toda la app, pero no es motivo para añadir dos líneas más que suspenden.
-   La jerarquía la marcan el tamaño y el peso. */
+/* --texto-2 y no --texto-3: aquí el saludo y el negocio acompañan al
+   nombre, que es lo que se lee, y conviene que se distingan de él sin
+   irse al nivel más apagado. La jerarquía la marcan tamaño y peso. */
 .sesion-saludo {
   color: var(--texto-2);
   font-size: 0.6875rem; line-height: 1.2;
