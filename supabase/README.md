@@ -525,8 +525,16 @@ Google Places, texto extraído de webs ajenas y mensajes de error. Con permiso
 de escritura, unas instrucciones metidas ahí alcanzan una base que ya tiene
 datos de seis clientes.
 
-**Cuándo volver a lectura:** al terminar el traslado del studio. Es quitar el
-parámetro:
+**Cuándo volver a lectura.** La condición original era «al terminar el
+traslado del studio», y **ya se cumplió**: la última migración es la 027, del
+5 de septiembre de 2026, y desde entonces ninguna función nueva ha necesitado
+DDL —el archivado de plantillas salió con una columna que ya existía—.
+
+Miguel lo aplazó a propósito el 6 de septiembre de 2026: se cambia **al dar
+el proyecto por terminado**, no antes. Queda escrito aquí para que nadie lea
+la condición de arriba, la vea cumplida y piense que se olvidó.
+
+Es añadir el parámetro:
 
 ```
 https://mcp.supabase.com/mcp?project_ref=tpfjeumrvdbciktmaaii&read_only=true
