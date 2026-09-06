@@ -131,6 +131,24 @@ export async function aplicarPlantilla(
         continue;
       }
 
+      // Una variable que la plantilla usa y nadie rellena se renderiza
+      // literal: al lead le llegaría "{{campaign.mi_campo}}" en mitad del
+      // texto. Con el filtro puesto no pasaba —esos bloques se iban—, pero
+      // respetando el diseño llegan enteros, y con ellos sus variables.
+      //
+      // Se salta el mensaje en vez de mandarlo así, igual que con el enlace
+      // de baja: media plantilla mal puesta se arregla; un correo con
+      // llaves dentro ya se ha enviado.
+      const sinRellenar = html.match(/{{\s*[\w.]+\s*}}/g);
+      if (sinRellenar) {
+        const cuales = [...new Set(sinRellenar)].join(", ");
+        resultado.saltados++;
+        resultado.motivos.push(
+          `${m.leads?.nombre ?? m.id}: la plantilla usa variables que nadie rellena (${cuales})`,
+        );
+        continue;
+      }
+
       const { error: falloU } = await supabase
         .from("messages")
         .update({
