@@ -17,6 +17,7 @@ import { ClaveOpenAI } from "./ClaveOpenAI";
 import { PanelClientes } from "./PanelClientes";
 import { PanelSalud } from "./PanelSalud";
 import { PanelUsuarios } from "./PanelUsuarios";
+import { CorreoDelServicio } from "./CorreoDelServicio";
 
 type Resumen = {
   tenants: number; usuarios: number; admins: number;
@@ -263,6 +264,7 @@ export function Panel() {
 
       {seccion === "ajustes" && (<>
         <h2 className="titulo-seccion">Proveedores</h2>
+        <CorreoDelServicio />
         <ClaveOpenAI />
       </>)}
 

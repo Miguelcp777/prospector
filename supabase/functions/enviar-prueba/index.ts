@@ -18,9 +18,12 @@
 // un cliente, y una prueba a tu propio correo no lo es. Falsearlo
 // estropearía el embudo y el registro que hay que poder enseñar.
 //
+// Se configura desde el panel: Ajustes → Correo del servicio. La clave vive
+// en el Vault y se lee aquí con `service_role`; el remitente, en `ajustes`.
+// Los secretos RESEND_API_KEY y REMITENTE_PRUEBA siguen valiendo como
+// respaldo, para no romper una instalación que ya los tuviera.
+//
 // Desplegar:  supabase functions deploy enviar-prueba
-// Secretos:   supabase secrets set RESEND_API_KEY=re_...
-//             supabase secrets set REMITENTE_PRUEBA="Prospector <pruebas@tu-dominio.com>"
 // ============================================================
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -37,21 +40,38 @@ Deno.serve(async (req) => {
     const { message_id } = await req.json();
     if (!message_id) return json(req, { error: "Falta el mensaje a probar." }, 400);
 
-    const clave = Deno.env.get("RESEND_API_KEY");
-    const remitente = Deno.env.get("REMITENTE_PRUEBA");
+    // La configuración vive en el panel (Ajustes → Correo del servicio) y
+    // se lee con `service_role`: la clave está en el Vault y no sale de ahí
+    // ni para un administrador. Los secretos de entorno se quedan como
+    // respaldo, para no romper una instalación que ya los tuviera puestos.
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+    const { data: claveVault } = await admin.rpc("leer_clave_correo");
+    const { data: ajustes } = await admin
+      .from("ajustes").select("remitente_servicio").maybeSingle();
+
+    const clave = (claveVault as string | null) || Deno.env.get("RESEND_API_KEY");
+    const remitente =
+      (ajustes?.remitente_servicio as string | null) ||
+      Deno.env.get("REMITENTE_PRUEBA");
 
     // Los dos avisos van por separado y con el nombre del secreto dentro:
     // "falta configuración" obliga a adivinar cuál.
     if (!clave)
       return json(req, {
-        error: "Falta RESEND_API_KEY en los secretos de la función. " +
-               "Se saca en resend.com → API Keys.",
+        error: "Falta la clave del proveedor de correo. Se pone en el " +
+               "panel: Ajustes → Correo del servicio. Se saca en " +
+               "resend.com → API Keys.",
       }, 503);
     if (!remitente || !REMITENTE.test(remitente))
       return json(req, {
-        error: "Falta REMITENTE_PRUEBA, o no tiene forma de dirección. " +
-               'Ejemplo: Prospector <pruebas@tu-dominio.com>. El dominio ' +
-               "tiene que estar verificado en Resend o rechazará el envío.",
+        error: "Falta el remitente por defecto, o no tiene forma de " +
+               "dirección. Se pone en el panel: Ajustes → Correo del " +
+               'servicio. Ejemplo: Prospector <pruebas@tu-dominio.com>. El ' +
+               "dominio tiene que estar verificado en el proveedor o " +
+               "rechazará el envío.",
       }, 503);
 
     // Con el token del usuario: la RLS decide a qué mensajes llega, así que
