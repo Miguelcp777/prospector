@@ -124,14 +124,6 @@ const NOMBRE_PASO: Record<WorkflowStep, string> = {
   review: "Revisar y guardar",
 };
 type Device = "desktop" | "mobile";
-// Sin "light": el eje claro/oscuro lo lleva el interruptor de la app, para
-// toda la web a la vez. Este selector queda para las variantes de color, que
-// derivan sus tokens de los de la app y funcionan en los dos modos.
-//
-// Tenerlo aquí también significaba dos interruptores peleándose, y los
-// parches de .theme-light dan por hecho que --texto es casi blanco: en modo
-// claro es casi negro y se invertían todos.
-type AppTheme = "dark" | "ocean" | "emerald" | "violet";
 type ExperienceMode = "guided" | "professional";
 type WorkflowStep = "library" | "content" | "design" | "variables" | "review";
 type TextTarget = {
@@ -1233,7 +1225,6 @@ export default function StudioClient({ displayName }: StudioProps) {
   });
   const [aiStep, setAiStep] = useState(1);
   const [aiProgress, setAiProgress] = useState("");
-  const [appTheme, setAppTheme] = useState<AppTheme>("dark");
   const [experienceMode, setExperienceMode] =
     useState<ExperienceMode>("guided");
   const [commandCenterOpen, setCommandCenterOpen] = useState(false);
@@ -1543,14 +1534,6 @@ export default function StudioClient({ displayName }: StudioProps) {
       void loadMediaLibrary();
       void loadBrandKit();
       try {
-      const savedTheme = globalThis.localStorage?.getItem(
-        "aurevanta-studio-theme",
-      ) as AppTheme | null;
-      if (
-        savedTheme &&
-        ["dark", "ocean", "emerald", "violet"].includes(savedTheme)
-      )
-        setAppTheme(savedTheme);
       const savedMode = globalThis.localStorage?.getItem(
         "aurevanta-experience-mode",
       ) as ExperienceMode | null;
@@ -1630,13 +1613,6 @@ export default function StudioClient({ displayName }: StudioProps) {
     templateId,
     version,
   ]);
-
-  function changeAppTheme(theme: AppTheme) {
-    setAppTheme(theme);
-    try {
-      globalThis.localStorage?.setItem("aurevanta-studio-theme", theme);
-    } catch {}
-  }
 
   function changeExperienceMode(mode: ExperienceMode) {
     setExperienceMode(mode);
@@ -2921,7 +2897,7 @@ export default function StudioClient({ displayName }: StudioProps) {
       {/* `paso-*` es lo que permite al modo guiado enseñar solo las
           herramientas del paso en el que estás. Sin ella, "guiado" y
           "profesional" pintaban exactamente lo mismo. */}
-      <div className={`studio-shell theme-${appTheme} mode-${experienceMode} paso-${workflowStep}`}>
+      <div className={`studio-shell mode-${experienceMode} paso-${workflowStep}`}>
         {/* El lateral del studio se quitó al integrarlo: Prospector ya
             tiene el suyo, y este duplicaba su navegación con botones que no
             hacían nada. Las dos acciones que sí valían siguen accesibles —
@@ -2963,25 +2939,6 @@ export default function StudioClient({ displayName }: StudioProps) {
                 >
                   <option value="guided">Guiado</option>
                   <option value="professional">Profesional</option>
-                </select>
-              </label>
-              <label
-                className="theme-picker"
-                title="Apariencia de la aplicación"
-              >
-                <Palette />
-                <span>Tema</span>
-                <select
-                  aria-label="Tema visual de la aplicación"
-                  value={appTheme}
-                  onChange={(event) =>
-                    changeAppTheme(event.target.value as AppTheme)
-                  }
-                >
-                  <option value="dark">Noche Aurevanta</option>
-                  <option value="ocean">Océano profundo</option>
-                  <option value="emerald">Esmeralda ejecutiva</option>
-                  <option value="violet">Violeta creativo</option>
                 </select>
               </label>
               <Button
