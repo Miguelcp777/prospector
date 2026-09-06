@@ -63,12 +63,31 @@ export async function aplicarPlantilla(
   const negocio =
     (perfil as { tenants?: { nombre?: string } } | null)?.tenants?.nombre ?? "";
 
+  // La identidad del remitente, de Cuenta → Correo saliente (migración 028).
+  // Hasta que existió esa pantalla, el domicilio postal y la política de
+  // privacidad se rellenaban con cadenas vacías: el pie prometía identificar
+  // al remitente y no identificaba a nadie.
+  const { data: correo } = await supabase
+    .from("config_correo")
+    .select("nombre_remitente, direccion_postal, url_privacidad, buzon, dominio")
+    .maybeSingle();
+  const identidad = (correo ?? {}) as {
+    nombre_remitente?: string | null;
+    direccion_postal?: string | null;
+    url_privacidad?: string | null;
+    buzon?: string | null;
+    dominio?: string | null;
+  };
+
   const filas = (mensajes ?? []) as unknown as MensajeFila[];
   const resultado: Resultado = { vestidos: 0, saltados: 0, motivos: [] };
 
   for (const m of filas) {
     try {
-      const html = componer(m, plantilla.documento as TemplateDocument, plantilla.asunto, negocio);
+      const html = componer(
+        m, plantilla.documento as TemplateDocument, plantilla.asunto,
+        negocio, identidad,
+      );
 
       // La garantía, comprobada aquí y otra vez por el trigger al enviar.
       // Si el diseño no tiene pie, o alguien lo borró del bloque, el
@@ -138,7 +157,22 @@ const BLOQUES_QUE_QUEDAN = new Set([
  * Aquí se pasan todas explícitamente. Lo que no se sabe va vacío, que es
  * feo pero honesto; un nombre inventado no lo es.
  */
-function datosReales(m: MensajeFila, urlBaja: string, negocio: string) {
+type Identidad = {
+  nombre_remitente?: string | null;
+  direccion_postal?: string | null;
+  url_privacidad?: string | null;
+  buzon?: string | null;
+  dominio?: string | null;
+};
+
+function datosReales(
+  m: MensajeFila, urlBaja: string, negocio: string, ident: Identidad,
+) {
+  // El nombre configurado manda sobre el del tenant: es el que el cliente
+  // ha decidido que aparezca firmando, y puede no ser su razón social.
+  const firma = ident.nombre_remitente?.trim() || negocio;
+  const correo =
+    ident.buzon && ident.dominio ? `${ident.buzon}@${ident.dominio}` : "";
   return {
     // No hay nombre de pila: escribimos a buzones corporativos, no a
     // personas. Ver docs/compliance.md.
@@ -147,12 +181,12 @@ function datosReales(m: MensajeFila, urlBaja: string, negocio: string) {
     "lead.segment": "",
     "campaign.offer": "",
     "campaign.cta_url": "",
-    "sender.name": negocio,
-    "sender.company": negocio,
-    "sender.legal_name": negocio,
-    "sender.postal_address": "",
-    "sender.privacy_url": "",
-    "sender.privacy_email": "",
+    "sender.name": firma,
+    "sender.company": firma,
+    "sender.legal_name": firma,
+    "sender.postal_address": ident.direccion_postal?.trim() ?? "",
+    "sender.privacy_url": ident.url_privacidad?.trim() ?? "",
+    "sender.privacy_email": correo,
     "campaign.legal_reason":
       "Le escribimos porque su negocio aparece en directorios públicos de empresas del sector.",
     "system.unsubscribe_url": urlBaja,
@@ -165,6 +199,7 @@ function componer(
   documento: TemplateDocument,
   asuntoPlantilla: string,
   negocio: string,
+  ident: Identidad,
 ) {
   const corte = m.cuerpo.indexOf(SEPARADOR);
   const texto = (corte === -1 ? m.cuerpo : m.cuerpo.slice(0, corte)).trim();
@@ -232,7 +267,8 @@ function componer(
   // ella un correo de la clínica de fisio es lo más grave de todo esto,
   // porque no parece un error de relleno sino una suplantación.
   const marca = doc.blocks.find((b) => b.type === "brand");
-  if (marca && negocio) marca.props.label = negocio;
+  const firma = ident.nombre_remitente?.trim() || negocio;
+  if (marca && firma) marca.props.label = firma;
 
   // El botón de la plantilla apunta a {{campaign.cta_url}}, y hoy no hay
   // ninguna configurada. Un botón grande que no lleva a ningún sitio es
@@ -244,14 +280,20 @@ function componer(
   // pendientes de redactar— y un enlace legal que no lleva a ningún sitio
   // es peor que no ofrecerlo: promete un derecho que no se puede ejercer.
   // La baja sí existe y se queda.
+  //
+  // Ahora hay política de privacidad si el cliente la ha configurado; si no,
+  // se sigue quitando el enlace. Un enlace legal que no lleva a ningún sitio
+  // es peor que no ofrecerlo: promete un derecho que no se puede ejercer.
   const pie = doc.blocks.find((b) => b.type === "footer");
   if (pie) {
-    pie.props.privacyLabel = "";
-    pie.props.privacyUrl = "";
+    const privacidad = ident.url_privacidad?.trim();
+    pie.props.privacyLabel = privacidad ? "Política de privacidad" : "";
+    pie.props.privacyUrl = privacidad ?? "";
+    // "Gestionar preferencias" sigue sin existir: no hay pantalla detrás.
     pie.props.preferencesLabel = "";
     pie.props.preferencesUrl = "";
   }
 
   return renderEmailHtml(doc, m.asunto ?? asuntoPlantilla, "",
-                         datosReales(m, urlBaja, negocio));
+                         datosReales(m, urlBaja, negocio, ident));
 }

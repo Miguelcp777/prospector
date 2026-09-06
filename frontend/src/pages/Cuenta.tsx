@@ -14,6 +14,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { CorreoDelCliente } from "./CorreoDelCliente";
 
 type Tenant = {
   id: string;
@@ -147,6 +148,8 @@ export function Cuenta() {
           </div>
         </form>
       )}
+
+      {perfil?.tenants && <CorreoDelCliente />}
 
       {perfil?.tenants && (
         <dl className="datos">
