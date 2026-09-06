@@ -225,7 +225,7 @@ function Aplicacion() {
         <div className="ancho">
           {vista === "campanas"    && <Campanas />}
           {vista === "leads"       && <Leads />}
-          {vista === "mensajes"    && <Mensajes />}
+          {vista === "mensajes"    && <Mensajes alIrA={setVista} />}
           {vista === "historial"   && <Historial />}
           {vista === "supresiones" && <Supresiones />}
           {vista === "incidencias" && <Incidencias />}

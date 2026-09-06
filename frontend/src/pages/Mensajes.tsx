@@ -34,7 +34,12 @@ type Mensaje = {
   leads: { nombre: string; email: string | null } | null;
 };
 
-export function Mensajes() {
+/**
+ * `alIrA` lleva a Plantillas desde el estado vacío. Se tipa solo con
+ * "studio" en vez de importar `Vista` de App: es el único destino que
+ * necesita esta pantalla y evita el import circular.
+ */
+export function Mensajes({ alIrA }: { alIrA?: (vista: "studio") => void }) {
   const [campanas, setCampanas] = useState<Campana[]>([]);
   const [elegida, setElegida] = useState("");     // "" = todas
   const [busqueda, setBusqueda] = useState("");
@@ -45,6 +50,7 @@ export function Mensajes() {
 
   const [plantillas, setPlantillas] = useState<{ id: string; nombre: string }[]>([]);
   const [plantillaElegida, setPlantillaElegida] = useState("");
+  const [falloPlantillas, setFalloPlantillas] = useState<string | null>(null);
   const [vistiendo, setVistiendo] = useState(false);
   const [resultado, setResultado] = useState<Resultado | null>(null);
 
@@ -53,9 +59,15 @@ export function Mensajes() {
       .order("creado_en", { ascending: false })
       .then(({ data }) => setCampanas((data ?? []) as Campana[]));
 
+    // El fallo se guarda aparte: sin esto, no poder leer las plantillas se
+    // ve exactamente igual que no tener ninguna, y son dos problemas
+    // distintos con dos arreglos distintos.
     supabase.from("plantillas").select("id, nombre")
       .order("actualizado_en", { ascending: false })
-      .then(({ data }) => setPlantillas(data ?? []));
+      .then(({ data, error: fallo }) => {
+        if (fallo) setFalloPlantillas(fallo.message);
+        setPlantillas(data ?? []);
+      });
   }, []);
 
   const cargar = useCallback(async () => {
@@ -170,6 +182,37 @@ export function Mensajes() {
 
       {/* Aparece solo con una campaña elegida: el diseño se aplica a una
           campaña, no a mensajes sueltos de varias. */}
+      {/* Sin plantillas la sección no se dibujaba, y una función que no
+          existe no se puede pedir: el usuario no ve un botón desactivado ni
+          un aviso, ve que la opción no está. Cada cliente empieza con cero
+          plantillas, así que esto le pasa a todo el mundo el primer día. */}
+      {elegida && plantillas.length === 0 && (
+        <div className="tarjeta">
+          <div>
+            <h2>Aplicar un diseño</h2>
+            {falloPlantillas ? (
+              <p className="caja-error">
+                No se han podido leer tus plantillas: {falloPlantillas}
+              </p>
+            ) : (
+              <p className="sutil">
+                Todavía no tienes ninguna plantilla. El diseño de los correos
+                se hace en <strong>Plantillas</strong>: eliges una del
+                catálogo, la ajustas y la guardas. Al volver aquí podrás
+                aplicarla a los mensajes de esta campaña.
+              </p>
+            )}
+          </div>
+          {!falloPlantillas && alIrA && (
+            <div className="acciones">
+              <button className="primario" onClick={() => alIrA("studio")}>
+                Ir a Plantillas
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {elegida && plantillas.length > 0 && (
         <div className="tarjeta">
           <div>
