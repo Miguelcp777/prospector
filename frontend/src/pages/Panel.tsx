@@ -15,6 +15,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { ClaveOpenAI } from "./ClaveOpenAI";
 import { PanelClientes } from "./PanelClientes";
+import { PanelSalud } from "./PanelSalud";
 
 type Resumen = {
   tenants: number; usuarios: number; admins: number;
@@ -221,6 +222,8 @@ export function Panel() {
 
       {/* ---------------- claves de proveedores ---------------- */}
       <h2 className="titulo-seccion">Proveedores</h2>
+      <PanelSalud />
+
       <PanelClientes />
 
       <ClaveOpenAI />

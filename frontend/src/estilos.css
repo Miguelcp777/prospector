@@ -803,6 +803,19 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e1) 0; width: 
 .toggle:has(input:checked) { border-color: var(--acento); background: var(--acento-suave); }
 
 
+/* ---------------- filas dentro de una tarjeta ---------------- */
+
+/* Cada cliente en riesgo es un bloque, no una fila de tabla: lleva motivo y
+   qué hacer, y eso en una celda no se lee. */
+.tarjeta-interior {
+  padding: var(--e3);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-s);
+  background: var(--hundido);
+}
+.tarjeta-interior + .tarjeta-interior { margin-top: var(--e2); }
+
+
 /* ============================================================
    Modo claro
    ============================================================
