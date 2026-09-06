@@ -17,6 +17,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
 type Estado = { configurada: boolean; actualizada_en: string | null; pista: string | null };
+type Evento = { tipo: string; veces: number; ultimo: string };
 
 export function CorreoDelServicio() {
   const [estado, setEstado] = useState<Estado | null>(null);
@@ -24,6 +25,7 @@ export function CorreoDelServicio() {
   const [remitente, setRemitente] = useState("");
   const [proveedor, setProveedor] = useState("resend");
   const [guardado, setGuardado] = useState(false);
+  const [eventos, setEventos] = useState<Evento[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
@@ -37,6 +39,9 @@ export function CorreoDelServicio() {
       setRemitente(aj.remitente_servicio ?? "");
       setProveedor(aj.proveedor_correo ?? "resend");
     }
+
+    const { data: ev } = await supabase.rpc("panel_correo_eventos", { p_dias: 30 });
+    setEventos((ev ?? []) as Evento[]);
   }, []);
 
   useEffect(() => { void cargar(); }, [cargar]);
@@ -141,6 +146,40 @@ export function CorreoDelServicio() {
         La clave se guarda cifrada en el Vault y no vuelve a salir de ahí: la
         lee la función de envío con identidad de servidor. Desde aquí no se
         puede recuperar, ni siendo administrador.
+      </p>
+
+      {/* Lo que el proveedor cuenta de vuelta. Está aquí y no en Salud
+          porque hasta que no se envíe de verdad estará vacío, y una sección
+          permanentemente a cero enseña a no mirarla. */}
+      <div className="section-label" style={{ marginTop: 18 }}>
+        <span>REBOTES Y QUEJAS · 30 DÍAS</span>
+      </div>
+
+      {eventos.length === 0 ? (
+        <p className="menudo">
+          Ningún evento todavía. El webhook está desplegado y rechaza todo lo
+          que no venga firmado; empezará a contar cuando se envíe de verdad.
+        </p>
+      ) : (
+        <dl className="datos">
+          {eventos.map((e) => (
+            <div key={e.tipo} style={{ display: "contents" }}>
+              <dt>{e.tipo}</dt>
+              <dd>
+                {e.veces}
+                <span className="menudo">
+                  {" · último "}{new Date(e.ultimo).toLocaleDateString("es-ES")}
+                </span>
+              </dd>
+            </div>
+          ))}
+        </dl>
+      )}
+
+      <p className="menudo">
+        Los rebotes y las quejas entran solos en la lista de supresión, y en
+        global: una dirección que rebota está muerta para todos los clientes,
+        y una queja respetada solo en uno vuelve a llegar desde otro.
       </p>
     </div>
   );

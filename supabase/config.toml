@@ -47,3 +47,9 @@ verify_jwt = true
 # el verify_jwt no es una precaución: es de dónde se saca el destinatario.
 [functions.enviar-prueba]
 verify_jwt = true
+
+# Lo llama el proveedor de correo, no una persona: sin JWT. Lo que lo
+# protege es la firma Svix del cuerpo, verificada dentro. Si falta el
+# secreto, la función rechaza todo con 503 en vez de aceptar a ciegas.
+[functions.correo-webhook]
+verify_jwt = false
