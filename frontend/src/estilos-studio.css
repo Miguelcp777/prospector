@@ -194,17 +194,27 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .sidebar-signal strong, .user-chip strong { font-size: 11px; }
 .sidebar-signal small, .user-chip small { font-size: 9px; }
 
-/* La primera fila la marca la barra lateral de la app, no el studio.
-   Allí el logo empieza a 20px (padding de .app-sidebar) y su bloque mide
-   86px (.brand-lockup), así que la línea de debajo cae en 106 y el centro
-   de la imagen —58px de alto— en 49.
+/* La primera fila la marca la barra lateral de la app.
 
-   La barra del studio medía 74 sin padding vertical: sus botones quedaban
-   centrados en 37, doce por encima del logo, y las dos líneas horizontales
-   a distinta altura. 106 de alto con 8 de padding abajo deja el contenido
-   centrado en 49 y la línea en 106: las dos cosas alineadas. */
-.studio-main { grid-template-rows: 106px 78px 50px minmax(0, 1fr); }
-.studio-topbar { min-height: 106px; padding: 0 24px 8px; }
+   OJO con el elemento: .app-sidebar y .brand-lockup, que también están en
+   este archivo, son la barra lateral PROPIA del studio, la que se quitó al
+   integrarlo. No se pintan. La que hay al lado es .lateral / .marca, de
+   estilos.css, y sus medidas son otras.
+
+   Medido en el navegador a 1440px, no calculado:
+
+     logo (.marca-logo)  24 → 54, centro en 39
+     bloque .marca       24 → 86  (30 del logo + 32 de padding inferior)
+     primer ítem del menú          empieza en 88
+
+   .contenido-completo quita el padding del main, así que las dos columnas
+   arrancan a la misma altura y esos números son comparables.
+
+   86 de alto con 8 de padding abajo deja el contenido centrado en 39 —la
+   altura exacta del logo— y el borde de la barra en 86, donde termina el
+   bloque de marca y empieza el menú. */
+.studio-main { grid-template-rows: 86px 78px 50px minmax(0, 1fr); }
+.studio-topbar { min-height: 86px; padding: 0 24px 8px; }
 .breadcrumb { font-size: 10px; }
 .name-row input { width: min(470px, 36vw); font-size: 20px; }
 .save-state { padding: 4px 8px; font-size: 9px; }
