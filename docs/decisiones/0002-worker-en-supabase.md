@@ -67,6 +67,21 @@ cerrar_job_si_completo → recalcular_scores → campaña 'lista'
 - El estado del recorrido está en la base, no en la memoria de un proceso.
   Si una invocación muere a mitad, la tarea vuelve a la cola y no se pierde
   nada. Un worker largo que se cae a los cuatro minutos pierde los cuatro.
+
+  > **Esto fue falso durante meses.** `reclamar_tareas` marcaba 'en_curso' y
+  > solo volvía a coger tareas 'pendiente': nada devolvía a la cola una
+  > tarea abandonada, así que quedaba fuera del alcance de todos para
+  > siempre y su job no podía cerrarse nunca.
+  >
+  > Se vio el 6 de septiembre de 2026, al construir el panel de salud: 38
+  > tareas de enriquecimiento reclamadas entre el 31 de agosto y el 1 de
+  > septiembre seguían ahí cinco días después, con el cron corriendo cada
+  > minuto y sin un solo error que lo delatara.
+  >
+  > Lo arregla `031_reponer_tareas_colgadas.sql`: un cron cada cinco
+  > minutos las devuelve a la cola, y las que ya han gastado sus intentos se
+  > marcan en error en vez de reponerse en bucle. La ventaja que este
+  > documento daba por hecha ahora existe de verdad.
 - `SKIP LOCKED` hace que solapar invocaciones sea inofensivo, así que el
   cron puede ser agresivo sin duplicar consultas de pago.
 - El progreso real sale de contar tareas hechas, no de una estimación.
