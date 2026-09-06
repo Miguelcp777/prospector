@@ -16,6 +16,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { aplicarPlantilla, type Resultado } from "../lib/aplicar-plantilla";
+import { invocar } from "../lib/edge";
 
 const TOPE = 200;
 const SEPARADOR = "\n—\n";
@@ -317,6 +318,34 @@ function Tarjeta({
 
   const cambiado = asunto !== (m.asunto ?? "") || cuerpo !== cuerpoOriginal;
 
+  const [probando, setProbando] = useState(false);
+  const [prueba, setPrueba] = useState<string | null>(null);
+  const [falloPrueba, setFalloPrueba] = useState<string | null>(null);
+
+  /**
+   * Manda este mensaje a tu propia dirección, para verlo en una bandeja de
+   * verdad. La dirección la pone la función a partir del token: aquí no se
+   * envía ningún destinatario, ni se puede.
+   */
+  async function enviarPrueba() {
+    setFalloPrueba(null);
+    setPrueba(null);
+    setProbando(true);
+    const { datos, error: fallo } = await invocar<{
+      enviado_a: string;
+      con_diseno: boolean;
+    }>("enviar-prueba", { message_id: m.id }, "envio de prueba");
+    setProbando(false);
+    if (fallo || !datos) {
+      setFalloPrueba(fallo ?? "No se pudo enviar la prueba");
+      return;
+    }
+    setPrueba(
+      `Enviado a ${datos.enviado_a}` +
+        (datos.con_diseno ? " con el diseño aplicado." : ", en texto plano."),
+    );
+  }
+
   return (
     <article className="tarjeta">
       <div className="fila-cabeza">
@@ -433,6 +462,13 @@ function Tarjeta({
               </button>
             )}
             <button className="fantasma" onClick={alAbrir}>Plegar</button>
+            {/* A tu propio correo, nunca al lead: el destinatario lo pone la
+                Edge Function desde el token. Sirve para ver el diseño en una
+                bandeja real antes de que exista el envío de verdad. */}
+            <button className="secundario" onClick={enviarPrueba} disabled={probando}
+                    title="Envía este mensaje a tu dirección para verlo en tu bandeja">
+              {probando ? "Enviando…" : "Enviar prueba a mi correo"}
+            </button>
             {guardado && <span className="etiqueta lista">guardado</span>}
             {m.estado === "borrador" && (
               <button className="secundario" style={{ marginLeft: "auto" }}
@@ -441,6 +477,9 @@ function Tarjeta({
               </button>
             )}
           </div>
+
+          {prueba && <p className="caja-aviso">{prueba}</p>}
+          {falloPrueba && <p className="caja-error">{falloPrueba}</p>}
         </>
       )}
 

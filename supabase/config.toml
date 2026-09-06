@@ -41,3 +41,9 @@ verify_jwt = false
 # que exige usuario.
 [functions.leer-documento]
 verify_jwt = true
+
+# El correo de prueba va SIEMPRE a la dirección de quien lo pide, y esa
+# dirección sale del token. Sin JWT no habría a quién enviarlo, así que aquí
+# el verify_jwt no es una precaución: es de dónde se saca el destinatario.
+[functions.enviar-prueba]
+verify_jwt = true

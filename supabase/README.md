@@ -438,6 +438,74 @@ Los jobs del worker (`descubrir`, `enriquecer`, `redactar`) escriben sus
 fallos en `job_tareas.detalle`, no en `incidencias`. Son los que nadie ve,
 porque ocurren sin navegador delante. Falta llevarlos aquí.
 
+## Correo de prueba
+
+En Mensajes, con un mensaje abierto: **«Enviar prueba a mi correo»**. Manda
+ese mensaje —con su diseño si tiene plantilla aplicada— a tu bandeja, para
+ver en un cliente de correo real lo que se va a enviar.
+
+### Esto no es el módulo de envío
+
+La Fase 4 sigue cerrada. La diferencia cabe en una línea de
+`functions/enviar-prueba/index.ts`:
+
+```ts
+const destino = user.user.email;
+```
+
+El destinatario sale del **token**, no del cuerpo de la petición. No hay
+manera de pedirle que escriba a un lead, ni equivocándose ni a propósito.
+
+Y **no marca el mensaje como `enviado`**: lo enviado es lo que se mandó a un
+cliente, y una prueba a tu propio correo no lo es. Falsearlo estropearía el
+embudo y el registro que hay que poder enseñar ante una reclamación.
+
+El asunto sale con `[PRUEBA]` delante y el cuerpo con un aviso arriba
+diciendo a quién iba dirigido de verdad. Una prueba indistinguible de un
+envío real en la bandeja es una forma estupenda de confundirse dentro de un
+mes.
+
+### Por qué se puede hacer esto ya
+
+CLAUDE.md pone una condición: nada de envío hasta que la lista de supresión
+y el opt-out funcionen. Comprobado contra la base antes de escribirlo:
+
+| Pieza | Estado |
+|---|---|
+| Tabla `suppressions` | existe |
+| `esta_suprimido()` | existe |
+| Trigger `no_enviar_a_suprimidos` sobre `messages` | activo |
+| `messages.token_baja` | existe, sin nulos |
+| Opt-out | Edge Function `baja` + `baja.html` |
+
+Ojo con el nombre: el trigger se llama `no_enviar_a_suprimidos` y la función
+`frenar_envio_a_suprimido`. Buscarlo por el nombre de la función hace pensar
+que no existe.
+
+La prueba aplica **la misma comprobación del enlace de baja** que el trigger
+haría al enviar de verdad. Si el mensaje no lo lleva, no sale ni de prueba:
+lo contrario sería probar algo distinto de lo que se va a mandar.
+
+### Puesta en marcha
+
+Sale por **Resend**. Es una llamada HTTP, sin SDK ni firmas, y él se encarga
+de DKIM. No cierra nada: la Fase 4 puede ir por otro sitio.
+
+1. En resend.com, **verifica tu dominio** pegando los DNS que te dé. Sin eso
+   rechaza el envío, y ese es el primer error que sale siempre.
+2. Saca una API key.
+3. Los dos secretos:
+
+```bash
+supabase secrets set RESEND_API_KEY=re_...
+supabase secrets set REMITENTE_PRUEBA="Prospector <pruebas@tu-dominio.com>"
+```
+
+4. `supabase functions deploy enviar-prueba`
+
+Sin los secretos la función responde **503 diciendo cuál falta**, con su
+nombre dentro. «Falta configuración» obliga a adivinar.
+
 ## Claves
 
 | Clave | Dónde | Qué puede |
