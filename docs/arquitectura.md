@@ -71,11 +71,15 @@ Fuente de verdad: `supabase/schema.sql`.
 
 ## Decisiones abiertas
 
-- ESP para el envío: montar sobre SES o contratar Smartlead/Instantly.
+- **Qué ESP**, no *qué modelo*: el modelo lo cierra
+  `decisiones/0004-quien-es-el-remitente.md` —enviamos nosotros desde el
+  dominio del cliente, con su propio proveedor como salida—. Falta elegir
+  proveedor, y eso se mide: precio por mil y esfuerzo de integración.
 - Cachear resultados de Places por zona, para no pagar dos veces la misma
   búsqueda en campañas distintas del mismo cliente.
 - Techo por defecto de `max_consultas`: hoy son 120 por campaña, elegidos a
   ojo. Falta medirlo con coste real.
 
 Resueltas: dónde corre el worker y el presupuesto por campaña, ambas en
-`decisiones/0002-worker-en-supabase.md`.
+`decisiones/0002-worker-en-supabase.md`. Y de quién sale el correo, en
+`decisiones/0004-quien-es-el-remitente.md`.
