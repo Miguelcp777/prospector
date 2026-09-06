@@ -1675,6 +1675,67 @@ export default function StudioClient({ displayName }: StudioProps) {
     }
   }
 
+  /**
+   * Borrado definitivo, solo desde la lista de archivadas.
+   *
+   * Se pide el uso antes de preguntar: un aviso que dice "esto es
+   * irreversible" no informa de nada, y uno que dice cuántos correos se
+   * quedan sin saber con qué se compusieron, sí.
+   *
+   * Además del confirm hay que escribir el nombre. Es la fricción que
+   * corresponde a lo único de esta pantalla que no se puede deshacer.
+   */
+  async function deleteTemplateForever(plantilla: StoredTemplate) {
+    const respUso = await apiFetch(`/api/templates/${plantilla.id}/uso`);
+    const uso = respUso.ok
+      ? ((await respUso.json()) as { versiones: number; mensajes: number; enviados: number })
+      : { versiones: 0, mensajes: 0, enviados: 0 };
+
+    if (uso.enviados > 0)
+      return toast.error(
+        `No se puede borrar: compuso ${uso.enviados} correo(s) ya enviado(s).`,
+      );
+
+    const consecuencias = [
+      uso.mensajes > 0 &&
+        `${uso.mensajes} mensaje(s) dejarán de saber con qué plantilla se compusieron. El correo en sí no se toca.`,
+      uso.versiones > 0 && `Se borran ${uso.versiones} versión(es) guardadas.`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    if (
+      !window.confirm(
+        `Borrar "${plantilla.name}" DEFINITIVAMENTE.\n\nEsto no se deshace.\n` +
+          (consecuencias ? `\n${consecuencias}\n` : "") +
+          `\nSi solo quieres quitarla de en medio, ya está archivada.`,
+      )
+    )
+      return;
+
+    const escrito = window.prompt(
+      `Escribe el nombre de la plantilla para confirmar:\n\n${plantilla.name}`,
+    );
+    if (escrito?.trim() !== plantilla.name) {
+      if (escrito !== null)
+        toast.error("El nombre no coincide. No se ha borrado nada.");
+      return;
+    }
+
+    const response = await apiFetch(
+      `/api/templates/${plantilla.id}/definitivo`,
+      { method: "DELETE" },
+    );
+    if (!response.ok) {
+      const cuerpo = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+      return toast.error(cuerpo?.error ?? "No se pudo borrar");
+    }
+    toast.success(`"${plantilla.name}" borrada`);
+    await loadLibrary();
+  }
+
   async function restoreTemplate(plantilla: StoredTemplate) {
     const response = await apiFetch(`/api/templates/${plantilla.id}/restaurar`, {
       method: "POST",
@@ -3711,13 +3772,23 @@ Deja de aparecer en la biblioteca y ` +
                                 {template.category} · v{template.version}
                               </small>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => restoreTemplate(template)}
-                              title={`Restaurar "${template.name}"`}
-                            >
-                              <RotateCcw /> Restaurar
-                            </button>
+                            <div className="archivada-acciones">
+                              <button
+                                type="button"
+                                onClick={() => restoreTemplate(template)}
+                                title={`Restaurar "${template.name}"`}
+                              >
+                                <RotateCcw /> Restaurar
+                              </button>
+                              <button
+                                type="button"
+                                className="borrar"
+                                onClick={() => deleteTemplateForever(template)}
+                                title={`Borrar "${template.name}" definitivamente`}
+                              >
+                                <Trash2 />
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>

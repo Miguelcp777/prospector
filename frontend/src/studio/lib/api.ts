@@ -123,6 +123,61 @@ async function restaurarPlantilla(id: string) {
   return json({ template: aPlantilla(data as unknown as FilaPlantilla) });
 }
 
+/**
+ * Qué se lleva por delante borrar una plantilla.
+ *
+ * Se consulta antes de preguntar, para que el aviso diga números en vez de
+ * "esto es irreversible", que no informa de nada.
+ */
+async function usoDePlantilla(id: string) {
+  const [versiones, mensajes, enviados] = await Promise.all([
+    supabase.from("plantilla_versiones").select("id", { count: "exact", head: true })
+      .eq("plantilla_id", id),
+    supabase.from("messages").select("id", { count: "exact", head: true })
+      .eq("plantilla_id", id),
+    supabase.from("messages").select("id", { count: "exact", head: true })
+      .eq("plantilla_id", id).eq("estado", "enviado"),
+  ]);
+  return {
+    versiones: versiones.count ?? 0,
+    mensajes: mensajes.count ?? 0,
+    enviados: enviados.count ?? 0,
+  };
+}
+
+/**
+ * Borrado definitivo.
+ *
+ * Solo desde la lista de archivadas: archivar primero y borrar después son
+ * dos pasos a propósito, porque esto no se deshace.
+ *
+ * Se niega si la plantilla compuso algún correo YA ENVIADO. `messages.html`
+ * guarda lo que se mandó y sobrevive —el enlace es ON DELETE SET NULL, no
+ * cascade— pero se perdería con qué plantilla se compuso, y eso es parte
+ * del registro que hay que poder enseñar ante una reclamación. Ver
+ * docs/compliance.md.
+ *
+ * Hoy no salta nunca: no hay ni un mensaje enviado. Está para cuando lo
+ * haya, que es cuando ya no se puede añadir.
+ */
+async function borrarPlantilla(id: string) {
+  const uso = await usoDePlantilla(id);
+
+  if (uso.enviados > 0)
+    return error(
+      `No se puede borrar: esta plantilla compuso ${uso.enviados} correo${
+        uso.enviados === 1 ? "" : "s"
+      } ya enviado${uso.enviados === 1 ? "" : "s"}. Se queda archivada, ` +
+        `porque hay que poder decir con qué se compuso lo que se mandó.`,
+      409,
+    );
+
+  const { error: fallo } = await supabase.from("plantillas")
+    .delete().eq("id", id).eq("estado", "archivada");
+  if (fallo) return error(fallo.message, 500);
+  return json({ ok: true, ...uso });
+}
+
 type CuerpoGuardar = {
   name?: string;
   category?: string;
@@ -361,6 +416,13 @@ export async function apiFetch(
     const paraRestaurar = ruta.match(/^\/api\/templates\/([0-9a-f-]{36})\/restaurar$/i);
     if (paraRestaurar && metodo === "POST")
       return await restaurarPlantilla(paraRestaurar[1]);
+
+    const paraUso = ruta.match(/^\/api\/templates\/([0-9a-f-]{36})\/uso$/i);
+    if (paraUso && metodo === "GET") return json(await usoDePlantilla(paraUso[1]));
+
+    const paraBorrar = ruta.match(/^\/api\/templates\/([0-9a-f-]{36})\/definitivo$/i);
+    if (paraBorrar && metodo === "DELETE")
+      return await borrarPlantilla(paraBorrar[1]);
 
     const conId = ruta.match(/^\/api\/templates\/([0-9a-f-]{36})$/i);
     if (conId) {
