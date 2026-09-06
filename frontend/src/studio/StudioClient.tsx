@@ -124,7 +124,14 @@ const NOMBRE_PASO: Record<WorkflowStep, string> = {
   review: "Revisar y guardar",
 };
 type Device = "desktop" | "mobile";
-type AppTheme = "dark" | "light" | "ocean" | "emerald" | "violet";
+// Sin "light": el eje claro/oscuro lo lleva el interruptor de la app, para
+// toda la web a la vez. Este selector queda para las variantes de color, que
+// derivan sus tokens de los de la app y funcionan en los dos modos.
+//
+// Tenerlo aquí también significaba dos interruptores peleándose, y los
+// parches de .theme-light dan por hecho que --texto es casi blanco: en modo
+// claro es casi negro y se invertían todos.
+type AppTheme = "dark" | "ocean" | "emerald" | "violet";
 type ExperienceMode = "guided" | "professional";
 type WorkflowStep = "library" | "content" | "design" | "variables" | "review";
 type TextTarget = {
@@ -1541,7 +1548,7 @@ export default function StudioClient({ displayName }: StudioProps) {
       ) as AppTheme | null;
       if (
         savedTheme &&
-        ["dark", "light", "ocean", "emerald", "violet"].includes(savedTheme)
+        ["dark", "ocean", "emerald", "violet"].includes(savedTheme)
       )
         setAppTheme(savedTheme);
       const savedMode = globalThis.localStorage?.getItem(
@@ -2972,7 +2979,6 @@ export default function StudioClient({ displayName }: StudioProps) {
                   }
                 >
                   <option value="dark">Noche Aurevanta</option>
-                  <option value="light">Claro mineral</option>
                   <option value="ocean">Océano profundo</option>
                   <option value="emerald">Esmeralda ejecutiva</option>
                   <option value="violet">Violeta creativo</option>

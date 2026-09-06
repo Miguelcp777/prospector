@@ -6,6 +6,22 @@
     <link rel="icon" type="image/png" href="/favicon.png" />
     <meta name="theme-color" content="#08060f" />
     <title>Prospector · Aurevanta Labs</title>
+    <!-- El tema, antes de que React monte. Si esto se hiciera en un efecto,
+         la app pintaría un fotograma en oscuro y luego saltaría al claro:
+         un destello que deslumbra justo a quien eligió el modo claro.
+         Va en línea y sin defer a propósito: tiene que ejecutarse antes del
+         primer pintado. La misma lógica está en src/lib/tema.ts. -->
+    <script>
+      (function () {
+        var t;
+        try { t = localStorage.getItem("prospector-tema"); } catch (e) {}
+        if (t !== "claro" && t !== "oscuro")
+          t = matchMedia("(prefers-color-scheme: light)").matches ? "claro" : "oscuro";
+        document.documentElement.dataset.tema = t;
+        document.querySelector('meta[name="theme-color"]')
+          .setAttribute("content", t === "claro" ? "#f7f6fb" : "#08060f");
+      })();
+    </script>
   </head>
   <body>
     <div id="raiz"></div>

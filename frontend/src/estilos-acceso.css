@@ -11,6 +11,54 @@
    que es donde va lo que hay que leer.
    ============================================================ */
 
+/* ------------------------------------------------------------
+   Esta pantalla se queda oscura en los dos modos, a propósito.
+
+   No es un descuido del tema claro: es un hero sobre una fotografía
+   nocturna, y los velos que oscurecen la izquierda existen para que el
+   texto blanco se lea encima. Con los tokens claros heredados, el titular
+   y el título de la tarjeta pasan a texto oscuro sobre foto oscura y
+   desaparecen — comprobado en pantalla antes de escribir esto.
+
+   Hacerla clara no es cambiar tokens, es rediseñarla: otra fotografía u
+   otros velos. Mientras tanto, se fija la paleta oscura aquí dentro, igual
+   que el marco de previsualización del correo se fija en blanco en los dos
+   modos porque los clientes de correo pintan sobre blanco.
+   ------------------------------------------------------------ */
+.acceso {
+  --fondo:        #08060f;
+  --superficie:   #100d1c;
+  --superficie-2: #171327;
+  --superficie-3: #1f1a33;
+  --hundido:      #0c0917;
+  --borde:        rgba(255, 255, 255, 0.07);
+  --borde-fuerte: rgba(255, 255, 255, 0.14);
+  --texto:   #f4f2fb;
+  --texto-2: #a29dba;
+  --texto-3: #6d6789;
+  --cian:    #22d3ee;
+  --violeta: #8b5cf6;
+  --magenta: #ec4899;
+  --degradado: linear-gradient(100deg, #22d3ee 0%, #6366f1 38%, #a855f7 66%, #ec4899 100%);
+  --acento:       #22d3ee;
+  --acento-suave: rgba(34, 211, 238, 0.12);
+  --error:       #fb7185;
+  --error-suave: rgba(251, 113, 133, 0.12);
+  --error-texto: #fecdd3;
+  --aviso:       #fbbf24;
+  --aviso-suave: rgba(251, 191, 36, 0.12);
+  --aviso-texto: #fde68a;
+  --sobre-degradado: #08060f;
+  --sombra-m: 0 8px 32px rgba(0, 0, 0, 0.5);
+
+  /* Redefinir las variables no basta: el color del texto se hereda de
+     `body`, que está fuera de aquí, y allí ya se resolvió con el token
+     claro. Un color heredado no se recalcula porque un descendiente cambie
+     la variable. Hay que volver a declararlo dentro. */
+  color: var(--texto);
+  color-scheme: dark;
+}
+
 .acceso {
   position: relative;
   isolation: isolate;

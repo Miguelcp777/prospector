@@ -52,6 +52,28 @@
   --sombra-m: 0 8px 32px rgba(0, 0, 0, 0.5);
   --brillo:   0 0 40px rgba(139, 92, 246, 0.25);
 
+  /* Tokens que antes iban escritos a pelo dentro de las reglas. Mismos
+     valores; el cambio es que ahora el tema claro puede tocarlos. */
+  --superficie-3: #1f1a33;   /* hover de los botones secundarios */
+  --hundido:      #0c0917;   /* campos, code, cuerpos de texto */
+  --velo:         rgba(16, 13, 28, 0.6);
+
+  --halo-1: rgba(99, 102, 241, 0.16);
+  --halo-2: rgba(236, 72, 153, 0.11);
+  --halo-3: rgba(34, 211, 238, 0.07);
+  --halo-logo: rgba(139, 92, 246, 0.45);
+  --sombra-primario: rgba(139, 92, 246, 0.3);
+
+  /* El texto que va encima del degradado de marca. Ese degradado es
+     brillante en los dos temas, así que encima siempre va oscuro. */
+  --sobre-degradado: #08060f;
+
+  --error-texto: #fecdd3;
+  --aviso-texto: #fde68a;
+  --exito-borde: rgba(52, 211, 153, 0.4);
+  --medio-suave: rgba(168, 85, 247, 0.14);
+  --medio-texto: #c4b5fd;
+
   color-scheme: dark;
 }
 
@@ -74,9 +96,9 @@ body::before {
   position: fixed; inset: 0;
   pointer-events: none; z-index: 0;
   background:
-    radial-gradient(900px 500px at 12% -5%,  rgba(99, 102, 241, 0.16), transparent 60%),
-    radial-gradient(700px 400px at 92% 8%,   rgba(236, 72, 153, 0.11), transparent 60%),
-    radial-gradient(800px 600px at 50% 110%, rgba(34, 211, 238, 0.07), transparent 60%);
+    radial-gradient(900px 500px at 12% -5%,  var(--halo-1), transparent 60%),
+    radial-gradient(700px 400px at 92% 8%,   var(--halo-2), transparent 60%),
+    radial-gradient(800px 600px at 50% 110%, var(--halo-3), transparent 60%);
 }
 .armazon, .centro { position: relative; z-index: 1; }
 
@@ -127,7 +149,7 @@ a:hover { text-decoration: underline; }
   display: flex; flex-direction: column; gap: 2px;
   position: sticky; top: 0; height: 100vh;
   border-right: 1px solid var(--borde);
-  background: rgba(16, 13, 28, 0.6);
+  background: var(--velo);
   backdrop-filter: blur(12px);
 }
 
@@ -142,7 +164,7 @@ a:hover { text-decoration: underline; }
 .marca-logo {
   width: 30px; height: 30px; flex-shrink: 0;
   object-fit: contain;
-  filter: drop-shadow(0 0 12px rgba(139, 92, 246, 0.45));
+  filter: drop-shadow(0 0 12px var(--halo-logo));
 }
 
 /* De quién es el producto. Abajo y discreto: el cliente viene a por
@@ -254,8 +276,8 @@ button:active:not(:disabled) { transform: translateY(1px); }
    contra el cian, que es muy claro. */
 .primario {
   background: var(--degradado);
-  color: #08060f; font-weight: 700;
-  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+  color: var(--sobre-degradado); font-weight: 700;
+  box-shadow: 0 4px 20px var(--sombra-primario);
 }
 .primario:hover:not(:disabled) { filter: brightness(1.12); }
 
@@ -263,7 +285,7 @@ button:active:not(:disabled) { transform: translateY(1px); }
   background: var(--superficie-2); color: var(--texto);
   border-color: var(--borde-fuerte);
 }
-.secundario:hover:not(:disabled) { background: #1f1a33; border-color: var(--cian); }
+.secundario:hover:not(:disabled) { background: var(--superficie-3); border-color: var(--cian); }
 
 .fantasma { background: none; color: var(--texto-2); padding: 7px 12px; }
 .fantasma:hover:not(:disabled) { background: var(--superficie-2); color: var(--texto); }
@@ -300,7 +322,7 @@ button:active:not(:disabled) { transform: translateY(1px); }
 input, textarea, select {
   font: inherit; width: 100%;
   padding: 11px 14px;
-  background: #0c0917;
+  background: var(--hundido);
   border: 1px solid var(--borde-fuerte);
   border-radius: var(--radio-s);
   color: var(--texto);
@@ -328,8 +350,8 @@ textarea { resize: vertical; line-height: 1.6; }
   font-size: 0.875rem;
   border-left: 3px solid;
 }
-.caja-error { background: var(--error-suave); border-color: var(--error); color: #fecdd3; }
-.caja-aviso { background: var(--aviso-suave); border-color: var(--aviso); color: #fde68a; }
+.caja-error { background: var(--error-suave); border-color: var(--error); color: var(--error-texto); }
+.caja-aviso { background: var(--aviso-suave); border-color: var(--aviso); color: var(--aviso-texto); }
 
 /* ---------------- etiquetas de estado ---------------- */
 
@@ -350,7 +372,7 @@ textarea { resize: vertical; line-height: 1.6; }
 .etiqueta.inferido, .etiqueta.alta {
   background: var(--aviso-suave); color: var(--aviso); border-color: transparent;
 }
-.etiqueta.media { background: rgba(168, 85, 247, 0.14); color: #c4b5fd; border-color: transparent; }
+.etiqueta.media { background: var(--medio-suave); color: var(--medio-texto); border-color: transparent; }
 
 /* ---------------- cifras ---------------- */
 
@@ -393,13 +415,13 @@ textarea { resize: vertical; line-height: 1.6; }
 }
 .paso.hecho .paso-numero {
   background: var(--exito-suave); color: var(--exito);
-  border-color: rgba(52, 211, 153, 0.4);
+  border-color: var(--exito-borde);
 }
 .paso.actual .paso-numero {
-  background: var(--degradado); color: #08060f;
+  background: var(--degradado); color: var(--sobre-degradado);
   border-color: transparent; box-shadow: var(--brillo);
 }
-.paso.hecho .paso-linea { background: rgba(52, 211, 153, 0.35); }
+.paso.hecho .paso-linea { background: var(--exito-borde); }
 
 .paso-cuerpo { flex: 1; min-width: 0; padding-bottom: var(--e6); }
 .paso:last-child .paso-cuerpo { padding-bottom: 0; }
@@ -489,7 +511,7 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e1) 0; width: 
 .fila.descartada { opacity: .45; }
 .queries { display: flex; gap: 6px; flex-wrap: wrap; }
 .queries code {
-  background: #0c0917; border: 1px solid var(--borde);
+  background: var(--hundido); border: 1px solid var(--borde);
   border-radius: 7px; padding: 4px 9px;
   font-size: 0.75rem; color: var(--texto-2);
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
@@ -503,7 +525,7 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e1) 0; width: 
 .datos dd { margin: 0; }
 .cuerpo {
   white-space: pre-wrap; font: inherit;
-  background: #0c0917; border: 1px solid var(--borde);
+  background: var(--hundido); border: 1px solid var(--borde);
   border-radius: var(--radio-s); padding: var(--e4); margin: 0; overflow-x: auto;
   color: var(--texto-2);
 }
@@ -547,12 +569,12 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e1) 0; width: 
 .recorrido-paso.hecho { color: var(--texto-2); }
 .recorrido-paso.hecho .recorrido-marca {
   background: var(--exito-suave); color: var(--exito);
-  border-color: rgba(52, 211, 153, 0.35);
+  border-color: var(--exito-borde);
 }
 
 .recorrido-paso.actual { color: var(--texto); font-weight: 600; background: var(--acento-suave); }
 .recorrido-paso.actual .recorrido-marca {
-  background: var(--degradado); color: #08060f; border-color: transparent;
+  background: var(--degradado); color: var(--sobre-degradado); border-color: transparent;
 }
 
 /* En móvil el lateral es una barra horizontal: el recorrido no cabe. */
@@ -683,4 +705,88 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e1) 0; width: 
   height: 520px; border: 1px solid var(--borde);
   border-radius: var(--radio-m); background: #fff;
   display: block; margin: 0 auto;
+}
+
+/* ============================================================
+   Modo claro
+   ============================================================
+   No es el oscuro con los tokens intercambiados: eso es lo que había y
+   por eso no valía. Un fondo casi blanco con los acentos de la paleta
+   oscura deja el cian en 1.63:1 sobre él —el acento principal, el de los
+   enlaces y el foco— cuando el mínimo legible es 4.5:1.
+
+   Los acentos se rebajan hasta que cumplen. Medido, no estimado:
+
+     cian    #0e7490  4.98:1     éxito  #047857  5.10:1
+     violeta #6d28d9  6.61:1     aviso  #a16207  4.58:1
+     magenta #be185d  5.62:1     error  #be123c  5.85:1
+
+   sobre el lienzo (#f7f6fb), y todos suben sobre tarjeta blanca. El texto
+   principal va a 16.99:1 y el terciario —el más flojo— a 5.17:1.
+
+   Los fondos llevan el mismo tinte violeta que el oscuro. Un blanco
+   neutro rompería la identidad y haría que los dos temas parecieran de
+   dos productos distintos.
+   ============================================================ */
+
+:root[data-tema="claro"] {
+  --fondo:        #f7f6fb;
+  --superficie:   #ffffff;
+  --superficie-2: #f1eff8;
+  --superficie-3: #e7e3f2;   /* hover: más oscuro, no más claro */
+  --hundido:      #f1eff8;
+  --velo:         rgba(255, 255, 255, 0.72);
+
+  /* Los bordes se invierten: alfa negro sobre claro, no blanco sobre
+     oscuro. Un borde blanco translúcido sobre fondo claro no existe. */
+  --borde:        rgba(23, 19, 31, 0.10);
+  --borde-fuerte: rgba(23, 19, 31, 0.20);
+
+  --texto:   #17131f;
+  --texto-2: #4c4661;
+  --texto-3: #6b6483;
+
+  --cian:    #0e7490;
+  --violeta: #6d28d9;
+  --magenta: #be185d;
+
+  /* El degradado se mantiene vivo: es la marca y solo aparece en
+     superficies pequeñas —botón principal, paso actual— con texto oscuro
+     encima, que es legible en los dos temas. */
+  --degradado: linear-gradient(100deg, #0891b2 0%, #4f46e5 38%, #7e22ce 66%, #be185d 100%);
+
+  --acento:       #0e7490;
+  --acento-suave: rgba(14, 116, 144, 0.10);
+
+  --exito:       #047857;
+  --exito-suave: rgba(4, 120, 87, 0.10);
+  --exito-borde: rgba(4, 120, 87, 0.35);
+  /* Un escalón más oscuro que el resto de acentos: el ámbar es el color
+     que peor contrasta sobre claro, y sobre su propio tinte se quedaba en
+     4.32:1. Medido en la etiqueta "inferido", que es donde aparece. */
+  --aviso:       #854d0e;
+  --aviso-suave: rgba(133, 77, 14, 0.10);
+  --error:       #be123c;
+  --error-suave: rgba(190, 18, 60, 0.09);
+
+  /* Dentro de las cajas de aviso el texto va MÁS oscuro que el borde, no
+     más claro: sobre un fondo tenue, aclararlo lo borra. */
+  --error-texto: #9f1239;
+  --aviso-texto: #854d0e;
+  --medio-suave: rgba(109, 40, 217, 0.10);
+  --medio-texto: #5b21b6;
+
+  /* Los halos del fondo bajan de opacidad: sobre claro, la misma alfa que
+     sobre negro se convierte en manchas de color. */
+  --halo-1: rgba(99, 102, 241, 0.07);
+  --halo-2: rgba(190, 24, 93, 0.05);
+  --halo-3: rgba(14, 116, 144, 0.05);
+  --halo-logo: rgba(109, 40, 217, 0.22);
+  --sombra-primario: rgba(109, 40, 217, 0.22);
+
+  /* Las sombras negras al 50% sobre blanco son suciedad, no profundidad. */
+  --sombra-m: 0 6px 24px rgba(23, 19, 31, 0.10);
+  --brillo:   0 0 24px rgba(109, 40, 217, 0.18);
+
+  color-scheme: light;
 }

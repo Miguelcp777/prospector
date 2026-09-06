@@ -375,6 +375,21 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .font-catalog { display:grid; gap:7px; margin-top:8px; }.font-catalog button { display:grid; grid-template-columns:92px minmax(0,1fr); align-items:center; gap:10px; min-width:0; padding:10px; border:1px solid color-mix(in srgb, var(--cian) 13%, transparent); border-radius:8px; background:var(--fondo); color:var(--texto-2); text-align:left; }.font-catalog button:hover,.font-catalog button.active { border-color:color-mix(in srgb, var(--cian) 44%, transparent); background:color-mix(in srgb, var(--cian) 7%, transparent); }.font-catalog span strong,.font-catalog span small { display:block; }.font-catalog span strong { color:var(--texto); font-size:10px; }.font-catalog span small { margin-top:3px; color:var(--texto-3); font-size:8px; }.font-catalog em { overflow:hidden; color:var(--texto); font-size:15px; font-style:normal; white-space:nowrap; text-overflow:ellipsis; }.font-note { display:block; margin-top:9px; color:var(--texto-3); font-size:8px; line-height:1.5; }
 .company-context { margin-top:14px; padding-top:12px; border-top:1px solid var(--line); }.company-context input,.company-context textarea { width:100%; margin-top:7px; border-color:var(--line); background:var(--fondo); color:var(--texto); }.context-chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; }.context-chips button { display:flex; align-items:center; gap:5px; padding:6px 8px; border:1px solid color-mix(in srgb, var(--cian) 16%, transparent); border-radius:20px; background:var(--fondo); color:var(--texto-2); font-size:8px; }.context-chips button.active { border-color:color-mix(in srgb, var(--cian) 45%, transparent); background:color-mix(in srgb, var(--cian) 11%, transparent); color:var(--cian); }.context-chips svg { width:10px; height:10px; }
 
+/* ============================================================
+   .theme-light ya no se aplica nunca.
+
+   Era el "modo claro" del studio: reutilizaba --texto (casi blanco en el
+   tema oscuro) como fondo y --superficie como texto. Nunca fue un tema
+   claro de verdad —el cian de la marca queda en 1.63:1 sobre él, y el
+   mínimo legible es 4.5:1— y desde que el eje claro/oscuro lo lleva la
+   app entera, con su propia paleta medida, este además se invertiría:
+   en modo claro --texto es casi negro.
+
+   Se ha quitado del selector de temas, así que la clase no se pone. Estas
+   reglas quedan aquí sin borrar porque son 209 y muchas comparten lista de
+   selectores con reglas vivas: quitarlas a mano es donde se rompe algo sin
+   enterarse. Se limpian aparte, con la pantalla delante.
+   ============================================================ */
 .theme-light { --ink-0:var(--texto); --ink-1:var(--texto); --foreground:var(--superficie); --muted-foreground:var(--texto-3); --line:color-mix(in srgb, var(--superficie-2) 20%, transparent); color:var(--superficie); }
 .theme-light .studio-topbar,.theme-light .studio-commandbar,.theme-light .message-fields,.theme-light .palette-panel,.theme-light .inspector-panel { color:var(--superficie); }
 .theme-light .breadcrumb,.theme-light .breadcrumb strong,.theme-light .command-group button,.theme-light .panel-intro small,.theme-light .structure-title small,.theme-light .library-section-label small,.theme-light .canvas-meta,.theme-light .property-field>label,.theme-light .dialog-field>span,.theme-light .dialog-form label>span,.theme-light .color-field,.theme-light .variable-row button span,.theme-light .workflow-heading small { color:var(--texto-3) !important; }

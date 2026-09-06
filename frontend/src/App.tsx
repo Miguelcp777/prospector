@@ -26,6 +26,47 @@ import { Panel } from "./pages/Panel";
 const Studio = lazy(() => import("./pages/Studio"));
 import { supabase } from "./lib/supabase";
 import { estadoDe, PASOS, ProveedorRecorrido, useRecorrido } from "./lib/recorrido";
+import { guardarTema, temaGuardado, type Tema } from "./lib/tema";
+
+/**
+ * El interruptor de tema.
+ *
+ * Enseña a dónde vas, no dónde estás: en oscuro dice "Modo claro". Un
+ * interruptor que se etiqueta con su estado actual se lee al revés la
+ * mitad de las veces.
+ */
+function BotonTema() {
+  const [tema, setTema] = useState<Tema>(() => temaGuardado());
+
+  // Mientras nadie haya elegido, la app sigue al sistema y cambia con él
+  // —al anochecer, por ejemplo—. En cuanto se elige, deja de seguirlo.
+  useEffect(() => {
+    const mq = globalThis.matchMedia?.("(prefers-color-scheme: light)");
+    if (!mq) return;
+    const alCambiar = () => {
+      if (localStorage.getItem("prospector-tema")) return;
+      setTema(mq.matches ? "claro" : "oscuro");
+    };
+    mq.addEventListener("change", alCambiar);
+    return () => mq.removeEventListener("change", alCambiar);
+  }, []);
+
+  function alternar() {
+    const siguiente: Tema = tema === "oscuro" ? "claro" : "oscuro";
+    setTema(siguiente);
+    guardarTema(siguiente);
+  }
+
+  const destino = tema === "oscuro" ? "claro" : "oscuro";
+  return (
+    <button className="nav-item" onClick={alternar}
+            title={`Cambiar al modo ${destino}`}
+            aria-label={`Cambiar al modo ${destino}`}>
+      <span aria-hidden="true">{tema === "oscuro" ? "☀" : "☾"}</span>
+      Modo {destino}
+    </button>
+  );
+}
 
 type Vista = "campanas" | "leads" | "mensajes" | "historial" | "supresiones" | "incidencias" | "cuenta" | "panel" | "studio";
 
@@ -159,6 +200,8 @@ function Aplicacion() {
         </div>
 
         <RecorridoLateral />
+
+        <BotonTema />
 
         <button className="nav-item nav-fin" onClick={() => supabase.auth.signOut()}>
           <span aria-hidden="true">→</span>
