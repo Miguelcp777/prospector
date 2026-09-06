@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Archive,
+  RotateCcw,
   AlignCenter,
   AlignJustify,
   AlignLeft,
@@ -1168,6 +1169,7 @@ export default function StudioClient({ displayName }: StudioProps) {
   );
   const [device, setDevice] = useState<Device>("desktop");
   const [savedTemplates, setSavedTemplates] = useState<StoredTemplate[]>([]);
+  const [archivedTemplates, setArchivedTemplates] = useState<StoredTemplate[]>([]);
   const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>([]);
   const [mediaSearch, setMediaSearch] = useState("");
   const [mediaLoading, setMediaLoading] = useState(true);
@@ -1654,14 +1656,35 @@ export default function StudioClient({ displayName }: StudioProps) {
   async function loadLibrary() {
     setLibraryLoading(true);
     try {
-      const response = await apiFetch("/api/templates");
-      if (response.ok) {
-        const data = (await response.json()) as { templates: StoredTemplate[] };
+      // Las dos listas a la vez: archivar mueve una plantilla de una a la
+      // otra, y recargar solo una dejaría la pantalla contando mal.
+      const [vivas, archivadas] = await Promise.all([
+        apiFetch("/api/templates"),
+        apiFetch("/api/templates/archivadas"),
+      ]);
+      if (vivas.ok) {
+        const data = (await vivas.json()) as { templates: StoredTemplate[] };
         setSavedTemplates(data.templates);
+      }
+      if (archivadas.ok) {
+        const data = (await archivadas.json()) as { templates: StoredTemplate[] };
+        setArchivedTemplates(data.templates);
       }
     } finally {
       setLibraryLoading(false);
     }
+  }
+
+  async function restoreTemplate(plantilla: StoredTemplate) {
+    const response = await apiFetch(`/api/templates/${plantilla.id}/restaurar`, {
+      method: "POST",
+    });
+    if (!response.ok) {
+      const cuerpo = (await response.json().catch(() => null)) as { error?: string } | null;
+      return toast.error(cuerpo?.error ?? "No se pudo restaurar");
+    }
+    toast.success(`"${plantilla.name}" vuelve a la biblioteca`);
+    await loadLibrary();
   }
 
   async function loadMediaLibrary() {
@@ -3666,6 +3689,41 @@ Deja de aparecer en la biblioteca y ` +
                       </small>
                     </div>
                   )}
+
+                  {/* Solo aparece si hay alguna. Una sección vacía y
+                      permanente llamada "Archivadas" es ruido en una
+                      columna que ya tiene tres listas. */}
+                  {archivedTemplates.length > 0 && (
+                    <>
+                      <div className="library-section-label saved">
+                        <span>ARCHIVADAS</span>
+                        <small>{archivedTemplates.length}</small>
+                      </div>
+                      <div className="saved-list archivadas">
+                        {archivedTemplates.map((template) => (
+                          <div key={template.id}>
+                            <span>
+                              <Archive />
+                            </span>
+                            <div>
+                              <strong>{template.name}</strong>
+                              <small>
+                                {template.category} · v{template.version}
+                              </small>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => restoreTemplate(template)}
+                              title={`Restaurar "${template.name}"`}
+                            >
+                              <RotateCcw /> Restaurar
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
                   <div className="library-section-label saved">
                     <span>MIS IMÁGENES</span>
                     <small>{mediaAssets.length}</small>

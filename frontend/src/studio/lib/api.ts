@@ -96,6 +96,33 @@ async function listarPlantillas() {
   return json({ templates: (data as unknown as FilaPlantilla[]).map(aPlantilla) });
 }
 
+/**
+ * Las archivadas, para poder deshacer.
+ *
+ * Archivar sin una forma de volver atrás no es archivar, es esconder: el
+ * dato sigue en la base pero nadie puede llegar a él sin SQL.
+ */
+async function listarArchivadas() {
+  const { data, error: fallo } = await supabase
+    .from("plantillas").select(COLUMNAS)
+    .eq("estado", "archivada")
+    .order("actualizado_en", { ascending: false }).limit(200);
+  if (fallo) return error(fallo.message, 500);
+  return json({ templates: (data as unknown as FilaPlantilla[]).map(aPlantilla) });
+}
+
+async function restaurarPlantilla(id: string) {
+  // Vuelve a 'borrador', no a 'activa': lo que estaba archivado hay que
+  // volver a mirarlo antes de darlo por bueno.
+  const { data, error: fallo } = await supabase.from("plantillas")
+    .update({ estado: "borrador", actualizado_en: new Date().toISOString() })
+    .eq("id", id).eq("estado", "archivada")
+    .select(COLUMNAS).maybeSingle();
+  if (fallo) return error(fallo.message, 500);
+  if (!data) return error("La plantilla no está archivada o no es tuya", 404);
+  return json({ template: aPlantilla(data as unknown as FilaPlantilla) });
+}
+
 type CuerpoGuardar = {
   name?: string;
   category?: string;
@@ -327,6 +354,13 @@ export async function apiFetch(
       if (metodo === "GET")  return await listarPlantillas();
       if (metodo === "POST") return await crearPlantilla(cuerpo as CuerpoGuardar);
     }
+
+    if (ruta === "/api/templates/archivadas" && metodo === "GET")
+      return await listarArchivadas();
+
+    const paraRestaurar = ruta.match(/^\/api\/templates\/([0-9a-f-]{36})\/restaurar$/i);
+    if (paraRestaurar && metodo === "POST")
+      return await restaurarPlantilla(paraRestaurar[1]);
 
     const conId = ruta.match(/^\/api\/templates\/([0-9a-f-]{36})$/i);
     if (conId) {
