@@ -90,6 +90,7 @@ const TODAVIA_NO =
 async function listarPlantillas() {
   const { data, error: fallo } = await supabase
     .from("plantillas").select(COLUMNAS)
+    .neq("estado", "archivada")
     .order("actualizado_en", { ascending: false }).limit(200);
   if (fallo) return error(fallo.message, 500);
   return json({ templates: (data as unknown as FilaPlantilla[]).map(aPlantilla) });
@@ -333,8 +334,24 @@ export async function apiFetch(
       if (metodo === "PUT" || metodo === "PATCH")
         return await actualizarPlantilla(id, cuerpo as CuerpoGuardar);
       if (metodo === "DELETE") {
-        const { error: fallo } = await supabase.from("plantillas").delete().eq("id", id);
-        return fallo ? error(fallo.message, 500) : json({ ok: true });
+        // Archiva, no borra. El botón del editor dice "Archivar" y hasta
+        // ahora hacía un DELETE de verdad, sin preguntar: un clic en un
+        // icono pequeño y la plantilla desaparecía.
+        //
+        // Y no se llevaba solo la plantilla. `plantilla_versiones` cuelga
+        // con ON DELETE CASCADE, así que se iba con ella el histórico de
+        // versiones —el que la 025 hizo inmutable a propósito— y
+        // `messages.plantilla_id` es ON DELETE SET NULL, así que los
+        // correos ya enviados perdían el registro de con qué se
+        // compusieron. Eso es justo lo que hay que poder enseñar ante una
+        // reclamación.
+        //
+        // `estado` ya admitía 'archivada' desde la 025. Solo había que
+        // usarlo.
+        const { error: fallo } = await supabase.from("plantillas")
+          .update({ estado: "archivada", actualizado_en: new Date().toISOString() })
+          .eq("id", id);
+        return fallo ? error(fallo.message, 500) : json({ ok: true, estado: "archivada" });
       }
       if (metodo === "GET") {
         const { data, error: fallo } = await supabase

@@ -63,6 +63,7 @@ export function Mensajes({ alIrA }: { alIrA?: (vista: "studio") => void }) {
     // ve exactamente igual que no tener ninguna, y son dos problemas
     // distintos con dos arreglos distintos.
     supabase.from("plantillas").select("id, nombre")
+      .neq("estado", "archivada")
       .order("actualizado_en", { ascending: false })
       .then(({ data, error: fallo }) => {
         if (fallo) setFalloPlantillas(fallo.message);

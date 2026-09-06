@@ -2221,6 +2221,18 @@ export default function StudioClient({ displayName }: StudioProps) {
 
   async function archiveTemplate() {
     if (!templateId) return;
+    // Preguntar antes: es un icono pequeño en una barra llena de iconos, y
+    // hasta ahora un clic de más se llevaba la plantilla sin decir nada.
+    if (
+      !window.confirm(
+        `¿Archivar "${name}"?
+
+Deja de aparecer en la biblioteca y ` +
+          `en Mensajes. No se borra: los correos ya compuestos con ella ` +
+          `siguen enlazados y se puede recuperar.`,
+      )
+    )
+      return;
     const response = await apiFetch(`/api/templates/${templateId}`, {
       method: "DELETE",
     });
@@ -3090,7 +3102,8 @@ export default function StudioClient({ displayName }: StudioProps) {
                   size="icon-sm"
                   className="danger-ghost"
                   onClick={archiveTemplate}
-                  aria-label="Archivar"
+                  aria-label="Archivar esta plantilla"
+                  title="Archivar esta plantilla"
                 >
                   <Archive />
                 </Button>
