@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronLeft, ChevronRight, HelpCircle, Sparkles, X } from "lucide-react";
 
 export type TourStep = { selector?: string; eyebrow: string; title: string; body: string; tip?: string };
@@ -11,12 +11,46 @@ export default function GuidedTour({ open, onOpenChange, steps }: Props) {
   const [index,setIndex]=useState(0);
   const [rect,setRect]=useState<DOMRect|null>(null);
   const step=steps[index];
+  const scrollGuardado=useRef<{el:Element;top:number;left:number}[]|null>(null);
+
+  // Cuando el recorrido sí ha tenido que desplazar algo para enseñarlo, al
+  // cerrarse hay que devolverlo. Si no, se sale de la ayuda y el editor se
+  // ha quedado movido, sin que el usuario haya tocado nada.
+  useEffect(()=>{
+    if(open){
+      const raiz=document.querySelector(".studio")??document.body;
+      const items:{el:Element;top:number;left:number}[]=[{el:document.scrollingElement??document.documentElement,top:window.scrollY,left:window.scrollX}];
+      for(const el of Array.from(raiz.querySelectorAll("*")))
+        if(el.scrollHeight>el.clientHeight||el.scrollWidth>el.clientWidth)
+          items.push({el,top:el.scrollTop,left:el.scrollLeft});
+      scrollGuardado.current=items;
+      return;
+    }
+    const items=scrollGuardado.current;
+    if(!items)return;
+    scrollGuardado.current=null;
+    const devolver=()=>{
+      for(const {el,top,left} of items){
+        if(!el.isConnected)continue;
+        el.scrollTop=top;el.scrollLeft=left;
+      }
+    };
+    // Dos veces a propósito: el scroll suave del último paso puede seguir
+    // animándose al cerrar. La primera pasada lo aborta —un scroll nuevo
+    // cancela el que está en curso— y la segunda recoge lo que llegara tarde.
+    devolver();
+    requestAnimationFrame(devolver);
+  },[open]);
 
   useEffect(()=>{
     if(!open||!step)return;
     const update=()=>{
       const element=step.selector?document.querySelector<HTMLElement>(step.selector):null;
-      if(element){element.scrollIntoView({behavior:"smooth",block:"center",inline:"center"});window.setTimeout(()=>setRect(element.getBoundingClientRect()),250)}else setRect(null);
+      if(element){// "nearest" no mueve nada cuando el elemento ya se ve entero, que en
+      // este layout es casi siempre: los siete puntos del recorrido son
+      // paneles visibles a la vez. "center" los recentraba igualmente y
+      // desplazaba el contenido sin ninguna necesidad.
+      element.scrollIntoView({behavior:"smooth",block:"nearest",inline:"nearest"});window.setTimeout(()=>setRect(element.getBoundingClientRect()),250)}else setRect(null);
     };
     update();window.addEventListener("resize",update);window.addEventListener("scroll",update,true);
     return()=>{window.removeEventListener("resize",update);window.removeEventListener("scroll",update,true)};
