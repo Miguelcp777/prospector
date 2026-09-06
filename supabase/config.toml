@@ -53,3 +53,10 @@ verify_jwt = true
 # secreto, la función rechaza todo con 503 en vez de aceptar a ciegas.
 [functions.correo-webhook]
 verify_jwt = false
+
+# El alta del dominio de un cliente en el proveedor. Con JWT: la lanza el
+# cliente desde su Cuenta, y su configuración se lee con SU token para que
+# la RLS decida cuál es la suya. La clave del proveedor y las columnas de
+# verificación las toca después con service_role, dentro.
+[functions.dominio-correo]
+verify_jwt = true

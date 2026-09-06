@@ -16,6 +16,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { invocar } from "../lib/edge";
 
 type Config = {
   modo: "gestionado" | "propio";
@@ -28,6 +29,22 @@ type Config = {
   proveedor: "resend" | "ses" | "smtp" | null;
   estado_dominio: "sin_verificar" | "pendiente_dns" | "verificado" | "fallo";
   detalle: string | null;
+  /**
+   * Lo que el proveedor dice que hay que poner en el DNS. Nace en [] y lo
+   * rellena la Edge Function `dominio-correo` al dar el dominio de alta.
+   */
+  registros_dns: RegistroDns[];
+};
+
+/** Un registro tal como lo devuelve el proveedor. */
+type RegistroDns = {
+  record?: string;
+  name?: string;
+  type?: string;
+  value?: string;
+  ttl?: string | number;
+  priority?: number;
+  status?: string;
 };
 
 type Credencial = { configurada: boolean; actualizada_en: string | null; pista: string | null };
@@ -36,6 +53,7 @@ const VACIA: Config = {
   modo: "gestionado", nombre_remitente: "", buzon: "", dominio: "",
   responder_a: "", direccion_postal: "", url_privacidad: "",
   proveedor: null, estado_dominio: "sin_verificar", detalle: null,
+  registros_dns: [],
 };
 
 export function CorreoDelCliente() {
@@ -45,6 +63,7 @@ export function CorreoDelCliente() {
   const [guardando, setGuardando] = useState(false);
   const [guardado, setGuardado] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dominioOcupado, setDominioOcupado] = useState<"alta" | "comprobar" | null>(null);
 
   const cargar = useCallback(async () => {
     // mi_config_correo crea la fila si no existe. Así la pantalla no tiene
@@ -63,6 +82,27 @@ export function CorreoDelCliente() {
   function campo<K extends keyof Config>(clave: K, valor: Config[K]) {
     setCfg((c) => (c ? { ...c, [clave]: valor } : c));
     setGuardado(false);
+  }
+
+  /**
+   * Da de alta el dominio en el proveedor, o pregunta cómo va.
+   *
+   * Las dos cosas las hace la misma Edge Function porque comparten casi
+   * todo: quién eres, cuál es tu dominio y qué dice el proveedor de él.
+   * El cliente no toca `estado_dominio` ni `registros_dns` — la 028 los
+   * dejó fuera del GRANT a propósito, así que esto tiene que pasar por el
+   * servidor aunque parezca un botón tonto.
+   */
+  async function gestionarDominio(accion: "alta" | "comprobar") {
+    setError(null);
+    setDominioOcupado(accion);
+    const { error: fallo } = await invocar(
+      "dominio-correo", { accion },
+      accion === "alta" ? "alta de dominio" : "comprobar dominio",
+    );
+    setDominioOcupado(null);
+    if (fallo) { setError(fallo); return; }
+    await cargar();
   }
 
   async function guardar(e: React.FormEvent) {
@@ -228,14 +268,13 @@ export function CorreoDelCliente() {
             </strong>{" "}
             Añadirás dos o tres registros DNS donde tengas{" "}
             {cfg.dominio || "tu dominio"} y nosotros comprobamos que están.
-            No hace falta que abras cuenta en ningún proveedor.
-            {" "}<em>Pendiente de elegir proveedor de envío.</em>
+            No hace falta que abras cuenta en ningún proveedor. Los registros
+            salen abajo, en <strong>Registros DNS</strong>.
           </li>
           <li>
-            <strong>○ Rebotes y quejas automáticos.</strong> Hasta que las
-            bajas y los rebotes entren solos en la lista de supresión, no se
-            envía. Sin eso la lista deja de estar al día y se acaba
-            escribiendo a direcciones muertas.
+            <strong>✓ Rebotes y quejas automáticos.</strong> Las bajas, los
+            rebotes y las quejas de spam entran solos en la lista de
+            supresión desde que existe el webhook del proveedor.
           </li>
         </ol>
 
@@ -244,6 +283,101 @@ export function CorreoDelCliente() {
           en cualquier mensaje, que va solo a tu dirección.
         </p>
       </div>
+
+      {/* ------------------------------------------------------------
+          Registros DNS.
+
+          Enseñarlos es media función: la otra media es no dejar que el
+          cliente se marque verificado solo. Por eso el estado no es un
+          campo de este formulario, sino lo que contesta el proveedor.
+          ------------------------------------------------------------ */}
+      {cfg.modo === "gestionado" && (
+        <div className="tarjeta">
+          <div>
+            <h2>Registros DNS</h2>
+            <p className="sutil">
+              Damos de alta {cfg.dominio || "tu dominio"} en nuestro proveedor
+              de envío y te decimos qué pegar donde lo tengas comprado. Ni
+              cuenta, ni factura, ni clave: solo unos registros.
+            </p>
+          </div>
+
+          {error && <p className="caja-error">{error}</p>}
+
+          <p className={cfg.estado_dominio === "verificado" ? "caja-aviso" : "menudo"}>
+            <strong>
+              {{
+                sin_verificar: "Sin dar de alta",
+                pendiente_dns: "Esperando a que aparezcan los registros",
+                verificado: "✓ Dominio verificado",
+                fallo: "El proveedor no encuentra los registros",
+              }[cfg.estado_dominio]}
+            </strong>
+            {cfg.detalle ? ` · ${cfg.detalle}` : ""}
+          </p>
+
+          <div className="rejilla">
+            <button
+              className="primario"
+              type="button"
+              disabled={!cfg.dominio || dominioOcupado !== null}
+              onClick={() => void gestionarDominio("alta")}
+            >
+              {dominioOcupado === "alta" ? "Dando de alta…" : "Dar de alta el dominio"}
+            </button>
+            {cfg.registros_dns.length > 0 && (
+              <button
+                className="fantasma"
+                type="button"
+                disabled={dominioOcupado !== null}
+                onClick={() => void gestionarDominio("comprobar")}
+              >
+                {dominioOcupado === "comprobar" ? "Comprobando…" : "Ya los he puesto, comprueba"}
+              </button>
+            )}
+          </div>
+
+          {!cfg.dominio && (
+            <p className="menudo">
+              Primero rellena el dominio arriba y guarda.
+            </p>
+          )}
+
+          {cfg.registros_dns.length > 0 && (
+            <>
+              <div className="tabla-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Tipo</th><th>Nombre</th><th>Valor</th><th>Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cfg.registros_dns.map((r, i) => (
+                      <tr key={i}>
+                        <td>{r.type ?? "—"}</td>
+                        <td><code>{r.name ?? "—"}</code></td>
+                        <td>
+                          <code style={{ wordBreak: "break-all" }}>{r.value ?? "—"}</code>
+                          {r.priority !== undefined && ` · prioridad ${r.priority}`}
+                        </td>
+                        <td>{r.status ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="menudo">
+                Cópialos tal cual, sin añadir el dominio al final del nombre:
+                casi todos los paneles de DNS lo ponen ellos, y duplicarlo es
+                el fallo que más tiempo se lleva. La propagación puede tardar
+                horas — si al comprobar sigue en espera, no está mal puesto,
+                está tardando.
+              </p>
+            </>
+          )}
+        </div>
+      )}
 
       {/* ------------------------------------------------------------
           Opción A de la decisión 0004.

@@ -506,6 +506,63 @@ supabase secrets set REMITENTE_PRUEBA="Prospector <pruebas@tu-dominio.com>"
 Sin los secretos la función responde **503 diciendo cuál falta**, con su
 nombre dentro. «Falta configuración» obliga a adivinar.
 
+## Alta del dominio de un cliente
+
+La pieza que la decisión 0004 dejaba pendiente. `config_correo` (028) ya
+guardaba qué dominio quiere usar cada cliente, pero `registros_dns` nacía
+en `[]` y `estado_dominio` en `sin_verificar`, y **nada los movía nunca**.
+
+Los mueve la Edge Function `dominio-correo`:
+
+```bash
+supabase functions deploy dominio-correo
+```
+
+Va con JWT: la lanza el cliente desde **Cuenta → Correo saliente**, en la
+tarjeta *Registros DNS*. Dos botones:
+
+| Acción | Qué hace |
+|---|---|
+| `alta` | Crea el dominio en Resend (región `eu-west-1`) y guarda los registros que devuelve |
+| `comprobar` | Pide la verificación y actualiza `estado_dominio` |
+
+No necesita secretos propios: usa la **clave del servicio**, la misma del
+Vault que ya lee `enviar-prueba`. El cliente no abre cuenta en ningún
+sitio, que es justo la fricción que la 0004 quería evitar.
+
+### Qué escribe, y por qué tiene que ser el servidor
+
+`estado_dominio`, `registros_dns` y `proveedor_dominio_id` están **fuera**
+del GRANT por columna que la 028 concede a `authenticated`. Eso obliga a
+pasar por la función, y no es burocracia:
+
+- Si el cliente pudiera escribir `estado_dominio`, se marcaría
+  `verificado` y empezaría a enviar sin haber puesto un solo registro.
+- Si pudiera escribir `proveedor_dominio_id`, podría apuntarlo al dominio
+  ya verificado de **otro tenant** y heredar su verificación.
+
+### Detalles que cuestan tiempo si no se saben
+
+- **Si el cliente cambia el dominio** después del alta, el id guardado
+  apunta al anterior. La función lo detecta comparando el nombre y vuelve
+  a dar de alta. Sin eso se verificaría un dominio que ya no usa y la
+  pantalla diría que todo está bien.
+- **`temporary_failure` no es `fallo`.** Se mapea a `pendiente_dns`:
+  marcarlo como error haría que el cliente rehiciera un DNS que ya estaba
+  bien puesto.
+- **Un estado desconocido del proveedor nunca cae en `verificado`.** Por
+  defecto va a `pendiente_dns`, porque lo contrario deja enviar desde un
+  dominio sin comprobar.
+- **Modo `propio`** (opción A de la 0004) no pasa por aquí: ese cliente
+  trae su propio proveedor y el alta la hace allí.
+
+### Lo que no está probado
+
+Escrito y desplegado; **ninguna campaña ha dado de alta un dominio real
+todavía**. El camino que sí está verificado es el manual —el mismo que se
+siguió con `envios.i-automate.es`—, que es de lo que esto es la versión
+automática.
+
 ## Claves
 
 | Clave | Dónde | Qué puede |
