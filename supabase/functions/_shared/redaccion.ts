@@ -13,6 +13,7 @@
 
 import { MODELO } from "./inferencia.ts";
 import { anotarConsumo, type Quien } from "./consumo.ts";
+import { claveAnthropic } from "./claves.ts";
 
 export type Contexto = {
   lead_nombre: string;
@@ -24,8 +25,12 @@ export type Contexto = {
   segmento_motivo: string | null;
   campana_descripcion: string | null;
   campana_ciudad: string;
+  /** Quién firma. Es el de la campaña si lo tiene, y si no el del tenant (043). */
   negocio_nombre: string;
-  negocio_vertical: string;
+  // Nulos cuando la campaña declara empresa propia: el sector y la ciudad
+  // describen al tenant, y atribuírselos a otra empresa sería inventar su
+  // presentación. Lo que sí describe a esta es `campana_descripcion`.
+  negocio_vertical: string | null;
   negocio_ciudad: string | null;
   campana_tipo: string;
   campana_tono: string;
@@ -103,7 +108,8 @@ export async function redactarMensaje(
   // Las reseñas y la puntuación se le pasan a propósito NO: el prompt dice
   // que no las use, y la forma fiable de que no las use es no dárselas.
   const contexto = [
-    `QUIEN ESCRIBE: ${c.negocio_nombre}, ${c.negocio_vertical}` +
+    `QUIEN ESCRIBE: ${c.negocio_nombre}` +
+      (c.negocio_vertical ? `, ${c.negocio_vertical}` : "") +
       (c.negocio_ciudad ? ` en ${c.negocio_ciudad}` : ""),
     c.campana_descripcion ? `A qué se dedica: ${c.campana_descripcion}` : "",
     "",
@@ -136,7 +142,7 @@ export async function redactarMensaje(
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-api-key": Deno.env.get("ANTHROPIC_API_KEY")!,
+      "x-api-key": await claveAnthropic(),
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({

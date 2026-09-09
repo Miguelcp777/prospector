@@ -16,6 +16,7 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { MODELO } from "../_shared/inferencia.ts";
 import { anotarConsumo } from "../_shared/consumo.ts";
+import { claveAnthropic } from "../_shared/claves.ts";
 import { json, preflight } from "../_shared/http.ts";
 
 /** Lo que el editor sabe pedir. Cualquier otra cosa se rechaza. */
@@ -88,7 +89,7 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        "x-api-key": Deno.env.get("ANTHROPIC_API_KEY")!,
+        "x-api-key": await claveAnthropic(),
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({

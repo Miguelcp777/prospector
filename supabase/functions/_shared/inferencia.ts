@@ -10,6 +10,7 @@
 // ============================================================
 
 import { anotarConsumo, type Quien } from "./consumo.ts";
+import { claveAnthropic } from "./claves.ts";
 
 export const MODELO = "claude-sonnet-5";
 
@@ -76,7 +77,7 @@ export async function inferirSegmentos(
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-api-key": Deno.env.get("ANTHROPIC_API_KEY")!,
+      "x-api-key": await claveAnthropic(),
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({

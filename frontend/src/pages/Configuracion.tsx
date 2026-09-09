@@ -18,6 +18,8 @@ type Config = {
   evitar_ya_contactados: boolean;
   tono: string;
   idioma: string;
+  /** La empresa que firma esta campaña. Vacío = la de la cuenta (043). */
+  negocio_nombre: string | null;
   firma: string | null;
   llamada_accion: string | null;
 };
@@ -43,19 +45,31 @@ const IDIOMAS = [
 
 export function Configuracion({ campanaId }: { campanaId: string }) {
   const [c, setC] = useState<Config | null>(null);
+  // El nombre de la cuenta, solo para enseñarlo como valor por defecto: es
+  // el que se usará si la campaña no pone uno propio.
+  const [nombreCuenta, setNombreCuenta] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [guardado, setGuardado] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.from("campaigns")
-      .select("tipo, tono, idioma, firma, llamada_accion, evitar_ya_contactados")
+      .select("tipo, tono, idioma, negocio_nombre, firma, llamada_accion, evitar_ya_contactados")
       .eq("id", campanaId).single()
       .then(({ data, error: fallo }) => {
         if (fallo) setError(fallo.message);
         else setC(data as Config);
       });
   }, [campanaId]);
+
+  useEffect(() => {
+    supabase.from("profiles").select("tenants(nombre)").single()
+      .then(({ data }) => {
+        setNombreCuenta(
+          (data as { tenants?: { nombre?: string } } | null)?.tenants?.nombre ?? "",
+        );
+      });
+  }, []);
 
   function cambiar(campo: keyof Config, valor: string | boolean) {
     setC((prev) => (prev ? { ...prev, [campo]: valor } : prev));
@@ -70,6 +84,7 @@ export function Configuracion({ campanaId }: { campanaId: string }) {
       tipo: c.tipo,
       tono: c.tono,
       idioma: c.idioma,
+      negocio_nombre: c.negocio_nombre?.trim() || null,
       firma: c.firma?.trim() || null,
       llamada_accion: c.llamada_accion?.trim() || null,
       evitar_ya_contactados: c.evitar_ya_contactados,
@@ -92,6 +107,27 @@ export function Configuracion({ campanaId }: { campanaId: string }) {
       </div>
 
       {error && <p className="caja-error">{error}</p>}
+
+      <label className="campo">
+        <span>Empresa que escribe</span>
+        <input value={c.negocio_nombre ?? ""}
+               onChange={(e) => cambiar("negocio_nombre", e.target.value)}
+               placeholder={nombreCuenta || "El nombre de tu cuenta"} />
+      </label>
+      <p className="menudo">
+        Con quién se presenta el correo y quién aparece en el pie legal.
+        Déjalo vacío y firma <strong>{nombreCuenta || "tu cuenta"}</strong>,
+        que es lo correcto si prospectas para ti. Ponlo cuando la campaña sea
+        de otra empresa: sin esto, un correo de una campaña de Woody Tatoo se
+        presenta como tu cuenta.
+      </p>
+      {c.negocio_nombre?.trim() && (
+        <p className="menudo">
+          Con nombre propio puesto, el sector y la ciudad de tu cuenta dejan
+          de ir al redactor: describirían a otra empresa. Lo que cuenta
+          entonces es la descripción de la campaña, del paso 1.
+        </p>
+      )}
 
       <label className="campo">
         <span>Tipo de campaña</span>

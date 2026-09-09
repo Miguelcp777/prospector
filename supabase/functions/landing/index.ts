@@ -69,14 +69,26 @@ Deno.serve(async (req) => {
     let logo: string | null = null;
     const documentos: { nombre: string; url: string }[] = [];
 
-    for (const r of (recursos ?? []) as { tipo: string; nombre: string; ruta: string }[]) {
-      const { data: firmada } = await supabase.storage
-        .from("recursos").createSignedUrl(r.ruta, 3600);
-      if (!firmada?.signedUrl) continue;
+    for (
+      const r of (recursos ?? []) as
+        { tipo: string; nombre: string; ruta: string; bucket: string | null }[]
+    ) {
+      const bucket = r.bucket ?? "recursos";
+
+      // Los logos viven ahora en un bucket público, para que se puedan ver
+      // también dentro de un correo (migración 044). Firmar su ruta contra
+      // `recursos` devolvería nulo y la landing se quedaría sin logo sin
+      // dar ningún error. Los documentos siguen firmados y caducando.
+      const url = bucket === "logos"
+        ? supabase.storage.from("logos").getPublicUrl(r.ruta).data.publicUrl
+        : (await supabase.storage.from(bucket).createSignedUrl(r.ruta, 3600))
+            .data?.signedUrl;
+
+      if (!url) continue;
       // El primero que llega es el logo de la campaña; el del negocio va
       // detrás y solo se usa si no había otro (lo ordena la función SQL).
-      if (r.tipo === "logo") logo ??= firmada.signedUrl;
-      else documentos.push({ nombre: r.nombre, url: firmada.signedUrl });
+      if (r.tipo === "logo") logo ??= url;
+      else documentos.push({ nombre: r.nombre, url });
     }
 
     return json({

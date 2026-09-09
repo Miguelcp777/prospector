@@ -506,7 +506,442 @@ supabase secrets set REMITENTE_PRUEBA="Prospector <pruebas@tu-dominio.com>"
 Sin los secretos la función responde **503 diciendo cuál falta**, con su
 nombre dentro. «Falta configuración» obliga a adivinar.
 
-## Claves
+## Alta del dominio de un cliente
+
+La pieza que la decisión 0004 dejaba pendiente. `config_correo` (028) ya
+guardaba qué dominio quiere usar cada cliente, pero `registros_dns` nacía
+en `[]` y `estado_dominio` en `sin_verificar`, y **nada los movía nunca**.
+
+Los mueve la Edge Function `dominio-correo`:
+
+```bash
+supabase functions deploy dominio-correo
+```
+
+Va con JWT: la lanza el cliente desde **Cuenta → Correo saliente**, en la
+tarjeta *Registros DNS*. Dos botones:
+
+| Acción | Qué hace |
+|---|---|
+| `alta` | Crea el dominio en Resend (región `eu-west-1`) y guarda los registros que devuelve |
+| `comprobar` | Pide la verificación y actualiza `estado_dominio` |
+
+No necesita secretos propios: usa la **clave del servicio**, la misma del
+Vault que ya lee `enviar-prueba`. El cliente no abre cuenta en ningún
+sitio, que es justo la fricción que la 0004 quería evitar.
+
+### Qué escribe, y por qué tiene que ser el servidor
+
+`estado_dominio`, `registros_dns` y `proveedor_dominio_id` están **fuera**
+del GRANT por columna que la 028 concede a `authenticated`. Eso obliga a
+pasar por la función, y no es burocracia:
+
+- Si el cliente pudiera escribir `estado_dominio`, se marcaría
+  `verificado` y empezaría a enviar sin haber puesto un solo registro.
+- Si pudiera escribir `proveedor_dominio_id`, podría apuntarlo al dominio
+  ya verificado de **otro tenant** y heredar su verificación.
+
+### Detalles que cuestan tiempo si no se saben
+
+- **Si el cliente cambia el dominio** después del alta, el id guardado
+  apunta al anterior. La función lo detecta comparando el nombre y vuelve
+  a dar de alta. Sin eso se verificaría un dominio que ya no usa y la
+  pantalla diría que todo está bien.
+- **`temporary_failure` no es `fallo`.** Se mapea a `pendiente_dns`:
+  marcarlo como error haría que el cliente rehiciera un DNS que ya estaba
+  bien puesto.
+- **Un estado desconocido del proveedor nunca cae en `verificado`.** Por
+  defecto va a `pendiente_dns`, porque lo contrario deja enviar desde un
+  dominio sin comprobar.
+- **Modo `propio`** (opción A de la 0004) no pasa por aquí: ese cliente
+  trae su propio proveedor y el alta la hace allí.
+
+### Lo que no está probado
+
+Escrito y desplegado; **ninguna campaña ha dado de alta un dominio real
+todavía**. El camino que sí está verificado es el manual —el mismo que se
+siguió con `envios.i-automate.es`—, que es de lo que esto es la versión
+automática.
+
+## Quién firma los correos
+
+En **Campaña → Cómo se escriben los correos**, campo *Empresa que escribe*.
+Vacío = el nombre de la cuenta, que es el comportamiento de siempre.
+
+### El fallo que lo trajo
+
+Los diez mensajes de la campaña «Woody tatoo» se presentaban como
+**i-automate**. No lo inventó el modelo: `v_contexto_mensaje` sacaba
+`negocio_nombre` de `tenants.nombre`, y el pie legal —el que identifica al
+remitente ante la LSSI-CE— también.
+
+Aparece en cuanto alguien usa esto como agencia: una cuenta, varias
+campañas, cada campaña de una empresa distinta. El tenant es la cuenta; la
+empresa que escribe, no siempre.
+
+### Por qué no vale `campaigns.nombre`
+
+Es lo primero que se piensa y sale mal. `campaigns.nombre` es una etiqueta
+para encontrar la campaña en una lista. En esta base ya hay campañas
+llamadas «ASESORIAS Y DESPACHOS DE ABOGADOS» y «Piloto Valencia»: eso es a
+quién se busca, o una nota de trabajo. Un correo firmado «ASESORIAS Y
+DESPACHOS DE ABOGADOS» dirigido a un despacho de abogados es justo el
+ridículo que hay que evitar.
+
+### El sector y la ciudad se apagan con nombre propio
+
+Cuando la campaña declara empresa propia, `negocio_vertical` y
+`negocio_ciudad` salen nulos del contexto. Describen al **tenant**, y
+atribuírselos a otra empresa es inventarle la presentación: «Woody Tatoo,
+automatización con IA» es peor que no decir el sector.
+
+Lo que sí describe al negocio de la campaña es `campaigns.descripcion`, que
+el prompt ya usa —«A qué se dedica»— y que se rellena en el paso 1.
+
+### Los dos sitios tienen que decir lo mismo
+
+El nombre lo usan dos caminos distintos y ambos aplican el mismo criterio:
+
+| Camino | Dónde |
+|---|---|
+| El texto que escribe el modelo, y el pie en texto plano | `v_contexto_mensaje` → `redaccion.ts` |
+| El diseño, al vestir con una plantilla | `frontend/src/lib/aplicar-plantilla.ts` |
+
+Si se cambia uno hay que cambiar el otro: un correo cuyo texto firma una
+empresa y cuyo pie firma otra es peor que el fallo original.
+
+### Lo que no arregla
+
+**Los mensajes ya redactados no cambian.** Siguen diciendo lo que decían
+cuando se escribieron. Para rehacerlos hay que borrar los borradores desde
+Mensajes y volver a pulsar «Escribir mensajes», y eso es una llamada al
+modelo por cabeza.
+
+## Configuración, recursos y plantillas: qué hace cada cosa
+
+Tres pantallas tocan el mismo correo y hasta la 044 no encajaban. Este es el
+reparto, ya coherente:
+
+| Pieza | Dónde se pone | A dónde va de verdad |
+|---|---|---|
+| Tipo, tono, idioma, firma, llamada a la acción | Campaña → Cómo se escriben los correos | al **prompt** del redactor |
+| Empresa que escribe | ídem | al prompt **y al pie legal** (043) |
+| **Documentos** | Campaña → Recursos | su **texto** al prompt («LO QUE SE OFRECE»). **No se adjuntan** |
+| **Logo** | Campaña → Recursos | la cabecera del **correo** y la **landing** |
+| Plantilla del studio | Plantillas | el **diseño** donde entra el texto |
+
+### Lo que estaba roto
+
+- **El logo no salía en ningún correo.** Ni con plantilla: no había ninguna
+  variable de logo que rellenar. Ahora es `{{brand.logo_url}}`.
+- **La pantalla prometía adjuntos.** Decía literalmente «los documentos como
+  adjunto», y nunca se adjuntó ninguno. Ahora dice lo que hacen de verdad.
+- **Un correo sin plantilla salía en texto plano.** Vestirlo obligaba a
+  entrar en el studio, diseñar algo y volver: tres pasos para el caso más
+  normal.
+
+### La plantilla por defecto
+
+«Correo simple», preseleccionada en Mensajes → Aplicar un diseño. Marca
+arriba, el texto del lead, botón a la landing si está publicada, y el pie
+legal. Sin copy de catálogo, así que no hay nada que revisar antes de
+aplicarla ni interruptor de «respetar el diseño» que tocar.
+
+Vive en `frontend/src/lib/plantilla-por-defecto.ts` y **no en la base**. Una
+plantilla del sistema en `plantillas` necesitaría filas sin tenant y una
+política de RLS que las deje leer a todo el mundo: abrir esa tabla a
+lecturas de fuera del tenant para guardar una constante. Aquí no hay nada
+que aislar. Si algún día se quiere editable, entonces sí es una fila.
+
+Al aplicarla, `messages.plantilla_id` queda **nulo**: no es una plantilla de
+la base y apuntar a una que no existe sería mentir en el registro.
+
+### Por qué el logo tiene bucket propio
+
+`recursos` es privado a propósito (017): ahí viven las ofertas comerciales.
+La landing las sirve con URLs firmadas que caducan en una hora, y eso vale
+porque la landing se pide en el momento.
+
+Un correo no. Se abre horas o semanas después, y muchas veces a través del
+proxy de imágenes de Gmail. Una URL firmada sería **una imagen rota con
+retardo** — el peor fallo posible, porque en la prueba se ve bien.
+
+De ahí el reparto de la 044:
+
+| Bucket | Acceso | Qué guarda |
+|---|---|---|
+| `logos` | **público** | solo PNG, JPG y WEBP de marca, hasta 2 MB |
+| `recursos` | privado | documentos y todo lo demás |
+
+Escribir sigue siendo privado en los dos: la ruta empieza por el uuid del
+tenant y la política lo compara con `auth_tenant_id()`.
+
+**Sin SVG en el bucket público**, y no es un descuido: un SVG es un
+documento con scripts dentro. En un correo no se ejecutan, pero la URL es
+pública y se puede abrir en una pestaña.
+
+**Los logos subidos antes de la 044 siguen en el bucket privado.** Salen en
+la landing y no en los correos. La pantalla de Recursos lo avisa y se
+arregla volviéndolos a subir, que es un clic; moverlos desde una migración
+significaría tocar los archivos de un cliente.
+
+### El pie tenía dos enlaces que no debían estar
+
+Encontrado al montar la plantilla por defecto, y venía de antes: el
+renderizador construía los tres enlaces del pie con `props.x || "valor por
+defecto"`. Vaciar una etiqueta a `""` —que es como el resto del código pedía
+quitar un enlace— es *falsy*, así que volvía la etiqueta por defecto.
+
+Resultado, en todos los correos vestidos:
+
+- **«Gestionar preferencias»**, que no existe, apuntando a la URL de baja.
+- **«Política de privacidad» con `href="#"`** cuando el cliente no tenía
+  ninguna configurada. Un enlace legal muerto es peor que no ofrecerlo:
+  promete un derecho que no se puede ejercer.
+
+Ahora un enlace del pie se dibuja solo si tiene **texto y destino**.
+`undefined` sigue cayendo en el valor por defecto, así que una plantilla que
+no toca esas props se comporta igual que siempre.
+
+### Lo que sigue pendiente
+
+`{{campaign.offer}}` existe como variable y **siempre se rellena con cadena
+vacía**. Una plantilla del catálogo con bloque de oferta lo pinta en blanco
+y nadie avisa. Es de las que hay que decidir: o se rellena con algo, o se
+quita del catálogo.
+
+## Modo demo
+
+Un freno de gasto **por cliente**, que **viene puesto** en toda cuenta
+nueva. Mientras está puesto, cada campaña de ese cliente para en un techo de
+leads y otro de mensajes; lo demás funciona igual.
+
+Se quita en **Panel → Clientes**, y es lo que se hace el día que alguien
+empieza a pagar. Está en la columna **Versión de prueba** de la tabla, un
+clic por fila; la ficha de abajo también lo lleva, pero ahí hay que elegir
+antes al cliente en un desplegable y eso convierte «quítale el límite a
+este» en tres pasos.
+
+### Quién decide qué
+
+| Cosa | Dónde | Quién |
+|---|---|---|
+| Si un cliente está en demo | `tenants.modo_demo` · Panel → Clientes | un administrador |
+| Cuántos leads y cuántos mensajes | `ajustes.max_leads_demo` y `max_mensajes_demo` · Panel → Ajustes | un administrador |
+| Nada | `ajustes.modo_demo` | **obsoleta desde la 045** |
+
+El interruptor era global hasta la 045 y no valía: en cuanto hay un cliente
+de pago y otro de prueba a la vez, un único interruptor está mal para uno de
+los dos. Los **topes** sí siguen siendo del servicio — son la misma cifra
+razonable para todos los que estén en demo, y afinarlos cliente a cliente
+sería una palanca más que mantener sin ganar nada.
+
+`ajustes.modo_demo` no se borró: borrar es destructivo y no lo pide nadie
+todavía. Pero **nada la lee**, y eso está dicho en el comentario de la
+propia columna para que no haga perder una tarde.
+
+### Son dos facturas, y por eso son dos techos
+
+| Techo | Qué acota | Quién cobra, y por qué |
+|---|---|---|
+| `max_leads_demo` (50) | el descubrimiento | Places, **por consulta** |
+| `max_mensajes_demo` (20) | la redacción | el modelo, **por correo escrito** |
+
+Un solo número no sirve. Con el techo de leads en 50, si todos tuvieran
+correo serían 50 llamadas al modelo: el gasto de Places queda acotado y el
+del modelo no.
+
+### El techo se cuenta en leads y el freno es de consultas
+
+Places cobra por consulta, no por lead. Un límite que se limitara a guardar
+menos leads ahorraría **cero**: las consultas ya estarían pagadas.
+
+Lo que hace el modo demo es que `reclamar_tareas` **deje de servir tareas**
+en cuanto la campaña llega al techo. Una campaña real dio 920 leads en 59
+consultas; con el techo en 50 son tres o cuatro. El recorte de la última
+página —la que ya está pagada— lo hace el worker, y es lo de menos.
+
+### El de mensajes es TOTAL, no por tanda
+
+Dos ajustes se parecen y hacen cosas distintas:
+
+| Ajuste | Alcance | Para qué está |
+|---|---|---|
+| `max_mensajes_por_campana` (018) | **por tanda** | trocear una campaña grande: «Escribir los que faltan» |
+| `max_mensajes_demo` (042) | **por campaña, total** | frenar el gasto del modelo |
+
+El de la 018 **no acota nada**, solo reparte: pulsando cinco veces se
+escriben cinco tandas. El del modo demo se aplica encima y gana el más
+pequeño.
+
+### Dos nombres para lo mismo, a propósito
+
+Dentro —columnas, panel, este README— se llama **modo demo**: es el nombre
+que ya tiene y renombrarlo en veinte sitios no arregla nada.
+
+Fuera, lo que lee el cliente, es **versión de prueba**. Un cliente que paga
+una cuota no está en una demo; está en una versión limitada de algo que ha
+contratado, y llamarlo demo suena a que no se le toma en serio.
+
+### El banner
+
+Quien está limitado lo ve arriba, en todas las secciones:
+
+> **Versión de prueba** — Las campañas de esta cuenta están limitadas a 50
+> leads y 20 mensajes. El resto de funciones está disponible sin
+> restricciones. Para ampliar los límites, escribe a *(el contacto)*.
+
+**No se puede cerrar**, y es a propósito: no es un aviso puntual sino el
+estado de la cuenta. Esconderlo llevaría a alguien a pasarse la tarde
+preguntándose por qué su campaña se para en 50 leads.
+
+El contacto sale de `ajustes.contacto_soporte` y se pone en Panel → Ajustes.
+Si es un correo o una URL, el banner lo pinta como enlace. Sin él, la frase
+se queda en «contacta con el administrador del servicio», que es la forma
+educada de no decir nada — por eso conviene rellenarlo.
+
+La pantalla del panel enseña **el aviso tal y como lo verá el cliente**,
+debajo de los campos. Redactar un aviso a ciegas y verlo por primera vez en
+la cuenta de alguien es cómo se cuela una frase que no se quería.
+
+Los mensajes de error dicen lo mismo, y la frase vive en un solo sitio
+—`aviso_version_de_prueba()`— para que no se despeguen. Antes decían «quita
+el modo demo en el panel», que es justo lo que quien los lee no puede hacer.
+
+### Qué pasa con lo que ya existe
+
+- **No se borra nada.** Una campaña con 920 leads o con 460 mensajes los
+  conserva. El límite frena el trabajo nuevo.
+- Un «Buscar más» o un «Escribir los que faltan» sobre una campaña que ya
+  pasa del techo se rechaza **con el motivo escrito**.
+- El job de descubrimiento se **cierra** al llegar al techo, no se queda
+  colgado. Es la lección de la 008: un freno nuevo sin quien cierre el job
+  deja la campaña clavada en `buscando` para siempre.
+
+### Al aplicar la 045, todos los clientes entraron en demo
+
+`default true` sobre una columna nueva la pone a true también en las filas
+que ya existen. Es la lectura literal de «activado por defecto» y hay que
+saberlo: **el día de la migración, todas las cuentas —incluida la tuya—
+quedaron limitadas**. Se saca a cada una en Panel → Clientes con un clic.
+
+### Sin pasar por el panel
+
+```sql
+-- Sacar a un cliente del modo demo
+update tenants set modo_demo = false where nombre = 'Quien sea';
+
+-- Cambiar los topes del servicio
+update ajustes set max_leads_demo = 50, max_mensajes_demo = 20 where id;
+```
+
+El `where id` del segundo no es adorno: sin él, PostgREST responde «UPDATE
+requires a WHERE clause». Ver la 036.
+
+### `ajustes` ya no se escribe desde el navegador
+
+Encontrado al montar la 042: `anon` y `authenticated` tenían concesión de
+INSERT y UPDATE sobre **todas** las columnas de `ajustes`. No pasaba nada
+porque la RLS está activa y la tabla solo tiene política de SELECT, así que
+toda escritura se denegaba.
+
+Es la misma trampa que este README ya señala en `administradores`. El día
+que alguien añadiera una política de escritura «para poder guardar los
+precios desde el panel», cualquiera con la clave publicable —que viaja en el
+bundle— podría subir el techo de Places del proyecto entero o cambiar el
+remitente del servicio.
+
+La 042 quita esa concesión. No rompe nada: quien escribe aquí son funciones
+`SECURITY DEFINER`, que corren con la identidad del dueño y no con la de
+quien llama.
+
+**`tenants.modo_demo` nace ya con ese cuidado**: se concede solo `SELECT` a
+`authenticated`. Si el cliente pudiera escribirla, se quitaría el límite él
+mismo y el modo demo no limitaría nada.
+
+## Cancelar una búsqueda en curso
+
+Botón **«Cancelar la búsqueda»** dentro del paso 3 de la campaña, mientras
+la barra de progreso está viva. Antes no había forma de parar: una vez
+encolado, el descubrimiento seguía gastando Places hasta el techo aunque el
+usuario ya hubiera visto que la búsqueda no era la que quería.
+
+Los leads encontrados hasta ese momento **se quedan**. Están en `leads`
+desde que se guardaron, así que no hay nada que rescatar: `cancelar_job`
+cierra el trabajo y devuelve la campaña a `lista` para que la pantalla los
+enseñe.
+
+### Cancelar no es fallar, y por eso hay estado nuevo
+
+`jobs.estado` admite ahora `cancelado`. Las otras dos opciones mentían:
+
+| Si se cerrara como… | Qué diría de más |
+|---|---|
+| `hecho` | que el descubrimiento terminó, y el panel contaría una campaña completada |
+| `error` | que algo se rompió — el panel de salud lo pinta en rojo y marca al cliente como en riesgo |
+
+Las **tareas** no necesitaron estado nuevo: la 008 ya creó `omitida` para
+exactamente esto, «no se hizo pero tampoco falló».
+
+### Detalles que cuestan tiempo si no se saben
+
+- **La tarea que está en vuelo termina.** Su consulta a Places ya está
+  pagada; tirarla sería perder leads por los que se ha pagado. Al acabar
+  llamará a `cerrar_job_si_completo`, que respeta el job cancelado y no lo
+  resucita a `hecho`.
+- **No se sella `ultima_busqueda_en`.** Sellarla metería la campaña en la
+  pausa de 30 días, y quien acaba de cancelar suele querer relanzar la
+  búsqueda ahora mismo, corregida.
+- **Sin ningún lead**, la campaña vuelve a `inferido` en vez de a `lista`:
+  no hay nada que enseñar en el paso siguiente.
+- `cancelar_job` vale para los tres tipos de trabajo. Hoy solo hay botón en
+  la búsqueda, que es la que cuesta por consulta.
+
+## Claves de los proveedores de modelo
+
+**Panel → Ajustes → Proveedores.** Tres proveedores, el mismo molde que la
+026 estrenó con OpenAI: se **escriben** desde el navegador y **no se pueden
+leer** desde ahí. `leer_clave_modelo` está concedida solo a `service_role`,
+que corre dentro de la Edge Function — ni siquiera un administrador la saca.
+
+| Proveedor | Quién la usa hoy |
+|---|---|
+| `anthropic` | inferencia, redacción, landings y `studio-ia` |
+| `openai` | las imágenes del studio (`generar-imagen`) |
+| `gemini` | **nadie todavía**. Se guarda, no se llama |
+
+Lo de Gemini está dicho así en la pantalla a propósito. Una clave guardada
+que nadie lee parece configuración hecha, y es de las cosas que se descubren
+el día que hacen falta.
+
+### El secreto de entorno sigue valiendo
+
+`_shared/claves.ts` mira primero el Vault y, si ahí no hay nada, usa
+`ANTHROPIC_API_KEY` como siempre. **El Vault gana**: es lo que hace que pegar
+una clave en el panel sirva de algo aunque quede un secreto viejo puesto.
+
+Consecuencia práctica: **rotar la clave de Anthropic ya no es un
+despliegue**. Se pega en el panel y surte efecto en cinco minutos como
+mucho, que es lo que dura la caché por isolate.
+
+### La lista blanca no es decoración
+
+Estas funciones escriben en `vault.secrets` **por nombre**. Sin acotar qué
+nombres se aceptan, un administrador podría pisar `correo_api_key` —la clave
+del proveedor de correo, que es de otro sitio— pasando ese nombre por
+parámetro. `proveedores_de_modelo()` es la lista de lo que se puede tocar
+desde aquí, y nada más.
+
+### Estado de esto hoy
+
+Comprobado ejecutándolo: el mapeo de nombres, que un proveedor desconocido
+devuelve `null` en vez de tocar otro secreto, y que la inferencia sigue
+respondiendo con el camino nuevo (llamada real a `demo-inferir`, segmentos
+de vuelta). **El Vault está vacío de claves de modelo**: hoy todo tira del
+secreto de entorno de Anthropic, y la clave de OpenAI no se ha puesto nunca
+—así que generar imágenes en el studio no funciona todavía—.
+
+## Las dos claves de Supabase
 
 | Clave | Dónde | Qué puede |
 |---|---|---|
@@ -534,9 +969,16 @@ fila en `profiles`.
 | Palanca | Dónde | Por defecto |
 |---|---|---|
 | Consultas a Places por campaña | `campaigns.max_consultas` | 120 |
+| Mensajes redactados por tanda | `ajustes.max_mensajes_por_campana` | 10 |
+| Quién está en modo demo | `tenants.modo_demo` | **puesto** en toda cuenta nueva |
+| Leads por campaña en modo demo | `ajustes.max_leads_demo` | 50 |
+| Mensajes por campaña en modo demo | `ajustes.max_mensajes_demo` | 20 |
 | Inferencias de demo por IP y día | `DEMO_MAX_POR_IP` | 5 |
 | Inferencias de demo por día | `DEMO_MAX_POR_DIA` | 300 |
 | Tareas por invocación del worker | `TAREAS_POR_TANDA` | 5 |
+
+Y cuando ninguna palanca llega a tiempo, está el botón: **Cancelar la
+búsqueda**, en el paso 3 de la campaña.
 
 `reclamar_tareas` deja de servir tareas cuando el job alcanza el techo de su
 campaña, así que el límite se aplica solo, sin vigilarlo.

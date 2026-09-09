@@ -1,13 +1,19 @@
 // ============================================================
 // Logo y documentos de una campaña.
 //
-// Los archivos van a un bucket PRIVADO. Uno público sería más simple, pero
-// significaría que la oferta comercial de un cliente la puede leer
-// cualquiera que adivine la ruta. La landing los sirve con URLs firmadas
-// que caducan, generadas en el servidor.
+// Dos destinos distintos, y la diferencia importa (migración 044):
 //
-// El aislamiento vive en la ruta: todo empieza por el uuid del tenant, y la
-// política de storage compara ese tramo con auth_tenant_id().
+//   documentos → bucket PRIVADO. Son la oferta comercial del cliente y no
+//                tienen por qué poder leerse adivinando una ruta. La
+//                landing los sirve con URLs firmadas que caducan.
+//   logo       → bucket PÚBLICO. Un correo se abre semanas después y
+//                muchas veces a través del proxy de imágenes de Gmail: una
+//                URL firmada sería una imagen rota con retardo, que es el
+//                peor fallo porque en la prueba se ve bien. Y un logo ya
+//                está publicado en la web del cliente.
+//
+// Escribir sigue siendo privado en los dos: la ruta empieza por el uuid del
+// tenant y la política de storage lo compara con auth_tenant_id().
 // ============================================================
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -20,6 +26,8 @@ type Recurso = {
   tipo: "logo" | "documento";
   nombre: string;
   ruta: string;
+  /** Dónde está el archivo. Los logos antiguos siguen en 'recursos'. */
+  bucket: string;
   mime: string | null;
   tamano: number | null;
   texto: string | null;
@@ -27,6 +35,10 @@ type Recurso = {
 };
 
 const MAX_BYTES = 10 * 1024 * 1024;
+/** El bucket de logos topa en 2 MB, y un logo que pese más está mal exportado. */
+const MAX_BYTES_LOGO = 2 * 1024 * 1024;
+/** Sin SVG: es un documento con scripts dentro, y este bucket es público. */
+const MIMES_LOGO = ["image/png", "image/jpeg", "image/webp"];
 
 export function Recursos({ campanaId }: { campanaId: string }) {
   const [tenantId, setTenantId] = useState<string | null>(null);
@@ -40,7 +52,7 @@ export function Recursos({ campanaId }: { campanaId: string }) {
     const [p, r] = await Promise.all([
       supabase.from("profiles").select("tenant_id").single(),
       supabase.from("recursos")
-        .select("id, campaign_id, tipo, nombre, ruta, mime, tamano, texto, texto_estado")
+        .select("id, campaign_id, tipo, nombre, ruta, bucket, mime, tamano, texto, texto_estado")
         // Los de esta campaña, más el logo del negocio (campaign_id null).
         .or(`campaign_id.eq.${campanaId},campaign_id.is.null`)
         .order("creado_en"),
@@ -54,8 +66,24 @@ export function Recursos({ campanaId }: { campanaId: string }) {
   async function subir(archivo: File, tipo: "logo" | "documento") {
     setError(null);
 
-    if (archivo.size > MAX_BYTES) {
-      setError(`"${archivo.name}" pesa demasiado. El máximo son 10 MB.`);
+    // El logo va al bucket público, que tiene sus propios límites. Se
+    // comprueban aquí para poder decir por qué en vez de dejar que storage
+    // devuelva un "mime type not supported" a secas.
+    const bucket = tipo === "logo" ? "logos" : "recursos";
+
+    if (tipo === "logo" && !MIMES_LOGO.includes(archivo.type)) {
+      setError(
+        "El logo tiene que ser PNG, JPG o WEBP. El SVG no se admite: es un " +
+        "documento con scripts dentro y este archivo se sirve en abierto.",
+      );
+      return;
+    }
+    if (archivo.size > (tipo === "logo" ? MAX_BYTES_LOGO : MAX_BYTES)) {
+      setError(
+        tipo === "logo"
+          ? `"${archivo.name}" pesa demasiado para un logo. El máximo son 2 MB.`
+          : `"${archivo.name}" pesa demasiado. El máximo son 10 MB.`,
+      );
       return;
     }
     if (!tenantId) { setError("No se ha podido identificar tu negocio."); return; }
@@ -70,7 +98,7 @@ export function Recursos({ campanaId }: { campanaId: string }) {
     const ruta = `${tenantId}/${campanaId}/${crypto.randomUUID()}-${limpio}`;
 
     const { error: falloSubida } = await supabase.storage
-      .from("recursos").upload(ruta, archivo, { contentType: archivo.type });
+      .from(bucket).upload(ruta, archivo, { contentType: archivo.type });
 
     if (falloSubida) {
       setSubiendo(null);
@@ -89,6 +117,7 @@ export function Recursos({ campanaId }: { campanaId: string }) {
       tipo,
       nombre: archivo.name,
       ruta,
+      bucket,
       mime: archivo.type || null,
       tamano: archivo.size,
     });
@@ -97,7 +126,7 @@ export function Recursos({ campanaId }: { campanaId: string }) {
 
     if (falloFila) {
       // La fila es la que manda: sin ella el archivo es basura invisible.
-      await supabase.storage.from("recursos").remove([ruta]);
+      await supabase.storage.from(bucket).remove([ruta]);
       setError(falloFila.message);
       return;
     }
@@ -123,7 +152,9 @@ export function Recursos({ campanaId }: { campanaId: string }) {
 
   async function borrar(r: Recurso, recargar = true) {
     setError(null);
-    await supabase.storage.from("recursos").remove([r.ruta]);
+    // Del bucket donde esté de verdad: los logos subidos antes de la 044
+    // siguen en el privado, y borrarlos del público no haría nada.
+    await supabase.storage.from(r.bucket ?? "recursos").remove([r.ruta]);
     const { error: fallo } = await supabase.from("recursos").delete().eq("id", r.id);
     if (fallo) setError(fallo.message);
     if (recargar) await cargar();
@@ -138,13 +169,31 @@ export function Recursos({ campanaId }: { campanaId: string }) {
       <div>
         <h2>Logo y documentos</h2>
         <p className="sutil">
-          El logo irá en el cuerpo del correo y los documentos como adjunto.
-          Además, lo que digan los documentos es lo que el redactor usa para
-          escribir la oferta concreta a cada lead.
+          Cada uno hace una cosa distinta, y conviene saber cuál:
         </p>
+        <ul className="menudo" style={{ margin: "6px 0 0", paddingLeft: 18 }}>
+          <li>
+            El <strong>logo</strong> va en la cabecera del correo y en la
+            landing.
+          </li>
+          <li>
+            Los <strong>documentos</strong> <strong>no se adjuntan</strong>.
+            Lo que hacen es dar al redactor las condiciones reales de tu
+            oferta, para que el correo pueda mencionarlas sin inventárselas.
+          </li>
+        </ul>
       </div>
 
       {error && <p className="caja-error">{error}</p>}
+
+      {logo && logo.bucket !== "logos" && (
+        <p className="caja-aviso">
+          Este logo se subió antes de que los correos pudieran enseñarlo, y
+          está guardado donde un cliente de correo no puede leerlo. Sale en la
+          landing pero no en los correos. Vuelve a subirlo y ya aparecerá en
+          los dos.
+        </p>
+      )}
 
       <div className="fila-cabeza">
         <div>
@@ -154,7 +203,7 @@ export function Recursos({ campanaId }: { campanaId: string }) {
               ? logo.campaign_id === campanaId
                 ? logo.nombre
                 : `${logo.nombre} · del negocio, común a todas las campañas`
-              : "Sin logo. PNG, JPG, WebP o SVG."}
+              : "Sin logo. PNG, JPG o WebP, hasta 2 MB."}
           </p>
         </div>
         <div className="acciones">
@@ -167,7 +216,7 @@ export function Recursos({ campanaId }: { campanaId: string }) {
           )}
         </div>
       </div>
-      <input ref={refLogo} type="file" hidden accept="image/png,image/jpeg,image/webp,image/svg+xml"
+      <input ref={refLogo} type="file" hidden accept="image/png,image/jpeg,image/webp"
              onChange={(e) => { const f = e.target.files?.[0]; if (f) subir(f, "logo"); e.target.value = ""; }} />
 
       <hr />

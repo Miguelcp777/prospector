@@ -16,6 +16,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { aplicarPlantilla, type Resultado } from "../lib/aplicar-plantilla";
+import {
+  ID_PLANTILLA_POR_DEFECTO,
+  NOMBRE_PLANTILLA_POR_DEFECTO,
+} from "../lib/plantilla-por-defecto";
 import { invocar } from "../lib/edge";
 
 const TOPE = 200;
@@ -49,8 +53,11 @@ export function Mensajes({ alIrA }: { alIrA?: (vista: "studio") => void }) {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [plantillas, setPlantillas] = useState<{ id: string; nombre: string }[]>([]);
-  const [plantillaElegida, setPlantillaElegida] = useState("");
+  type PlantillaFila = { id: string; nombre: string; respetar_diseno: boolean };
+  const [plantillas, setPlantillas] = useState<PlantillaFila[]>([]);
+  // Preseleccionada la de por defecto: vestir un correo es lo normal, y
+  // hasta ahora el caso normal exigía diseñar algo antes en el studio.
+  const [plantillaElegida, setPlantillaElegida] = useState(ID_PLANTILLA_POR_DEFECTO);
   const [falloPlantillas, setFalloPlantillas] = useState<string | null>(null);
   const [vistiendo, setVistiendo] = useState(false);
   const [resultado, setResultado] = useState<Resultado | null>(null);
@@ -63,12 +70,12 @@ export function Mensajes({ alIrA }: { alIrA?: (vista: "studio") => void }) {
     // El fallo se guarda aparte: sin esto, no poder leer las plantillas se
     // ve exactamente igual que no tener ninguna, y son dos problemas
     // distintos con dos arreglos distintos.
-    supabase.from("plantillas").select("id, nombre")
+    supabase.from("plantillas").select("id, nombre, respetar_diseno")
       .neq("estado", "archivada")
       .order("actualizado_en", { ascending: false })
       .then(({ data, error: fallo }) => {
         if (fallo) setFalloPlantillas(fallo.message);
-        setPlantillas(data ?? []);
+        setPlantillas((data ?? []) as PlantillaFila[]);
       });
   }, []);
 
@@ -118,6 +125,25 @@ export function Mensajes({ alIrA }: { alIrA?: (vista: "studio") => void }) {
    * Solo con una campaña elegida: aplicar un diseño a "todas" mezclaría
    * clientes distintos y estilos que no tienen nada que ver entre sí.
    */
+  /**
+   * Declara que el copy de una plantilla es propio y no relleno de catálogo.
+   *
+   * Va en la plantilla y no en la campaña: lo que se afirma es sobre el
+   * diseño —"esto lo he leído y es mío"—, y aplicarlo a diez campañas no lo
+   * vuelve menos cierto. Ver migración 037.
+   */
+  async function cambiarRespetar(valor: boolean) {
+    if (!plantillaElegida) return;
+    setError(null);
+    const { error: fallo } = await supabase
+      .from("plantillas")
+      .update({ respetar_diseno: valor })
+      .eq("id", plantillaElegida);
+    if (fallo) { setError(fallo.message); return; }
+    setPlantillas((ps) =>
+      ps.map((p) => (p.id === plantillaElegida ? { ...p, respetar_diseno: valor } : p)));
+  }
+
   async function vestir() {
     if (!elegida || !plantillaElegida) return;
     setError(null);
@@ -188,34 +214,7 @@ export function Mensajes({ alIrA }: { alIrA?: (vista: "studio") => void }) {
           existe no se puede pedir: el usuario no ve un botón desactivado ni
           un aviso, ve que la opción no está. Cada cliente empieza con cero
           plantillas, así que esto le pasa a todo el mundo el primer día. */}
-      {elegida && plantillas.length === 0 && (
-        <div className="tarjeta">
-          <div>
-            <h2>Aplicar un diseño</h2>
-            {falloPlantillas ? (
-              <p className="caja-error">
-                No se han podido leer tus plantillas: {falloPlantillas}
-              </p>
-            ) : (
-              <p className="sutil">
-                Todavía no tienes ninguna plantilla. El diseño de los correos
-                se hace en <strong>Plantillas</strong>: eliges una del
-                catálogo, la ajustas y la guardas. Al volver aquí podrás
-                aplicarla a los mensajes de esta campaña.
-              </p>
-            )}
-          </div>
-          {!falloPlantillas && alIrA && (
-            <div className="acciones">
-              <button className="primario" onClick={() => alIrA("studio")}>
-                Ir a Plantillas
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {elegida && plantillas.length > 0 && (
+      {elegida && (
         <div className="tarjeta">
           <div>
             <h2>Aplicar un diseño</h2>
@@ -226,10 +225,19 @@ export function Mensajes({ alIrA }: { alIrA?: (vista: "studio") => void }) {
             </p>
           </div>
 
+          {falloPlantillas && (
+            <p className="caja-error">
+              No se han podido leer tus plantillas: {falloPlantillas}. La de
+              por defecto sigue disponible, porque no sale de la base.
+            </p>
+          )}
+
           <div className="rejilla">
             <select value={plantillaElegida}
                     onChange={(e) => setPlantillaElegida(e.target.value)}>
-              <option value="">Elige una plantilla…</option>
+              <option value={ID_PLANTILLA_POR_DEFECTO}>
+                {NOMBRE_PLANTILLA_POR_DEFECTO}
+              </option>
               {plantillas.map((p) => (
                 <option key={p.id} value={p.id}>{p.nombre}</option>
               ))}
@@ -240,6 +248,42 @@ export function Mensajes({ alIrA }: { alIrA?: (vista: "studio") => void }) {
             </button>
           </div>
 
+          {plantillaElegida === ID_PLANTILLA_POR_DEFECTO && (
+            <p className="menudo">
+              Cabecera con el logo de la campaña —si lo has subido en
+              Recursos—, el texto del correo, el botón a la landing cuando
+              esté publicada, y el pie con la identificación y el enlace de
+              baja. Sin copy de catálogo, así que no hay nada que revisar
+              antes de aplicarla.
+            </p>
+          )}
+
+          {/* Por defecto se asume catálogo, y el catálogo trae copy de
+              muestra que no va dirigido a nadie. Encender esto es afirmar
+              lo contrario, así que el aviso dice qué se está afirmando.
+              No aplica a la de por defecto: ahí no hay relleno que filtrar. */}
+          {plantillaElegida && plantillaElegida !== ID_PLANTILLA_POR_DEFECTO && (
+            <label className="toggle">
+              <input
+                type="checkbox"
+                checked={
+                  plantillas.find((p) => p.id === plantillaElegida)
+                    ?.respetar_diseno ?? false
+                }
+                onChange={(e) => void cambiarRespetar(e.target.checked)}
+              />
+              <span>
+                <strong>Respetar el diseño tal cual</strong>
+                <small>
+                  Conserva todos los bloques y el titular como los guardaste.
+                  Enciéndelo solo si has revisado el texto: las plantillas
+                  del catálogo traen copy de muestra —«Hola María», el pie de
+                  otra empresa— y con esto activado sale tal cual al lead.
+                </small>
+              </span>
+            </label>
+          )}
+
           {resultado && (
             <>
               <p className="caja-aviso">
@@ -247,6 +291,15 @@ export function Mensajes({ alIrA }: { alIrA?: (vista: "studio") => void }) {
                 diseño
                 {resultado.saltados > 0 && ` · ${resultado.saltados} sin tocar`}
               </p>
+              {resultado.bloquesQuitados.length > 0 && (
+                <p className="menudo">
+                  Se han quitado del diseño estos bloques por traer texto que
+                  no es de este lead: <strong>
+                    {resultado.bloquesQuitados.join(", ")}
+                  </strong>. Si ese texto lo escribiste tú, marca «Respetar
+                  el diseño tal cual» y vuelve a aplicar.
+                </p>
+              )}
               {resultado.motivos.length > 0 && (
                 <ul className="pasos-arreglo">
                   {resultado.motivos.slice(0, 5).map((m, i) => <li key={i}>{m}</li>)}

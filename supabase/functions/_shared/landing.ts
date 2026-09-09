@@ -9,6 +9,7 @@
 
 import { MODELO } from "./inferencia.ts";
 import { anotarConsumo, type Quien } from "./consumo.ts";
+import { claveAnthropic } from "./claves.ts";
 
 export type ContextoLanding = {
   negocio_nombre: string;
@@ -86,7 +87,7 @@ export async function generarLanding(
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-api-key": Deno.env.get("ANTHROPIC_API_KEY")!,
+      "x-api-key": await claveAnthropic(),
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({

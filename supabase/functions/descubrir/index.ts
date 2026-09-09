@@ -279,12 +279,23 @@ async function procesar(
       fuente: "places",
     }));
 
-  if (filas.length > 0) {
+  // Modo demo: solo entran los que quepan. `huecos_de_leads` devuelve null
+  // cuando no hay techo, y el número de sitios libres cuando lo hay (039).
+  //
+  // Esto es el recorte fino, no el freno: quien de verdad ahorra dinero es
+  // `reclamar_tareas`, que deja de servir tareas al llegar al techo. Aquí
+  // solo se evita que la última página, que ya está pagada, deje 68 leads
+  // donde la pantalla prometía 50.
+  const { data: huecos } = await supabase
+    .rpc("huecos_de_leads", { p_campaign: tarea.campaign_id });
+  const aGuardar = typeof huecos === "number" ? filas.slice(0, huecos) : filas;
+
+  if (aGuardar.length > 0) {
     // ignoreDuplicates: el mismo sitio sale en varios segmentos y en varias
     // queries. El primero que lo encuentra se lo queda; no lo reasignamos.
     const { error } = await supabase
       .from("leads")
-      .upsert(filas, { onConflict: "campaign_id,place_id", ignoreDuplicates: true });
+      .upsert(aGuardar, { onConflict: "campaign_id,place_id", ignoreDuplicates: true });
     if (error) throw new Error(`Guardando leads: ${error.message}`);
   }
 
@@ -307,6 +318,18 @@ async function procesar(
   }
 
   if (encadenar) {
+    // ¿Sigue vivo el job? Entre que se reclamó esta tarea y ahora, el
+    // usuario ha podido cancelar la búsqueda (040). Encadenar la página
+    // siguiente dejaría una tarea pendiente que nadie va a reclamar nunca,
+    // colgando de un job ya cerrado.
+    const { data: job } = await supabase
+      .from("jobs").select("estado").eq("id", tarea.job_id).maybeSingle();
+    if (job && job.estado !== "pendiente" && job.estado !== "en_curso") {
+      encadenar = false;
+    }
+  }
+
+  if (encadenar) {
     await supabase.from("job_tareas").insert({
       job_id: tarea.job_id,
       tenant_id: tarea.tenant_id,
@@ -321,12 +344,14 @@ async function procesar(
   await supabase.from("job_tareas")
     .update({
       estado: "hecho",
-      detalle: `${filas.length} resultados${deCache ? " (de caché, sin coste)" : ""}`,
+      detalle: `${aGuardar.length} resultados` +
+        (aGuardar.length < filas.length ? ` de ${filas.length} (modo demo)` : "") +
+        (deCache ? " (de caché, sin coste)" : ""),
       actualizado_en: new Date().toISOString(),
     })
     .eq("id", tarea.id);
 
-  return filas.length;
+  return aGuardar.length;
 }
 
 type PlaceApi = {
