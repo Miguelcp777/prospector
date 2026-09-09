@@ -1,52 +1,51 @@
 // ============================================================
-// Modo demo, desde el panel.
+// Los topes del modo demo.
 //
-// Una campaña de verdad devuelve cientos de leads y escribe cientos de
-// correos: «Woody tatoo» dio 920 leads en 59 consultas a Places, y otra
-// campaña se dejó 516 llamadas al modelo redactando. Para enseñar el
-// producto sobran los tres números.
+// Aquí solo están los NÚMEROS, que son del servicio entero. El interruptor
+// —quién está en modo demo y quién no— es de cada cliente y vive en
+// Panel → Clientes desde la migración 045.
 //
-// Son DOS facturas distintas y por eso hay dos techos:
+// El reparto no es caprichoso: un interruptor global está mal en cuanto hay
+// un cliente de pago y otro de prueba a la vez, mientras que los topes son
+// la misma cifra razonable para todos los que estén en demo.
+//
+// Son DOS facturas distintas y por eso son dos números:
 //
 //   · Places cobra por consulta  → el techo de leads para las búsquedas
 //   · El modelo cobra por correo → el techo de mensajes para la redacción
 //
 // Un solo número no sirve: 50 leads con correo son 50 llamadas al modelo si
 // nadie las acota aparte.
-//
-// Los límites viven en la base (039 y 042), no aquí. Un tope de interfaz lo
-// esquiva cualquiera llamando a la RPC con la clave publicable, que viaja
-// en el bundle.
 // ============================================================
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
-type Ajuste = {
-  modo_demo: boolean;
-  max_leads_demo: number;
-  max_mensajes_demo: number;
-};
+type Ajuste = { max_leads_demo: number; max_mensajes_demo: number };
 
 export function ModoDemo() {
-  const [activo, setActivo] = useState(false);
   const [topeLeads, setTopeLeads] = useState(50);
   const [topeMensajes, setTopeMensajes] = useState(20);
+  const [enDemo, setEnDemo] = useState<number | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
-    const { data, error: fallo } = await supabase
-      .from("ajustes")
-      .select("modo_demo, max_leads_demo, max_mensajes_demo")
-      .limit(1);
-    if (fallo) { setError(fallo.message); return; }
-    const a = (data?.[0] ?? null) as Ajuste | null;
-    if (!a) return;
-    setActivo(a.modo_demo);
-    setTopeLeads(a.max_leads_demo);
-    setTopeMensajes(a.max_mensajes_demo);
+    const [a, c] = await Promise.all([
+      supabase.from("ajustes").select("max_leads_demo, max_mensajes_demo").limit(1),
+      // Cuántos clientes están en demo ahora mismo. Sin esta cifra, la
+      // pantalla enseña dos números sin decir a cuántos afectan.
+      supabase.rpc("panel_tenants"),
+    ]);
+    if (a.error) { setError(a.error.message); return; }
+    const ajuste = (a.data?.[0] ?? null) as Ajuste | null;
+    if (ajuste) {
+      setTopeLeads(ajuste.max_leads_demo);
+      setTopeMensajes(ajuste.max_mensajes_demo);
+    }
+    const clientes = (c.data ?? []) as { modo_demo: boolean }[];
+    if (!c.error) setEnDemo(clientes.filter((x) => x.modo_demo).length);
   }, []);
 
   useEffect(() => { cargar(); }, [cargar]);
@@ -55,17 +54,14 @@ export function ModoDemo() {
     setError(null);
     setMensaje(null);
     setGuardando(true);
-    const { error: fallo } = await supabase.rpc("guardar_modo_demo", {
-      p_activo: activo,
+    const { error: fallo } = await supabase.rpc("guardar_topes_demo", {
       p_max_leads: topeLeads,
       p_max_mensajes: topeMensajes,
     });
     setGuardando(false);
     if (fallo) { setError(fallo.message); return; }
     setMensaje(
-      activo
-        ? `Modo demo puesto. Cada campaña para en ${topeLeads} leads y ${topeMensajes} mensajes.`
-        : "Modo demo quitado. Vuelven a mandar los techos normales de cada campaña.",
+      `Guardado. Cada campaña de un cliente en demo para en ${topeLeads} leads y ${topeMensajes} mensajes.`,
     );
     await cargar();
   }
@@ -74,34 +70,31 @@ export function ModoDemo() {
     <div className="tarjeta">
       <div className="fila-cabeza">
         <div>
-          <h2>Modo demo</h2>
+          <h2>Topes del modo demo</h2>
           <p className="sutil">
-            Para enseñar el producto sin pagar una campaña entera. Afecta a
-            todos los clientes del servicio.
+            Para que un cliente pueda probar el producto sin pagar una campaña
+            entera. Estos números valen para todos los que estén en demo.
           </p>
         </div>
-        {activo && <span className="etiqueta buscando">puesto</span>}
+        {enDemo !== null && (
+          <span className={enDemo > 0 ? "etiqueta buscando" : "etiqueta lista"}>
+            {enDemo} en demo
+          </span>
+        )}
       </div>
 
       {error && <p className="caja-error">{error}</p>}
       {mensaje && <p className="caja-aviso">{mensaje}</p>}
 
-      <label className="toggle">
-        <input type="checkbox" checked={activo}
-               onChange={(e) => setActivo(e.target.checked)} />
-        <span>
-          <strong>Limitar cada campaña</strong>
-          <small>
-            El descubrimiento y la redacción paran al llegar a su techo, y la
-            campaña se queda con lo que haya conseguido.
-          </small>
-        </span>
-      </label>
+      <p className="caja-aviso">
+        El interruptor de cada cliente está en <strong>Panel → Clientes</strong>.
+        Las cuentas nuevas nacen en modo demo; quitarlo es lo que hace que el
+        cliente pueda usar la app entera.
+      </p>
 
       <label className="campo">
         <span>Leads como mucho por campaña</span>
         <input type="number" min={1} max={100000} value={topeLeads}
-               disabled={!activo}
                onChange={(e) => setTopeLeads(Number(e.target.value))} />
       </label>
       <p className="menudo">
@@ -113,7 +106,6 @@ export function ModoDemo() {
       <label className="campo">
         <span>Mensajes como mucho por campaña</span>
         <input type="number" min={1} max={100000} value={topeMensajes}
-               disabled={!activo}
                onChange={(e) => setTopeMensajes(Number(e.target.value))} />
       </label>
       <p className="menudo">

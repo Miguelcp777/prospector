@@ -18,7 +18,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
-type Fila = { tenant_id: string; nombre: string; vertical: string };
+type Fila = {
+  tenant_id: string; nombre: string; vertical: string; modo_demo: boolean;
+};
 
 type Detalle = {
   id: string; nombre: string; vertical: string; ciudad: string | null;
@@ -30,6 +32,7 @@ type Detalle = {
   correo_remitente: string | null;
   correo_estado: string | null;
   correo_modo: string | null;
+  modo_demo: boolean;
 };
 
 export function PanelClientes() {
@@ -73,6 +76,7 @@ export function PanelClientes() {
       p_modulo_email: d.modulo_email,
       p_max_consultas_mes: d.max_consultas_mes,
       p_dias_cache_places: d.dias_cache_places,
+      p_modo_demo: d.modo_demo,
     });
     setGuardando(false);
     if (fallo) { setError(fallo.message); return; }
@@ -104,9 +108,12 @@ export function PanelClientes() {
         <span>Cliente</span>
         <select value={elegido ?? ""} onChange={(e) => e.target.value && abrir(e.target.value)}>
           <option value="">Elige un cliente…</option>
+          {/* La marca de demo va en la propia lista: sin ella hay que abrir
+              los clientes uno a uno para encontrar al que lleva dos semanas
+              sin poder buscar leads. */}
           {clientes.map((c) => (
             <option key={c.tenant_id} value={c.tenant_id}>
-              {c.nombre} · {c.vertical}
+              {c.nombre} · {c.vertical}{c.modo_demo ? " · demo" : ""}
             </option>
           ))}
         </select>
@@ -132,6 +139,23 @@ export function PanelClientes() {
               {d.correo_modo === "propio" && " · proveedor propio"}
             </dd>
           </dl>
+
+          {/* El modo demo va aparte y arriba: no es un módulo contratado
+              sino el freno de gasto, y es lo que se quita el día que un
+              cliente empieza a pagar. Viene puesto en todas las cuentas
+              nuevas (045). */}
+          <label className="toggle">
+            <input type="checkbox" checked={d.modo_demo}
+                   onChange={(e) => campo("modo_demo", e.target.checked)} />
+            <span>
+              <strong>Modo demo</strong>
+              <small>
+                Sus campañas paran en el techo de leads y de mensajes que hay
+                en Ajustes. Quítalo para que use la app entera; el cliente ve
+                un aviso mientras esté puesto.
+              </small>
+            </span>
+          </label>
 
           {/* Los módulos. Apagar uno no esconde una sección: los triggers
               de la 029 rechazan el trabajo en la base. */}

@@ -712,13 +712,30 @@ quita del catálogo.
 
 ## Modo demo
 
-Dos techos por campaña, para enseñar el producto sin pagar una campaña
-entera. Se ponen y se quitan en el **Panel → Ajustes → Uso del servicio**, y
-afectan a todos los clientes a la vez.
+Un freno de gasto **por cliente**, que **viene puesto** en toda cuenta
+nueva. Mientras está puesto, cada campaña de ese cliente para en un techo de
+leads y otro de mensajes; lo demás funciona igual.
 
-De dónde salió: «Woody tatoo» devolvió **920 leads en 59 consultas** a
-Places, y otra campaña se dejó **516 llamadas al modelo** redactando
-correos. Para una demostración sobran los tres números.
+Se quita en **Panel → Clientes**, y es lo que se hace el día que alguien
+empieza a pagar.
+
+### Quién decide qué
+
+| Cosa | Dónde | Quién |
+|---|---|---|
+| Si un cliente está en demo | `tenants.modo_demo` · Panel → Clientes | un administrador |
+| Cuántos leads y cuántos mensajes | `ajustes.max_leads_demo` y `max_mensajes_demo` · Panel → Ajustes | un administrador |
+| Nada | `ajustes.modo_demo` | **obsoleta desde la 045** |
+
+El interruptor era global hasta la 045 y no valía: en cuanto hay un cliente
+de pago y otro de prueba a la vez, un único interruptor está mal para uno de
+los dos. Los **topes** sí siguen siendo del servicio — son la misma cifra
+razonable para todos los que estén en demo, y afinarlos cliente a cliente
+sería una palanca más que mantener sin ganar nada.
+
+`ajustes.modo_demo` no se borró: borrar es destructivo y no lo pide nadie
+todavía. Pero **nada la lee**, y eso está dicho en el comentario de la
+propia columna para que no haga perder una tarde.
 
 ### Son dos facturas, y por eso son dos techos
 
@@ -734,52 +751,66 @@ del modelo no.
 ### El techo se cuenta en leads y el freno es de consultas
 
 Places cobra por consulta, no por lead. Un límite que se limitara a guardar
-menos leads ahorraría **cero**: las 59 consultas ya estarían pagadas.
+menos leads ahorraría **cero**: las consultas ya estarían pagadas.
 
-Así que lo que hace el modo demo es que `reclamar_tareas` **deje de servir
-tareas** en cuanto la campaña llega al techo. Con 50 leads son tres o cuatro
-consultas. El recorte de la última página —la que ya está pagada y podría
-dejar 68 donde la pantalla prometía 50— lo hace el worker, y es lo de menos.
+Lo que hace el modo demo es que `reclamar_tareas` **deje de servir tareas**
+en cuanto la campaña llega al techo. Una campaña real dio 920 leads en 59
+consultas; con el techo en 50 son tres o cuatro. El recorte de la última
+página —la que ya está pagada— lo hace el worker, y es lo de menos.
 
 ### El de mensajes es TOTAL, no por tanda
 
-Aquí hay una confusión fácil que conviene dejar clara, porque los dos
-ajustes se parecen y hacen cosas distintas:
+Dos ajustes se parecen y hacen cosas distintas:
 
 | Ajuste | Alcance | Para qué está |
 |---|---|---|
 | `max_mensajes_por_campana` (018) | **por tanda** | trocear una campaña grande: «Escribir los que faltan» |
-| `max_mensajes_demo` (042) | **por campaña, total** | frenar el gasto del modelo en una demostración |
+| `max_mensajes_demo` (042) | **por campaña, total** | frenar el gasto del modelo |
 
 El de la 018 **no acota nada**, solo reparte: pulsando cinco veces se
 escriben cinco tandas. El del modo demo se aplica encima y gana el más
-pequeño de los dos; cuando la campaña llega a su techo, el botón deja de
-escribir y dice por qué.
+pequeño.
 
-No hizo falta tocar el worker de redacción: a diferencia del
-descubrimiento, no encadena tareas nuevas sobre la marcha. Todo el trabajo
-lo crea `encolar_redaccion`, así que acotarlo ahí lo acota del todo.
+### El banner
+
+Quien está en modo demo lo ve arriba, en todas las secciones, con las dos
+cifras dentro. **No se puede cerrar**, y es a propósito: no es un aviso
+puntual sino el estado de la cuenta. Esconderlo llevaría a alguien a pasarse
+la tarde preguntándose por qué su campaña se para en 50 leads.
+
+Los mensajes de error van en la misma línea. Antes decían «quita el modo
+demo en el panel», que el cliente no puede hacer; ahora dicen que hable con
+quien le lleva la cuenta.
 
 ### Qué pasa con lo que ya existe
 
 - **No se borra nada.** Una campaña con 920 leads o con 460 mensajes los
   conserva. El límite frena el trabajo nuevo.
 - Un «Buscar más» o un «Escribir los que faltan» sobre una campaña que ya
-  pasa del techo se rechaza **con el motivo escrito**, en vez de encolar un
-  trabajo que no haría nada.
+  pasa del techo se rechaza **con el motivo escrito**.
 - El job de descubrimiento se **cierra** al llegar al techo, no se queda
   colgado. Es la lección de la 008: un freno nuevo sin quien cierre el job
   deja la campaña clavada en `buscando` para siempre.
 
+### Al aplicar la 045, todos los clientes entraron en demo
+
+`default true` sobre una columna nueva la pone a true también en las filas
+que ya existen. Es la lectura literal de «activado por defecto» y hay que
+saberlo: **el día de la migración, todas las cuentas —incluida la tuya—
+quedaron limitadas**. Se saca a cada una en Panel → Clientes con un clic.
+
 ### Sin pasar por el panel
 
 ```sql
-update ajustes set modo_demo = true, max_leads_demo = 50, max_mensajes_demo = 20
- where id;
+-- Sacar a un cliente del modo demo
+update tenants set modo_demo = false where nombre = 'Quien sea';
+
+-- Cambiar los topes del servicio
+update ajustes set max_leads_demo = 50, max_mensajes_demo = 20 where id;
 ```
 
-El `where id` no es adorno: sin él, PostgREST responde «UPDATE requires a
-WHERE clause». Ver la 036.
+El `where id` del segundo no es adorno: sin él, PostgREST responde «UPDATE
+requires a WHERE clause». Ver la 036.
 
 ### `ajustes` ya no se escribe desde el navegador
 
@@ -791,12 +822,16 @@ toda escritura se denegaba.
 Es la misma trampa que este README ya señala en `administradores`. El día
 que alguien añadiera una política de escritura «para poder guardar los
 precios desde el panel», cualquiera con la clave publicable —que viaja en el
-bundle— podría apagar el modo demo, subir el techo de Places del proyecto
-entero o cambiar el remitente del servicio.
+bundle— podría subir el techo de Places del proyecto entero o cambiar el
+remitente del servicio.
 
 La 042 quita esa concesión. No rompe nada: quien escribe aquí son funciones
 `SECURITY DEFINER`, que corren con la identidad del dueño y no con la de
 quien llama.
+
+**`tenants.modo_demo` nace ya con ese cuidado**: se concede solo `SELECT` a
+`authenticated`. Si el cliente pudiera escribirla, se quitaría el límite él
+mismo y el modo demo no limitaría nada.
 
 ## Cancelar una búsqueda en curso
 
@@ -909,8 +944,9 @@ fila en `profiles`.
 |---|---|---|
 | Consultas a Places por campaña | `campaigns.max_consultas` | 120 |
 | Mensajes redactados por tanda | `ajustes.max_mensajes_por_campana` | 10 |
-| Leads por campaña en modo demo | `ajustes.modo_demo` · `ajustes.max_leads_demo` | apagado · 50 |
-| Mensajes por campaña en modo demo | `ajustes.modo_demo` · `ajustes.max_mensajes_demo` | apagado · 20 |
+| Quién está en modo demo | `tenants.modo_demo` | **puesto** en toda cuenta nueva |
+| Leads por campaña en modo demo | `ajustes.max_leads_demo` | 50 |
+| Mensajes por campaña en modo demo | `ajustes.max_mensajes_demo` | 20 |
 | Inferencias de demo por IP y día | `DEMO_MAX_POR_IP` | 5 |
 | Inferencias de demo por día | `DEMO_MAX_POR_DIA` | 300 |
 | Tareas por invocación del worker | `TAREAS_POR_TANDA` | 5 |

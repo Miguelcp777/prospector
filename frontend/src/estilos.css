@@ -923,3 +923,21 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e1) 0; width: 
 
   color-scheme: light;
 }
+
+/* ---------------- banner de modo demo ----------------
+   Va pegado arriba del contenido, en todas las secciones. No se puede
+   cerrar a propósito: no es un aviso puntual sino el estado de la cuenta,
+   y esconderlo llevaría a alguien a pasarse la tarde preguntándose por qué
+   una campaña se para en 50 leads. */
+.banner-demo {
+  display: flex; align-items: center; gap: var(--e3);
+  flex-wrap: wrap;
+  max-width: 960px; margin: 0 auto var(--e5);
+  padding: var(--e3) var(--e4);
+  border-radius: var(--radio-s);
+  border-left: 3px solid var(--aviso);
+  background: var(--aviso-suave); color: var(--aviso-texto);
+  font-size: 0.875rem;
+}
+.banner-demo strong { font-weight: 700; }
+.banner-demo .banner-demo-detalle { opacity: 0.9; }

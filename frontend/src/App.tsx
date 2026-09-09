@@ -187,6 +187,12 @@ function Aplicacion() {
   // puestos para que el menú no parpadee mientras se resuelve: quitar
   // secciones y volver a ponerlas se lee como un fallo.
   const [modulos, setModulos] = useState({ prospeccion: true, email: true });
+  // El modo demo de esta cuenta y los topes que trae. Empieza en null —no
+  // «false»— para no enseñar el banner y quitarlo medio segundo después,
+  // que es peor que enseñarlo tarde.
+  const [demo, setDemo] = useState<
+    { leads: number; mensajes: number } | null
+  >(null);
   const [vista, setVista] = useState<Vista>("campanas");
 
   // Si es admin, aparece la sección de panel. Que el menú esté o no no
@@ -201,7 +207,7 @@ function Aplicacion() {
     // apaga un módulo son los triggers de la 029 sobre `jobs` y
     // `plantillas`. Esto es solo para no enseñar lo que no se ha vendido.
     supabase.from("tenants")
-      .select("modulo_prospeccion, modulo_email")
+      .select("modulo_prospeccion, modulo_email, modo_demo")
       .maybeSingle()
       .then(({ data }) => {
         if (!data) return;
@@ -209,6 +215,23 @@ function Aplicacion() {
           prospeccion: data.modulo_prospeccion !== false,
           email: data.modulo_email !== false,
         });
+        // El banner solo se puede pintar con las cifras delante: «estás en
+        // modo demo» sin decir en qué se nota no sirve de nada.
+        if (data.modo_demo === true) {
+          supabase.from("ajustes")
+            .select("max_leads_demo, max_mensajes_demo")
+            .limit(1)
+            .then(({ data: a }) => {
+              const t = a?.[0] as
+                { max_leads_demo: number; max_mensajes_demo: number } | undefined;
+              setDemo({
+                leads: t?.max_leads_demo ?? 0,
+                mensajes: t?.max_mensajes_demo ?? 0,
+              });
+            });
+        } else {
+          setDemo(null);
+        }
       });
   }, [sesion]);
 
@@ -301,6 +324,18 @@ function Aplicacion() {
       </nav>
 
       <main className={vistaValida === "studio" ? "contenido contenido-completo" : "contenido"}>
+        {demo && (
+          <div className="banner-demo" role="status">
+            <strong>Modo demo</strong>
+            <span className="banner-demo-detalle">
+              Cada campaña se para en <strong>{demo.leads} leads</strong> y{" "}
+              <strong>{demo.mensajes} mensajes</strong>. Todo lo demás
+              funciona igual. Para trabajar sin ese tope, habla con quien te
+              lleva la cuenta.
+            </span>
+          </div>
+        )}
+
         {/* El studio se sale de .ancho a propósito: esa clase limita el
             contenido a 960px, que es lo correcto para leer una tabla y lo
             contrario de lo que necesita un editor de dos paneles. */}
