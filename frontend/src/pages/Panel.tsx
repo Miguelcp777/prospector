@@ -13,7 +13,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
-import { ClaveOpenAI } from "./ClaveOpenAI";
+import { ClavesDeModelo } from "./ClavesDeModelo";
+import { ModoDemo } from "./ModoDemo";
 import { PanelClientes } from "./PanelClientes";
 import { PanelSalud } from "./PanelSalud";
 import { PanelUsuarios } from "./PanelUsuarios";
@@ -263,9 +264,11 @@ export function Panel() {
       {seccion === "clientes" && <PanelClientes />}
 
       {seccion === "ajustes" && (<>
+        <h2 className="titulo-seccion">Uso del servicio</h2>
+        <ModoDemo />
         <h2 className="titulo-seccion">Proveedores</h2>
         <CorreoDelServicio />
-        <ClaveOpenAI />
+        <ClavesDeModelo />
       </>)}
 
       {seccion === "costes" && (<>

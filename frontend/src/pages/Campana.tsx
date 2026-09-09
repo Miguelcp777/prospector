@@ -48,6 +48,7 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [frenada, setFrenada] = useState(false);
+  const [aviso, setAviso] = useState<string | null>(null);
   const [editandoDesc, setEditandoDesc] = useState(false);
   const [desc, setDesc] = useState("");
   const [topeMensajes, setTopeMensajes] = useState<number | null>(null);
@@ -103,12 +104,40 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
 
   async function llamar(nombre: string, rpc: string, args: Record<string, unknown>) {
     setError(null);
+    setAviso(null);
     setOcupado(nombre);
     const { error: fallo } = await supabase.rpc(rpc, args);
     setOcupado(null);
     if (fallo) {
       setError(fallo.message);
       if (fallo.message.includes("en pausa")) setFrenada(true);
+    }
+    await cargar();
+  }
+
+  /**
+   * Parar la búsqueda en marcha.
+   *
+   * Los leads encontrados hasta aquí no se tocan: están en la base desde que
+   * se guardaron. Lo que hace `cancelar_job` (040) es cerrar el trabajo y
+   * devolver la campaña a 'lista', que es lo que hace que esta pantalla pase
+   * de la barra de progreso a la lista de lo conseguido.
+   */
+  async function cancelar() {
+    setError(null);
+    setAviso(null);
+    setOcupado("cancelar");
+    const { data, error: fallo } = await supabase.rpc("cancelar_job", {
+      p_campaign: id,
+      p_tipo: "descubrir",
+    });
+    setOcupado(null);
+    if (fallo) setError(fallo.message);
+    else {
+      const paradas = typeof data === "number" ? data : 0;
+      setAviso(
+        `Búsqueda cancelada. Se quedaron ${paradas} búsquedas sin hacer; los leads encontrados hasta ahora se conservan.`,
+      );
     }
     await cargar();
   }
@@ -166,6 +195,7 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
       </div>
 
       {error && <p className="caja-error">{error}</p>}
+      {aviso && <p className="caja-aviso">{aviso}</p>}
 
       <div className="pasos">
         <Paso n={1} estado={estadoDe(hechos, 0)} titulo={PASOS[0].nombre}
@@ -220,10 +250,28 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
               resumen="Google Places, por segmento y zona. Es el único paso que cuesta dinero."
               insignia={leads > 0 ? `${leads} leads` : undefined}>
           {buscando && jobs.descubrir ? (
-            <div className="progreso">
-              <div className="barra-progreso"><div style={{ width: `${jobs.descubrir.progreso}%` }} /></div>
-              <span className="sutil">{jobs.descubrir.progreso}% · {jobs.descubrir.detalle}</span>
-            </div>
+            <>
+              <div className="progreso">
+                <div className="barra-progreso"><div style={{ width: `${jobs.descubrir.progreso}%` }} /></div>
+                <span className="sutil">{jobs.descubrir.progreso}% · {jobs.descubrir.detalle}</span>
+              </div>
+              <p className="sutil">
+                {leads > 0
+                  ? `${leads} leads encontrados hasta ahora.`
+                  : "Todavía no ha llegado ningún lead."}
+              </p>
+              <div className="acciones">
+                <button className="peligro" disabled={ocupado === "cancelar"}
+                        onClick={cancelar}>
+                  {ocupado === "cancelar" ? "Cancelando…" : "Cancelar la búsqueda"}
+                </button>
+              </div>
+              <p className="menudo">
+                Se para donde esté y te quedas con los leads encontrados hasta
+                ese momento. La búsqueda que esté en vuelo termina —ya está
+                pagada— y las que queden en cola no se hacen.
+              </p>
+            </>
           ) : (
             <>
               {jobs.descubrir?.detalle && <p className="sutil">Última búsqueda: {jobs.descubrir.detalle}</p>}

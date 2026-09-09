@@ -563,7 +563,126 @@ todavía**. El camino que sí está verificado es el manual —el mismo que se
 siguió con `envios.i-automate.es`—, que es de lo que esto es la versión
 automática.
 
-## Claves
+## Modo demo
+
+Un techo de leads por campaña, para enseñar el producto sin pagar una
+campaña entera. Se pone y se quita en el **Panel → Ajustes → Uso del
+servicio**, y afecta a todos los clientes a la vez.
+
+De dónde salió: la campaña «Woody tatoo» devolvió **920 leads en 59
+consultas** a Places. Para una demostración sobran los dos números.
+
+### El techo se cuenta en leads y el freno es de consultas
+
+Places cobra por consulta, no por lead. Un límite que se limitara a guardar
+menos leads ahorraría **cero**: las 59 consultas ya estarían pagadas.
+
+Así que lo que hace el modo demo es que `reclamar_tareas` **deje de servir
+tareas** en cuanto la campaña llega al techo. Con 50 leads son tres o cuatro
+consultas. El recorte de la última página —la que ya está pagada y podría
+dejar 68 donde la pantalla prometía 50— lo hace el worker, y es lo de menos.
+
+### Qué pasa con lo que ya existe
+
+- **No se borra ningún lead.** Una campaña que ya tiene 920 los conserva.
+- Un «Buscar más» sobre una campaña que pasa del techo se rechaza con el
+  motivo escrito, en vez de encolar un trabajo que no haría nada.
+- El job se **cierra** al llegar al techo, no se queda colgado. Es la lección
+  de la 008: un freno nuevo sin quien cierre el job deja la campaña clavada
+  en `buscando` para siempre.
+
+### Sin pasar por el panel
+
+```sql
+update ajustes set modo_demo = true, max_leads_demo = 50 where id;
+```
+
+El `where id` no es adorno: sin él, PostgREST responde «UPDATE requires a
+WHERE clause». Ver la 036.
+
+## Cancelar una búsqueda en curso
+
+Botón **«Cancelar la búsqueda»** dentro del paso 3 de la campaña, mientras
+la barra de progreso está viva. Antes no había forma de parar: una vez
+encolado, el descubrimiento seguía gastando Places hasta el techo aunque el
+usuario ya hubiera visto que la búsqueda no era la que quería.
+
+Los leads encontrados hasta ese momento **se quedan**. Están en `leads`
+desde que se guardaron, así que no hay nada que rescatar: `cancelar_job`
+cierra el trabajo y devuelve la campaña a `lista` para que la pantalla los
+enseñe.
+
+### Cancelar no es fallar, y por eso hay estado nuevo
+
+`jobs.estado` admite ahora `cancelado`. Las otras dos opciones mentían:
+
+| Si se cerrara como… | Qué diría de más |
+|---|---|
+| `hecho` | que el descubrimiento terminó, y el panel contaría una campaña completada |
+| `error` | que algo se rompió — el panel de salud lo pinta en rojo y marca al cliente como en riesgo |
+
+Las **tareas** no necesitaron estado nuevo: la 008 ya creó `omitida` para
+exactamente esto, «no se hizo pero tampoco falló».
+
+### Detalles que cuestan tiempo si no se saben
+
+- **La tarea que está en vuelo termina.** Su consulta a Places ya está
+  pagada; tirarla sería perder leads por los que se ha pagado. Al acabar
+  llamará a `cerrar_job_si_completo`, que respeta el job cancelado y no lo
+  resucita a `hecho`.
+- **No se sella `ultima_busqueda_en`.** Sellarla metería la campaña en la
+  pausa de 30 días, y quien acaba de cancelar suele querer relanzar la
+  búsqueda ahora mismo, corregida.
+- **Sin ningún lead**, la campaña vuelve a `inferido` en vez de a `lista`:
+  no hay nada que enseñar en el paso siguiente.
+- `cancelar_job` vale para los tres tipos de trabajo. Hoy solo hay botón en
+  la búsqueda, que es la que cuesta por consulta.
+
+## Claves de los proveedores de modelo
+
+**Panel → Ajustes → Proveedores.** Tres proveedores, el mismo molde que la
+026 estrenó con OpenAI: se **escriben** desde el navegador y **no se pueden
+leer** desde ahí. `leer_clave_modelo` está concedida solo a `service_role`,
+que corre dentro de la Edge Function — ni siquiera un administrador la saca.
+
+| Proveedor | Quién la usa hoy |
+|---|---|
+| `anthropic` | inferencia, redacción, landings y `studio-ia` |
+| `openai` | las imágenes del studio (`generar-imagen`) |
+| `gemini` | **nadie todavía**. Se guarda, no se llama |
+
+Lo de Gemini está dicho así en la pantalla a propósito. Una clave guardada
+que nadie lee parece configuración hecha, y es de las cosas que se descubren
+el día que hacen falta.
+
+### El secreto de entorno sigue valiendo
+
+`_shared/claves.ts` mira primero el Vault y, si ahí no hay nada, usa
+`ANTHROPIC_API_KEY` como siempre. **El Vault gana**: es lo que hace que pegar
+una clave en el panel sirva de algo aunque quede un secreto viejo puesto.
+
+Consecuencia práctica: **rotar la clave de Anthropic ya no es un
+despliegue**. Se pega en el panel y surte efecto en cinco minutos como
+mucho, que es lo que dura la caché por isolate.
+
+### La lista blanca no es decoración
+
+Estas funciones escriben en `vault.secrets` **por nombre**. Sin acotar qué
+nombres se aceptan, un administrador podría pisar `correo_api_key` —la clave
+del proveedor de correo, que es de otro sitio— pasando ese nombre por
+parámetro. `proveedores_de_modelo()` es la lista de lo que se puede tocar
+desde aquí, y nada más.
+
+### Estado de esto hoy
+
+Comprobado ejecutándolo: el mapeo de nombres, que un proveedor desconocido
+devuelve `null` en vez de tocar otro secreto, y que la inferencia sigue
+respondiendo con el camino nuevo (llamada real a `demo-inferir`, segmentos
+de vuelta). **El Vault está vacío de claves de modelo**: hoy todo tira del
+secreto de entorno de Anthropic, y la clave de OpenAI no se ha puesto nunca
+—así que generar imágenes en el studio no funciona todavía—.
+
+## Las dos claves de Supabase
 
 | Clave | Dónde | Qué puede |
 |---|---|---|
@@ -591,9 +710,13 @@ fila en `profiles`.
 | Palanca | Dónde | Por defecto |
 |---|---|---|
 | Consultas a Places por campaña | `campaigns.max_consultas` | 120 |
+| Techo de leads del modo demo | `ajustes.modo_demo` · `ajustes.max_leads_demo` | apagado · 50 |
 | Inferencias de demo por IP y día | `DEMO_MAX_POR_IP` | 5 |
 | Inferencias de demo por día | `DEMO_MAX_POR_DIA` | 300 |
 | Tareas por invocación del worker | `TAREAS_POR_TANDA` | 5 |
+
+Y cuando ninguna palanca llega a tiempo, está el botón: **Cancelar la
+búsqueda**, en el paso 3 de la campaña.
 
 `reclamar_tareas` deja de servir tareas cuando el job alcanza el techo de su
 campaña, así que el límite se aplica solo, sin vigilarlo.
