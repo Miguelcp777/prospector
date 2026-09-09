@@ -563,6 +563,60 @@ todavía**. El camino que sí está verificado es el manual —el mismo que se
 siguió con `envios.i-automate.es`—, que es de lo que esto es la versión
 automática.
 
+## Quién firma los correos
+
+En **Campaña → Cómo se escriben los correos**, campo *Empresa que escribe*.
+Vacío = el nombre de la cuenta, que es el comportamiento de siempre.
+
+### El fallo que lo trajo
+
+Los diez mensajes de la campaña «Woody tatoo» se presentaban como
+**i-automate**. No lo inventó el modelo: `v_contexto_mensaje` sacaba
+`negocio_nombre` de `tenants.nombre`, y el pie legal —el que identifica al
+remitente ante la LSSI-CE— también.
+
+Aparece en cuanto alguien usa esto como agencia: una cuenta, varias
+campañas, cada campaña de una empresa distinta. El tenant es la cuenta; la
+empresa que escribe, no siempre.
+
+### Por qué no vale `campaigns.nombre`
+
+Es lo primero que se piensa y sale mal. `campaigns.nombre` es una etiqueta
+para encontrar la campaña en una lista. En esta base ya hay campañas
+llamadas «ASESORIAS Y DESPACHOS DE ABOGADOS» y «Piloto Valencia»: eso es a
+quién se busca, o una nota de trabajo. Un correo firmado «ASESORIAS Y
+DESPACHOS DE ABOGADOS» dirigido a un despacho de abogados es justo el
+ridículo que hay que evitar.
+
+### El sector y la ciudad se apagan con nombre propio
+
+Cuando la campaña declara empresa propia, `negocio_vertical` y
+`negocio_ciudad` salen nulos del contexto. Describen al **tenant**, y
+atribuírselos a otra empresa es inventarle la presentación: «Woody Tatoo,
+automatización con IA» es peor que no decir el sector.
+
+Lo que sí describe al negocio de la campaña es `campaigns.descripcion`, que
+el prompt ya usa —«A qué se dedica»— y que se rellena en el paso 1.
+
+### Los dos sitios tienen que decir lo mismo
+
+El nombre lo usan dos caminos distintos y ambos aplican el mismo criterio:
+
+| Camino | Dónde |
+|---|---|
+| El texto que escribe el modelo, y el pie en texto plano | `v_contexto_mensaje` → `redaccion.ts` |
+| El diseño, al vestir con una plantilla | `frontend/src/lib/aplicar-plantilla.ts` |
+
+Si se cambia uno hay que cambiar el otro: un correo cuyo texto firma una
+empresa y cuyo pie firma otra es peor que el fallo original.
+
+### Lo que no arregla
+
+**Los mensajes ya redactados no cambian.** Siguen diciendo lo que decían
+cuando se escribieron. Para rehacerlos hay que borrar los borradores desde
+Mensajes y volver a pulsar «Escribir mensajes», y eso es una llamada al
+modelo por cabeza.
+
 ## Modo demo
 
 Dos techos por campaña, para enseñar el producto sin pagar una campaña

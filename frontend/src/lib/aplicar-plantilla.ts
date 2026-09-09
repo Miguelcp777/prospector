@@ -66,10 +66,19 @@ export async function aplicarPlantilla(
 
   // El negocio de quien envía. Va al pie legal, que exige identificación
   // inequívoca del remitente.
+  //
+  // El de la campaña manda sobre el del tenant, y tiene que ser el mismo
+  // criterio que usa `v_contexto_mensaje` (043): una cuenta puede llevar
+  // campañas de varias empresas, y el texto y el diseño no pueden firmar
+  // con nombres distintos dentro del mismo correo.
+  const { data: campanaFirma } = await supabase
+    .from("campaigns").select("negocio_nombre").eq("id", campanaId).maybeSingle();
   const { data: perfil } = await supabase
     .from("profiles").select("tenants(nombre)").single();
   const negocio =
-    (perfil as { tenants?: { nombre?: string } } | null)?.tenants?.nombre ?? "";
+    (campanaFirma as { negocio_nombre?: string | null } | null)?.negocio_nombre?.trim() ||
+    (perfil as { tenants?: { nombre?: string } } | null)?.tenants?.nombre ||
+    "";
 
   // La identidad del remitente, de Cuenta → Correo saliente (migración 028).
   // Hasta que existió esa pantalla, el domicilio postal y la política de
