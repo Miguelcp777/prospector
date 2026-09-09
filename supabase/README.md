@@ -717,7 +717,10 @@ nueva. Mientras está puesto, cada campaña de ese cliente para en un techo de
 leads y otro de mensajes; lo demás funciona igual.
 
 Se quita en **Panel → Clientes**, y es lo que se hace el día que alguien
-empieza a pagar.
+empieza a pagar. Está en la columna **Versión de prueba** de la tabla, un
+clic por fila; la ficha de abajo también lo lleva, pero ahí hay que elegir
+antes al cliente en un desplegable y eso convierte «quítale el límite a
+este» en tres pasos.
 
 ### Quién decide qué
 
@@ -771,16 +774,39 @@ El de la 018 **no acota nada**, solo reparte: pulsando cinco veces se
 escriben cinco tandas. El del modo demo se aplica encima y gana el más
 pequeño.
 
+### Dos nombres para lo mismo, a propósito
+
+Dentro —columnas, panel, este README— se llama **modo demo**: es el nombre
+que ya tiene y renombrarlo en veinte sitios no arregla nada.
+
+Fuera, lo que lee el cliente, es **versión de prueba**. Un cliente que paga
+una cuota no está en una demo; está en una versión limitada de algo que ha
+contratado, y llamarlo demo suena a que no se le toma en serio.
+
 ### El banner
 
-Quien está en modo demo lo ve arriba, en todas las secciones, con las dos
-cifras dentro. **No se puede cerrar**, y es a propósito: no es un aviso
-puntual sino el estado de la cuenta. Esconderlo llevaría a alguien a pasarse
-la tarde preguntándose por qué su campaña se para en 50 leads.
+Quien está limitado lo ve arriba, en todas las secciones:
 
-Los mensajes de error van en la misma línea. Antes decían «quita el modo
-demo en el panel», que el cliente no puede hacer; ahora dicen que hable con
-quien le lleva la cuenta.
+> **Versión de prueba** — Las campañas de esta cuenta están limitadas a 50
+> leads y 20 mensajes. El resto de funciones está disponible sin
+> restricciones. Para ampliar los límites, escribe a *(el contacto)*.
+
+**No se puede cerrar**, y es a propósito: no es un aviso puntual sino el
+estado de la cuenta. Esconderlo llevaría a alguien a pasarse la tarde
+preguntándose por qué su campaña se para en 50 leads.
+
+El contacto sale de `ajustes.contacto_soporte` y se pone en Panel → Ajustes.
+Si es un correo o una URL, el banner lo pinta como enlace. Sin él, la frase
+se queda en «contacta con el administrador del servicio», que es la forma
+educada de no decir nada — por eso conviene rellenarlo.
+
+La pantalla del panel enseña **el aviso tal y como lo verá el cliente**,
+debajo de los campos. Redactar un aviso a ciegas y verlo por primera vez en
+la cuenta de alguien es cómo se cuela una frase que no se quería.
+
+Los mensajes de error dicen lo mismo, y la frase vive en un solo sitio
+—`aviso_version_de_prueba()`— para que no se despeguen. Antes decían «quita
+el modo demo en el panel», que es justo lo que quien los lee no puede hacer.
 
 ### Qué pasa con lo que ya existe
 

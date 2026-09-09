@@ -941,3 +941,12 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e1) 0; width: 
 }
 .banner-demo strong { font-weight: 700; }
 .banner-demo .banner-demo-detalle { opacity: 0.9; }
+
+/* Interruptor dentro de una celda de tabla: la casilla y su etiqueta van
+   juntas y todo el conjunto es pulsable, que en una tabla ancha es la
+   diferencia entre acertar y perseguir un cuadradito de 13 píxeles. */
+.celda-interruptor {
+  display: inline-flex; align-items: center; gap: var(--e2);
+  cursor: pointer; user-select: none;
+}
+.celda-interruptor input { accent-color: var(--acento); cursor: pointer; }

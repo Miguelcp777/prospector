@@ -21,11 +21,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
-type Ajuste = { max_leads_demo: number; max_mensajes_demo: number };
+type Ajuste = {
+  max_leads_demo: number;
+  max_mensajes_demo: number;
+  contacto_soporte: string | null;
+};
 
 export function ModoDemo() {
   const [topeLeads, setTopeLeads] = useState(50);
   const [topeMensajes, setTopeMensajes] = useState(20);
+  const [contacto, setContacto] = useState("");
   const [enDemo, setEnDemo] = useState<number | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
@@ -33,7 +38,8 @@ export function ModoDemo() {
 
   const cargar = useCallback(async () => {
     const [a, c] = await Promise.all([
-      supabase.from("ajustes").select("max_leads_demo, max_mensajes_demo").limit(1),
+      supabase.from("ajustes")
+        .select("max_leads_demo, max_mensajes_demo, contacto_soporte").limit(1),
       // Cuántos clientes están en demo ahora mismo. Sin esta cifra, la
       // pantalla enseña dos números sin decir a cuántos afectan.
       supabase.rpc("panel_tenants"),
@@ -43,6 +49,7 @@ export function ModoDemo() {
     if (ajuste) {
       setTopeLeads(ajuste.max_leads_demo);
       setTopeMensajes(ajuste.max_mensajes_demo);
+      setContacto(ajuste.contacto_soporte ?? "");
     }
     const clientes = (c.data ?? []) as { modo_demo: boolean }[];
     if (!c.error) setEnDemo(clientes.filter((x) => x.modo_demo).length);
@@ -57,6 +64,7 @@ export function ModoDemo() {
     const { error: fallo } = await supabase.rpc("guardar_topes_demo", {
       p_max_leads: topeLeads,
       p_max_mensajes: topeMensajes,
+      p_contacto: contacto,
     });
     setGuardando(false);
     if (fallo) { setError(fallo.message); return; }
@@ -119,6 +127,39 @@ export function ModoDemo() {
         Lo que ya existe <strong>no se toca</strong>: las campañas con más
         leads o más mensajes que el techo los conservan. El límite frena el
         trabajo nuevo, no borra nada.
+      </p>
+
+      <label className="campo">
+        <span>A quién escribir para ampliarlos</span>
+        <input value={contacto} onChange={(e) => setContacto(e.target.value)}
+               placeholder="comercial@tuempresa.com" />
+      </label>
+      <p className="menudo">
+        Un correo o una dirección web. Sale dentro del aviso que ve el
+        cliente, como enlace. Sin esto, el aviso solo puede decir «contacta
+        con el administrador del servicio», que es la forma educada de no
+        decir nada.
+      </p>
+
+      {/* Lo que el cliente lee, tal cual. Redactar un aviso a ciegas y verlo
+          por primera vez en la cuenta de alguien es cómo se cuela una frase
+          que no se quería. */}
+      <div className="banner-demo" style={{ margin: 0 }}>
+        <strong>Versión de prueba</strong>
+        <span className="banner-demo-detalle">
+          Las campañas de esta cuenta están limitadas a{" "}
+          <strong>{topeLeads} leads</strong> y{" "}
+          <strong>{topeMensajes} mensajes</strong>. El resto de funciones está
+          disponible sin restricciones.{" "}
+          {contacto.trim()
+            ? `Para ampliar los límites, escribe a ${contacto.trim()}.`
+            : "Para ampliar los límites, contacta con el administrador del servicio."}
+        </span>
+      </div>
+      <p className="menudo">
+        Así lo ve un cliente en versión de prueba, arriba y en todas las
+        secciones. No lo puede cerrar: es el estado de su cuenta, no un aviso
+        pasajero.
       </p>
 
       <div className="acciones">

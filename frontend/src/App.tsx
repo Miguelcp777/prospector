@@ -191,7 +191,7 @@ function Aplicacion() {
   // «false»— para no enseñar el banner y quitarlo medio segundo después,
   // que es peor que enseñarlo tarde.
   const [demo, setDemo] = useState<
-    { leads: number; mensajes: number } | null
+    { leads: number; mensajes: number; contacto: string | null } | null
   >(null);
   const [vista, setVista] = useState<Vista>("campanas");
 
@@ -219,14 +219,18 @@ function Aplicacion() {
         // modo demo» sin decir en qué se nota no sirve de nada.
         if (data.modo_demo === true) {
           supabase.from("ajustes")
-            .select("max_leads_demo, max_mensajes_demo")
+            .select("max_leads_demo, max_mensajes_demo, contacto_soporte")
             .limit(1)
             .then(({ data: a }) => {
-              const t = a?.[0] as
-                { max_leads_demo: number; max_mensajes_demo: number } | undefined;
+              const t = a?.[0] as {
+                max_leads_demo: number;
+                max_mensajes_demo: number;
+                contacto_soporte: string | null;
+              } | undefined;
               setDemo({
                 leads: t?.max_leads_demo ?? 0,
                 mensajes: t?.max_mensajes_demo ?? 0,
+                contacto: t?.contacto_soporte?.trim() || null,
               });
             });
         } else {
@@ -326,12 +330,13 @@ function Aplicacion() {
       <main className={vistaValida === "studio" ? "contenido contenido-completo" : "contenido"}>
         {demo && (
           <div className="banner-demo" role="status">
-            <strong>Modo demo</strong>
+            <strong>Versión de prueba</strong>
             <span className="banner-demo-detalle">
-              Cada campaña se para en <strong>{demo.leads} leads</strong> y{" "}
-              <strong>{demo.mensajes} mensajes</strong>. Todo lo demás
-              funciona igual. Para trabajar sin ese tope, habla con quien te
-              lleva la cuenta.
+              Las campañas de esta cuenta están limitadas a{" "}
+              <strong>{demo.leads} leads</strong> y{" "}
+              <strong>{demo.mensajes} mensajes</strong>. El resto de funciones
+              está disponible sin restricciones.{" "}
+              <ContactoSoporte contacto={demo.contacto} />
             </span>
           </div>
         )}
@@ -383,6 +388,43 @@ function Aplicacion() {
  * Con una excepción: el grupo que contiene la pantalla abierta se abre
  * siempre. Un menú que esconde dónde estás desorienta más que uno largo.
  */
+/**
+ * A quién escribir para que le quiten el límite de la versión de prueba.
+ *
+ * Sin contacto configurado, la frase se queda genérica en vez de mandar a
+ * ningún sitio. Decirle a alguien «contacta con» sin decir con quién es la
+ * forma educada de no decir nada, pero es mejor que inventarse una
+ * dirección o que no explicar cómo se sale de aquí.
+ *
+ * El mismo texto lo devuelve `aviso_version_de_prueba()` en la base, que es
+ * el que sale en los mensajes de error. Están escritos dos veces porque uno
+ * necesita ser un enlace y el otro no puede serlo.
+ */
+function ContactoSoporte({ contacto }: { contacto: string | null }) {
+  if (!contacto) {
+    return <>Para ampliar los límites, contacta con el administrador del servicio.</>;
+  }
+
+  const esCorreo = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(contacto);
+  const esEnlace = /^https?:\/\//i.test(contacto);
+
+  if (!esCorreo && !esEnlace) {
+    // Un texto suelto —un teléfono, un nombre— se enseña tal cual: hacerlo
+    // enlace a la fuerza daría un href roto.
+    return <>Para ampliar los límites, contacta con {contacto}.</>;
+  }
+
+  return (
+    <>
+      Para ampliar los límites,{" "}
+      <a href={esCorreo ? `mailto:${contacto}` : contacto}
+         {...(esEnlace ? { target: "_blank", rel: "noreferrer" } : {})}>
+        {esCorreo ? `escribe a ${contacto}` : "escríbenos"}
+      </a>.
+    </>
+  );
+}
+
 function GrupoLateral({
   grupo, vista, alElegir,
 }: {

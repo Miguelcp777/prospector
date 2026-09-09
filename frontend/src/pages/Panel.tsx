@@ -40,6 +40,7 @@ type FilaTenant = {
   plan: string; alta: string; usuarios: number; campanas: number; leads: number;
   enviados: number; places_mes: number; places_techo: number;
   tokens_mes: number; incidencias: number; ultimo_uso: string;
+  modo_demo: boolean;
 };
 
 type Dia = {
@@ -132,9 +133,36 @@ export function Panel() {
     setCostes((c.data ?? []) as Coste[]);
     setEconomia((e.data?.[0] ?? null) as Economia | null);
     setCargando(false);
+
   }, [ventana]);
 
   useEffect(() => { cargar(); }, [cargar]);
+
+  /**
+   * Quitar o poner la versión de prueba a un cliente, desde la propia lista.
+   *
+   * También se puede en la ficha de abajo, pero ahí hay que elegir antes al
+   * cliente en un desplegable, y eso convierte «quítale el límite a este»
+   * en tres pasos y una búsqueda. Aquí es un clic en la fila que ya estás
+   * mirando.
+   *
+   * Los demás parámetros van sin pasar a propósito: `panel_guardar_cliente`
+   * deja como estaba todo lo que reciba nulo, así que esto no puede pisar
+   * un plan ni un módulo que alguien esté cambiando a la vez.
+   */
+  async function cambiarPrueba(tenantId: string, enPrueba: boolean) {
+    // Optimista: la tabla responde al clic y se corrige sola si falla.
+    setTenants((ts) =>
+      ts.map((t) => (t.tenant_id === tenantId ? { ...t, modo_demo: enPrueba } : t)));
+    const { error: fallo } = await supabase.rpc("panel_guardar_cliente", {
+      p_tenant: tenantId,
+      p_modo_demo: enPrueba,
+    });
+    if (fallo) {
+      setError(fallo.message);
+      await cargar();
+    }
+  }
 
   if (cargando) return <div className="panel"><p className="sutil">Cargando…</p></div>;
 
@@ -371,7 +399,8 @@ export function Panel() {
         <table>
           <thead>
             <tr>
-              <th>Cliente</th><th>Plan</th><th>Usuarios</th><th>Campañas</th>
+              <th>Cliente</th><th>Versión de prueba</th><th>Plan</th>
+              <th>Usuarios</th><th>Campañas</th>
               <th>Leads</th><th>Enviados</th><th>Places (mes)</th>
               <th>Tokens (mes)</th><th>Inc.</th><th>Último uso</th>
             </tr>
@@ -382,6 +411,21 @@ export function Panel() {
                 <td>
                   <strong>{t.nombre}</strong>
                   <div className="menudo">{t.vertical}{t.ciudad ? ` · ${t.ciudad}` : ""}</div>
+                </td>
+                <td>
+                  {/* Marcado = limitado. Quitar la marca es lo que se hace
+                      el día que el cliente empieza a pagar. */}
+                  <label className="celda-interruptor" title={
+                    t.modo_demo
+                      ? "Limitado. Quita la marca para que use la app entera."
+                      : "Sin límites."
+                  }>
+                    <input type="checkbox" checked={t.modo_demo}
+                           onChange={(e) => void cambiarPrueba(t.tenant_id, e.target.checked)} />
+                    <span className={t.modo_demo ? "etiqueta buscando" : "etiqueta lista"}>
+                      {t.modo_demo ? "limitado" : "completo"}
+                    </span>
+                  </label>
                 </td>
                 <td><span className="etiqueta">{t.plan}</span></td>
                 <td>{num(t.usuarios)}</td>
