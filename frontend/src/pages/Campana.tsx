@@ -52,6 +52,9 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
   const [editandoDesc, setEditandoDesc] = useState(false);
   const [desc, setDesc] = useState("");
   const [topeMensajes, setTopeMensajes] = useState<number | null>(null);
+  // Techo total de mensajes del modo demo, o null si está apagado. Es otro
+  // límite distinto del de arriba: aquel es por tanda, este por campaña.
+  const [topeDemo, setTopeDemo] = useState<number | null>(null);
   const { publicar } = useRecorrido();
 
   const cargar = useCallback(async () => {
@@ -64,7 +67,8 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
       supabase.from("messages").select("id, leads!inner(campaign_id)").eq("leads.campaign_id", id),
       supabase.from("jobs").select("tipo, estado, progreso, detalle")
         .eq("campaign_id", id).order("creado_en", { ascending: false }),
-      supabase.from("ajustes").select("max_mensajes_por_campana").limit(1),
+      supabase.from("ajustes")
+        .select("max_mensajes_por_campana, modo_demo, max_mensajes_demo").limit(1),
     ]);
 
     if (c.error) { setError(c.error.message); setCargando(false); return; }
@@ -73,9 +77,13 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
     const jobs: Record<string, Job> = {};
     for (const job of (j.data ?? []) as Job[]) if (!jobs[job.tipo]) jobs[job.tipo] = job;
 
-    setTopeMensajes(
-      (a.data?.[0] as { max_mensajes_por_campana: number } | undefined)?.max_mensajes_por_campana ?? null,
-    );
+    const ajustes = a.data?.[0] as {
+      max_mensajes_por_campana: number;
+      modo_demo: boolean;
+      max_mensajes_demo: number;
+    } | undefined;
+    setTopeMensajes(ajustes?.max_mensajes_por_campana ?? null);
+    setTopeDemo(ajustes?.modo_demo ? ajustes.max_mensajes_demo : null);
 
     const campana = c.data as Campana;
     setDesc(campana.descripcion ?? "");
@@ -334,12 +342,23 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
                 Cuesta una llamada al modelo por lead. Se saltan los que están
                 en la lista de supresión.
               </p>
-              {topeMensajes !== null && conEmail > topeMensajes && (
+              {/* El techo del modo demo manda sobre el de tanda, así que si
+                  está puesto se enseña ese: decir "vuelve a pulsar" cuando
+                  no va a escribir más es peor que no decir nada. */}
+              {topeDemo !== null ? (
                 <p className="caja-aviso">
-                  Tope de {topeMensajes} mensajes por tanda mientras se está
-                  probando. Se escriben los de mayor score primero; para el
-                  resto, vuelve a pulsar.
+                  Modo demo: {topeDemo} mensajes por campaña, en total. Llevas{" "}
+                  {mensajes}. Cada correo es una llamada al modelo, y ahí es
+                  donde se va el dinero de esta parte.
                 </p>
+              ) : (
+                topeMensajes !== null && conEmail > topeMensajes && (
+                  <p className="caja-aviso">
+                    Tope de {topeMensajes} mensajes por tanda mientras se está
+                    probando. Se escriben los de mayor score primero; para el
+                    resto, vuelve a pulsar.
+                  </p>
+                )
               )}
               <div className="acciones">
                 <button className={mensajes > 0 ? "secundario" : "primario"}

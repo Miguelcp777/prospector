@@ -565,12 +565,24 @@ automática.
 
 ## Modo demo
 
-Un techo de leads por campaña, para enseñar el producto sin pagar una
-campaña entera. Se pone y se quita en el **Panel → Ajustes → Uso del
-servicio**, y afecta a todos los clientes a la vez.
+Dos techos por campaña, para enseñar el producto sin pagar una campaña
+entera. Se ponen y se quitan en el **Panel → Ajustes → Uso del servicio**, y
+afectan a todos los clientes a la vez.
 
-De dónde salió: la campaña «Woody tatoo» devolvió **920 leads en 59
-consultas** a Places. Para una demostración sobran los dos números.
+De dónde salió: «Woody tatoo» devolvió **920 leads en 59 consultas** a
+Places, y otra campaña se dejó **516 llamadas al modelo** redactando
+correos. Para una demostración sobran los tres números.
+
+### Son dos facturas, y por eso son dos techos
+
+| Techo | Qué acota | Quién cobra, y por qué |
+|---|---|---|
+| `max_leads_demo` (50) | el descubrimiento | Places, **por consulta** |
+| `max_mensajes_demo` (20) | la redacción | el modelo, **por correo escrito** |
+
+Un solo número no sirve. Con el techo de leads en 50, si todos tuvieran
+correo serían 50 llamadas al modelo: el gasto de Places queda acotado y el
+del modelo no.
 
 ### El techo se cuenta en leads y el freno es de consultas
 
@@ -582,23 +594,62 @@ tareas** en cuanto la campaña llega al techo. Con 50 leads son tres o cuatro
 consultas. El recorte de la última página —la que ya está pagada y podría
 dejar 68 donde la pantalla prometía 50— lo hace el worker, y es lo de menos.
 
+### El de mensajes es TOTAL, no por tanda
+
+Aquí hay una confusión fácil que conviene dejar clara, porque los dos
+ajustes se parecen y hacen cosas distintas:
+
+| Ajuste | Alcance | Para qué está |
+|---|---|---|
+| `max_mensajes_por_campana` (018) | **por tanda** | trocear una campaña grande: «Escribir los que faltan» |
+| `max_mensajes_demo` (042) | **por campaña, total** | frenar el gasto del modelo en una demostración |
+
+El de la 018 **no acota nada**, solo reparte: pulsando cinco veces se
+escriben cinco tandas. El del modo demo se aplica encima y gana el más
+pequeño de los dos; cuando la campaña llega a su techo, el botón deja de
+escribir y dice por qué.
+
+No hizo falta tocar el worker de redacción: a diferencia del
+descubrimiento, no encadena tareas nuevas sobre la marcha. Todo el trabajo
+lo crea `encolar_redaccion`, así que acotarlo ahí lo acota del todo.
+
 ### Qué pasa con lo que ya existe
 
-- **No se borra ningún lead.** Una campaña que ya tiene 920 los conserva.
-- Un «Buscar más» sobre una campaña que pasa del techo se rechaza con el
-  motivo escrito, en vez de encolar un trabajo que no haría nada.
-- El job se **cierra** al llegar al techo, no se queda colgado. Es la lección
-  de la 008: un freno nuevo sin quien cierre el job deja la campaña clavada
-  en `buscando` para siempre.
+- **No se borra nada.** Una campaña con 920 leads o con 460 mensajes los
+  conserva. El límite frena el trabajo nuevo.
+- Un «Buscar más» o un «Escribir los que faltan» sobre una campaña que ya
+  pasa del techo se rechaza **con el motivo escrito**, en vez de encolar un
+  trabajo que no haría nada.
+- El job de descubrimiento se **cierra** al llegar al techo, no se queda
+  colgado. Es la lección de la 008: un freno nuevo sin quien cierre el job
+  deja la campaña clavada en `buscando` para siempre.
 
 ### Sin pasar por el panel
 
 ```sql
-update ajustes set modo_demo = true, max_leads_demo = 50 where id;
+update ajustes set modo_demo = true, max_leads_demo = 50, max_mensajes_demo = 20
+ where id;
 ```
 
 El `where id` no es adorno: sin él, PostgREST responde «UPDATE requires a
 WHERE clause». Ver la 036.
+
+### `ajustes` ya no se escribe desde el navegador
+
+Encontrado al montar la 042: `anon` y `authenticated` tenían concesión de
+INSERT y UPDATE sobre **todas** las columnas de `ajustes`. No pasaba nada
+porque la RLS está activa y la tabla solo tiene política de SELECT, así que
+toda escritura se denegaba.
+
+Es la misma trampa que este README ya señala en `administradores`. El día
+que alguien añadiera una política de escritura «para poder guardar los
+precios desde el panel», cualquiera con la clave publicable —que viaja en el
+bundle— podría apagar el modo demo, subir el techo de Places del proyecto
+entero o cambiar el remitente del servicio.
+
+La 042 quita esa concesión. No rompe nada: quien escribe aquí son funciones
+`SECURITY DEFINER`, que corren con la identidad del dueño y no con la de
+quien llama.
 
 ## Cancelar una búsqueda en curso
 
@@ -710,7 +761,9 @@ fila en `profiles`.
 | Palanca | Dónde | Por defecto |
 |---|---|---|
 | Consultas a Places por campaña | `campaigns.max_consultas` | 120 |
-| Techo de leads del modo demo | `ajustes.modo_demo` · `ajustes.max_leads_demo` | apagado · 50 |
+| Mensajes redactados por tanda | `ajustes.max_mensajes_por_campana` | 10 |
+| Leads por campaña en modo demo | `ajustes.modo_demo` · `ajustes.max_leads_demo` | apagado · 50 |
+| Mensajes por campaña en modo demo | `ajustes.modo_demo` · `ajustes.max_mensajes_demo` | apagado · 20 |
 | Inferencias de demo por IP y día | `DEMO_MAX_POR_IP` | 5 |
 | Inferencias de demo por día | `DEMO_MAX_POR_DIA` | 300 |
 | Tareas por invocación del worker | `TAREAS_POR_TANDA` | 5 |
