@@ -16,6 +16,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { aplicarPlantilla, type Resultado } from "../lib/aplicar-plantilla";
+import {
+  ID_PLANTILLA_POR_DEFECTO,
+  NOMBRE_PLANTILLA_POR_DEFECTO,
+} from "../lib/plantilla-por-defecto";
 import { invocar } from "../lib/edge";
 
 const TOPE = 200;
@@ -51,7 +55,9 @@ export function Mensajes({ alIrA }: { alIrA?: (vista: "studio") => void }) {
 
   type PlantillaFila = { id: string; nombre: string; respetar_diseno: boolean };
   const [plantillas, setPlantillas] = useState<PlantillaFila[]>([]);
-  const [plantillaElegida, setPlantillaElegida] = useState("");
+  // Preseleccionada la de por defecto: vestir un correo es lo normal, y
+  // hasta ahora el caso normal exigía diseñar algo antes en el studio.
+  const [plantillaElegida, setPlantillaElegida] = useState(ID_PLANTILLA_POR_DEFECTO);
   const [falloPlantillas, setFalloPlantillas] = useState<string | null>(null);
   const [vistiendo, setVistiendo] = useState(false);
   const [resultado, setResultado] = useState<Resultado | null>(null);
@@ -208,34 +214,7 @@ export function Mensajes({ alIrA }: { alIrA?: (vista: "studio") => void }) {
           existe no se puede pedir: el usuario no ve un botón desactivado ni
           un aviso, ve que la opción no está. Cada cliente empieza con cero
           plantillas, así que esto le pasa a todo el mundo el primer día. */}
-      {elegida && plantillas.length === 0 && (
-        <div className="tarjeta">
-          <div>
-            <h2>Aplicar un diseño</h2>
-            {falloPlantillas ? (
-              <p className="caja-error">
-                No se han podido leer tus plantillas: {falloPlantillas}
-              </p>
-            ) : (
-              <p className="sutil">
-                Todavía no tienes ninguna plantilla. El diseño de los correos
-                se hace en <strong>Plantillas</strong>: eliges una del
-                catálogo, la ajustas y la guardas. Al volver aquí podrás
-                aplicarla a los mensajes de esta campaña.
-              </p>
-            )}
-          </div>
-          {!falloPlantillas && alIrA && (
-            <div className="acciones">
-              <button className="primario" onClick={() => alIrA("studio")}>
-                Ir a Plantillas
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {elegida && plantillas.length > 0 && (
+      {elegida && (
         <div className="tarjeta">
           <div>
             <h2>Aplicar un diseño</h2>
@@ -246,10 +225,19 @@ export function Mensajes({ alIrA }: { alIrA?: (vista: "studio") => void }) {
             </p>
           </div>
 
+          {falloPlantillas && (
+            <p className="caja-error">
+              No se han podido leer tus plantillas: {falloPlantillas}. La de
+              por defecto sigue disponible, porque no sale de la base.
+            </p>
+          )}
+
           <div className="rejilla">
             <select value={plantillaElegida}
                     onChange={(e) => setPlantillaElegida(e.target.value)}>
-              <option value="">Elige una plantilla…</option>
+              <option value={ID_PLANTILLA_POR_DEFECTO}>
+                {NOMBRE_PLANTILLA_POR_DEFECTO}
+              </option>
               {plantillas.map((p) => (
                 <option key={p.id} value={p.id}>{p.nombre}</option>
               ))}
@@ -260,10 +248,21 @@ export function Mensajes({ alIrA }: { alIrA?: (vista: "studio") => void }) {
             </button>
           </div>
 
+          {plantillaElegida === ID_PLANTILLA_POR_DEFECTO && (
+            <p className="menudo">
+              Cabecera con el logo de la campaña —si lo has subido en
+              Recursos—, el texto del correo, el botón a la landing cuando
+              esté publicada, y el pie con la identificación y el enlace de
+              baja. Sin copy de catálogo, así que no hay nada que revisar
+              antes de aplicarla.
+            </p>
+          )}
+
           {/* Por defecto se asume catálogo, y el catálogo trae copy de
               muestra que no va dirigido a nadie. Encender esto es afirmar
-              lo contrario, así que el aviso dice qué se está afirmando. */}
-          {plantillaElegida && (
+              lo contrario, así que el aviso dice qué se está afirmando.
+              No aplica a la de por defecto: ahí no hay relleno que filtrar. */}
+          {plantillaElegida && plantillaElegida !== ID_PLANTILLA_POR_DEFECTO && (
             <label className="toggle">
               <input
                 type="checkbox"

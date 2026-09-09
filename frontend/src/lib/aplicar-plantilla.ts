@@ -14,6 +14,10 @@
 import { supabase } from "./supabase";
 import { renderEmailHtml } from "../studio/lib/email-renderer";
 import type { TemplateDocument } from "../studio/lib/template-types";
+import {
+  ID_PLANTILLA_POR_DEFECTO,
+  PLANTILLA_POR_DEFECTO,
+} from "./plantilla-por-defecto";
 
 /** El separador que `redaccion.ts` pone antes del pie legal. */
 const SEPARADOR = "\n—\n";
@@ -50,12 +54,41 @@ export async function aplicarPlantilla(
   campanaId: string,
   plantillaId: string,
 ): Promise<Resultado> {
-  const { data: plantilla, error: falloP } = await supabase
-    .from("plantillas")
-    .select("id, documento, asunto, preencabezado, version, respetar_diseno")
-    .eq("id", plantillaId)
-    .single();
-  if (falloP || !plantilla) throw new Error(falloP?.message ?? "Plantilla no encontrada");
+  // La de por defecto no vive en la base: es una constante del código, y
+  // por eso no se busca. Ver `plantilla-por-defecto.ts`.
+  const esPorDefecto = plantillaId === ID_PLANTILLA_POR_DEFECTO;
+
+  type Plantilla = {
+    id: string | null;
+    documento: TemplateDocument;
+    asunto: string;
+    version: number | null;
+    respetar_diseno: boolean;
+  };
+
+  let plantilla: Plantilla;
+
+  if (esPorDefecto) {
+    plantilla = {
+      id: null,
+      documento: PLANTILLA_POR_DEFECTO,
+      // Sin asunto propio: el que vale es el que el modelo escribió para
+      // este lead. Una plantilla del catálogo sí puede traer el suyo.
+      asunto: "",
+      version: null,
+      // No hay relleno de catálogo que filtrar: todos sus textos salen de
+      // variables o los pone este proceso.
+      respetar_diseno: true,
+    };
+  } else {
+    const { data, error: falloP } = await supabase
+      .from("plantillas")
+      .select("id, documento, asunto, preencabezado, version, respetar_diseno")
+      .eq("id", plantillaId)
+      .single();
+    if (falloP || !data) throw new Error(falloP?.message ?? "Plantilla no encontrada");
+    plantilla = data as unknown as Plantilla;
+  }
 
   const { data: mensajes, error: falloM } = await supabase
     .from("messages")
@@ -113,6 +146,20 @@ export async function aplicarPlantilla(
       ? `${location.origin}/landing.html?s=${landing.slug}`
       : "";
 
+  // El logo de la campaña, con URL pública y estable (migración 044).
+  //
+  // Pública y no firmada porque un correo se abre semanas después y a
+  // menudo a través del proxy de imágenes de Gmail: una URL que caduca
+  // sería una imagen rota con retardo, y en la prueba se vería bien.
+  //
+  // La regla de cuál es el logo —el de la campaña, y si no el del negocio—
+  // vive en `logo_de_campana`, la misma que usa la landing.
+  const { data: rutaLogo } = await supabase
+    .rpc("logo_de_campana", { p_campaign: campanaId });
+  const urlLogo = rutaLogo
+    ? supabase.storage.from("logos").getPublicUrl(rutaLogo as string).data.publicUrl
+    : "";
+
   const respetar = Boolean(
     (plantilla as { respetar_diseno?: boolean }).respetar_diseno,
   );
@@ -126,7 +173,7 @@ export async function aplicarPlantilla(
     try {
       const html = componer(
         m, plantilla.documento as TemplateDocument, plantilla.asunto,
-        negocio, identidad, respetar, urlLanding, resultado,
+        negocio, identidad, respetar, urlLanding, urlLogo, resultado,
       );
 
       // La garantía, comprobada aquí y otra vez por el trigger al enviar.
@@ -236,7 +283,7 @@ function anotarQuitado(r: Resultado, tipo: string) {
 
 function datosReales(
   m: MensajeFila, urlBaja: string, negocio: string, ident: Identidad,
-  urlLanding: string,
+  urlLanding: string, urlLogo: string,
 ) {
   // El nombre configurado manda sobre el del tenant: es el que el cliente
   // ha decidido que aparezca firmando, y puede no ser su razón social.
@@ -251,6 +298,10 @@ function datosReales(
     "lead.segment": "",
     "campaign.offer": "",
     "campaign.cta_url": urlLanding,
+    // Vacío cuando la campaña no tiene logo subido al bucket público. El
+    // bloque de marca lo aguanta: sin imagen enseña el nombre de quien
+    // firma, que es exactamente lo que hay que enseñar entonces.
+    "brand.logo_url": urlLogo,
     "sender.name": firma,
     "sender.company": firma,
     "sender.legal_name": firma,
@@ -274,6 +325,8 @@ function componer(
   respetar: boolean,
   /** Adónde apunta el botón, o "" si la campaña no tiene landing publicada. */
   urlLanding: string,
+  /** El logo de la campaña, o "" si no hay ninguno en el bucket público. */
+  urlLogo: string,
   resultado: Resultado,
 ) {
   const corte = m.cuerpo.indexOf(SEPARADOR);
@@ -385,5 +438,5 @@ function componer(
   }
 
   return renderEmailHtml(doc, m.asunto ?? asuntoPlantilla, "",
-                         datosReales(m, urlBaja, negocio, ident, urlLanding));
+                         datosReales(m, urlBaja, negocio, ident, urlLanding, urlLogo));
 }

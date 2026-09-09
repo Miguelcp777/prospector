@@ -617,6 +617,99 @@ cuando se escribieron. Para rehacerlos hay que borrar los borradores desde
 Mensajes y volver a pulsar «Escribir mensajes», y eso es una llamada al
 modelo por cabeza.
 
+## Configuración, recursos y plantillas: qué hace cada cosa
+
+Tres pantallas tocan el mismo correo y hasta la 044 no encajaban. Este es el
+reparto, ya coherente:
+
+| Pieza | Dónde se pone | A dónde va de verdad |
+|---|---|---|
+| Tipo, tono, idioma, firma, llamada a la acción | Campaña → Cómo se escriben los correos | al **prompt** del redactor |
+| Empresa que escribe | ídem | al prompt **y al pie legal** (043) |
+| **Documentos** | Campaña → Recursos | su **texto** al prompt («LO QUE SE OFRECE»). **No se adjuntan** |
+| **Logo** | Campaña → Recursos | la cabecera del **correo** y la **landing** |
+| Plantilla del studio | Plantillas | el **diseño** donde entra el texto |
+
+### Lo que estaba roto
+
+- **El logo no salía en ningún correo.** Ni con plantilla: no había ninguna
+  variable de logo que rellenar. Ahora es `{{brand.logo_url}}`.
+- **La pantalla prometía adjuntos.** Decía literalmente «los documentos como
+  adjunto», y nunca se adjuntó ninguno. Ahora dice lo que hacen de verdad.
+- **Un correo sin plantilla salía en texto plano.** Vestirlo obligaba a
+  entrar en el studio, diseñar algo y volver: tres pasos para el caso más
+  normal.
+
+### La plantilla por defecto
+
+«Correo simple», preseleccionada en Mensajes → Aplicar un diseño. Marca
+arriba, el texto del lead, botón a la landing si está publicada, y el pie
+legal. Sin copy de catálogo, así que no hay nada que revisar antes de
+aplicarla ni interruptor de «respetar el diseño» que tocar.
+
+Vive en `frontend/src/lib/plantilla-por-defecto.ts` y **no en la base**. Una
+plantilla del sistema en `plantillas` necesitaría filas sin tenant y una
+política de RLS que las deje leer a todo el mundo: abrir esa tabla a
+lecturas de fuera del tenant para guardar una constante. Aquí no hay nada
+que aislar. Si algún día se quiere editable, entonces sí es una fila.
+
+Al aplicarla, `messages.plantilla_id` queda **nulo**: no es una plantilla de
+la base y apuntar a una que no existe sería mentir en el registro.
+
+### Por qué el logo tiene bucket propio
+
+`recursos` es privado a propósito (017): ahí viven las ofertas comerciales.
+La landing las sirve con URLs firmadas que caducan en una hora, y eso vale
+porque la landing se pide en el momento.
+
+Un correo no. Se abre horas o semanas después, y muchas veces a través del
+proxy de imágenes de Gmail. Una URL firmada sería **una imagen rota con
+retardo** — el peor fallo posible, porque en la prueba se ve bien.
+
+De ahí el reparto de la 044:
+
+| Bucket | Acceso | Qué guarda |
+|---|---|---|
+| `logos` | **público** | solo PNG, JPG y WEBP de marca, hasta 2 MB |
+| `recursos` | privado | documentos y todo lo demás |
+
+Escribir sigue siendo privado en los dos: la ruta empieza por el uuid del
+tenant y la política lo compara con `auth_tenant_id()`.
+
+**Sin SVG en el bucket público**, y no es un descuido: un SVG es un
+documento con scripts dentro. En un correo no se ejecutan, pero la URL es
+pública y se puede abrir en una pestaña.
+
+**Los logos subidos antes de la 044 siguen en el bucket privado.** Salen en
+la landing y no en los correos. La pantalla de Recursos lo avisa y se
+arregla volviéndolos a subir, que es un clic; moverlos desde una migración
+significaría tocar los archivos de un cliente.
+
+### El pie tenía dos enlaces que no debían estar
+
+Encontrado al montar la plantilla por defecto, y venía de antes: el
+renderizador construía los tres enlaces del pie con `props.x || "valor por
+defecto"`. Vaciar una etiqueta a `""` —que es como el resto del código pedía
+quitar un enlace— es *falsy*, así que volvía la etiqueta por defecto.
+
+Resultado, en todos los correos vestidos:
+
+- **«Gestionar preferencias»**, que no existe, apuntando a la URL de baja.
+- **«Política de privacidad» con `href="#"`** cuando el cliente no tenía
+  ninguna configurada. Un enlace legal muerto es peor que no ofrecerlo:
+  promete un derecho que no se puede ejercer.
+
+Ahora un enlace del pie se dibuja solo si tiene **texto y destino**.
+`undefined` sigue cayendo en el valor por defecto, así que una plantilla que
+no toca esas props se comporta igual que siempre.
+
+### Lo que sigue pendiente
+
+`{{campaign.offer}}` existe como variable y **siempre se rellena con cadena
+vacía**. Una plantilla del catálogo con bloque de oferta lo pinta en blanco
+y nadie avisa. Es de las que hay que decidir: o se rellena con algo, o se
+quita del catálogo.
+
 ## Modo demo
 
 Dos techos por campaña, para enseñar el producto sin pagar una campaña

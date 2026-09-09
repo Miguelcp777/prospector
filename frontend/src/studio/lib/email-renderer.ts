@@ -445,11 +445,40 @@ function renderBlock(
     case "spacer":
       return `<tr data-block-id="${escapeHtml(block.id)}"><td aria-hidden="true" style="height:${Math.min(80, Math.max(8, Number(props.height) || 24))}px;font-size:0;line-height:0;">&nbsp;</td></tr>`;
     case "footer": {
+      // Un enlace del pie solo se dibuja si tiene texto Y destino.
+      //
+      // Antes se dibujaban los tres siempre, y el `||` era la trampa:
+      // vaciar la etiqueta a "" —que es como el resto del código pedía
+      // quitar un enlace— es falsy, así que volvía la etiqueta por defecto.
+      // Salían «Gestionar preferencias», que no existe, y «Política de
+      // privacidad» con href="#" cuando el cliente no había configurado
+      // ninguna. Un enlace legal muerto es peor que no ofrecerlo: promete
+      // un derecho que no se puede ejercer.
+      //
+      // `undefined` sigue cayendo en el valor por defecto, así que una
+      // plantilla que no toca estas props se comporta igual que siempre.
+      const enlace = (
+        url: unknown, urlPorDefecto: string,
+        etiqueta: unknown, etiquetaPorDefecto: string,
+      ) => {
+        const texto = interpolate(
+          etiqueta === undefined ? etiquetaPorDefecto : etiqueta, data,
+        ).trim();
+        if (!texto) return "";
+        const href = safeUrl(url || urlPorDefecto, data);
+        // safeUrl devuelve "#" cuando no hay destino válido.
+        if (!href || href === "#") return "";
+        return `<a href="${href}" style="color:inherit;text-decoration:underline;">${texto}</a>`;
+      };
+
       const links = [
-        `<a href="${safeUrl(props.unsubscribeUrl || "{{system.unsubscribe_url}}", data)}" style="color:inherit;text-decoration:underline;">${interpolate(props.unsubscribeLabel || "Cancelar suscripción", data)}</a>`,
-        `<a href="${safeUrl(props.preferencesUrl || "{{system.preferences_url}}", data)}" style="color:inherit;text-decoration:underline;">${interpolate(props.preferencesLabel || "Gestionar preferencias", data)}</a>`,
-        `<a href="${safeUrl(props.privacyUrl || "{{sender.privacy_url}}", data)}" style="color:inherit;text-decoration:underline;">${interpolate(props.privacyLabel || "Política de privacidad", data)}</a>`,
-      ].join(" &nbsp;·&nbsp; ");
+        enlace(props.unsubscribeUrl, "{{system.unsubscribe_url}}",
+               props.unsubscribeLabel, "Cancelar suscripción"),
+        enlace(props.preferencesUrl, "{{system.preferences_url}}",
+               props.preferencesLabel, "Gestionar preferencias"),
+        enlace(props.privacyUrl, "{{sender.privacy_url}}",
+               props.privacyLabel, "Política de privacidad"),
+      ].filter(Boolean).join(" &nbsp;·&nbsp; ");
       return blockCell(
         block,
         `<div style="padding-top:6px;border-top:1px solid #dbe3ea;text-align:${safeAlign(props.textAlign ?? props.align ?? "center")};${typeStyle(props, muted, { size: 12, lineHeight: 1.65 })}"><strong style="color:${text};">${interpolate(props.company || "{{sender.legal_name}}", data)}</strong><br>${interpolate(props.address || "{{sender.postal_address}}", data)}<br>${interpolate(props.note || "{{campaign.legal_reason}}", data)}<br>${links}</div>`,
