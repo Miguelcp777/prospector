@@ -119,16 +119,38 @@ hay guardadas.
   proyecto Next, el troceado de subida que Storage no necesita, y la clase
   del tema en el shell en vez de en `<html>`. Se ejecutan con
   `npm run test:studio`.
-- **No se ha abierto el studio en un navegador con sesión.** Compila, monta
-  y no rompe nada de lo que las pruebas cubren; que el editor se vea bien es
-  otra cosa y todavía está sin comprobar.
+- **Abierto en el navegador con una cuenta real.** El editor monta, el
+  carril guiado recorre los seis pasos —el quinto es el de adaptación móvil
+  que trae V45—, el tema se queda en el shell y no toca `<html>`, y no hay
+  desbordes horizontales.
+- **Las 29 plantillas del tenant se renderizan con el código nuevo sin una
+  sola excepción, y ninguna pasa a composición libre.** La más pesada son
+  33,9 KB con las dos maquetaciones dentro, lejos de los 102 KB a los que
+  Gmail recorta. Los dos riesgos que quedaban abiertos están medidos sobre
+  datos reales, no sobre un documento de ejemplo.
+
+## El CSS no se porta línea a línea
+
+Quede escrito, porque costó un rato encontrarlo. El primer intento
+reconstruyó `estilos-studio.css` insertando las líneas nuevas de V45 una a
+una, y eso **sacó de su `@media(max-width:900px)` las reglas del editor
+compacto**. Resultado: en un escritorio de 1.280 px la paleta y el inspector
+salían con `display:none!important`, el lienzo dejaba de ser una rejilla y
+la barra inferior de móvil se quedaba fija sobre el editor.
+
+No lo detectó ninguna prueba —son de contrato, no de estilos— ni el build.
+Se vio abriendo la pantalla y preguntándole al DOM qué reglas ganaban.
+
+La forma correcta es aplicar el cambio **como parche**, que conserva los
+bloques: `diff -u v31.css v45.css | patch cuerpo.css`, con el bloque de
+integración separado antes y añadido después, porque tiene que ser el
+último en ganar.
 
 ## Pendiente
 
-- Mirarlo con una cuenta real. El riesgo del hero está medido y atado,
-  pero medir no es ver: falta abrir una de las 33 en el editor.
-- Medir el peso del correo con las dos maquetaciones sobre una plantilla de
-  verdad, no sobre una mínima. Los 102 KB de Gmail son el límite.
+- Diseñar un correo entero con esto delante, de principio a fin. Lo que está
+  comprobado es que monta, que respeta lo guardado y que las reglas caen
+  donde deben; no que la pantalla se entienda.
 - Que un fisioterapeuta —o quien sea— diseñe un correo entero con esto
   antes de darlo por bueno. Las pruebas dicen que el contrato se respeta;
   no dicen que la pantalla se entienda.
