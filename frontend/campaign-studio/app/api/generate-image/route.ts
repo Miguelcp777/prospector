@@ -4,6 +4,10 @@ import { aiUsageEvents, assets, generationRuns } from "@/db/schema";
 import { requireRequestUser } from "@/lib/request-user";
 import { estimateAiCost } from "@/lib/studio-finalization";
 import {
+  composeVisualGenerationPrompt,
+  type ImagePlacement,
+} from "@/lib/image-context";
+import {
   getGeneratedImageDimensions,
   getImageFormat,
   getProviderImageSize,
@@ -43,6 +47,10 @@ export async function POST(request: Request) {
     customWidth?: number;
     customHeight?: number;
     sizingMode?: "preset" | "hero" | "canvas" | "custom";
+    placement?: ImagePlacement;
+    brandContext?: string;
+    screenContext?: string;
+    automaticContext?: boolean;
   };
   const prompt = String(payload.prompt ?? "")
     .trim()
@@ -53,6 +61,12 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+  const contextualPrompt = composeVisualGenerationPrompt(prompt, {
+    placement: payload.placement || "custom-asset",
+    brandContext: String(payload.brandContext ?? "").slice(0, 1600),
+    screenContext: String(payload.screenContext ?? "").slice(0, 1800),
+    automaticContext: payload.automaticContext !== false,
+  });
   const runtime = env as unknown as {
     OPENAI_API_KEY?: string;
     BUCKET?: R2Bucket;
@@ -87,8 +101,9 @@ export async function POST(request: Request) {
   const quality = resolution === "draft" ? "medium" : "high";
   if (!runtime.OPENAI_API_KEY || !runtime.BUCKET) {
     return Response.json({
-      url: fallbackImage(prompt),
+      url: fallbackImage(contextualPrompt),
       mode: "curated-4k-preview",
+      contextApplied: true,
     });
   }
   const runId = crypto.randomUUID();
@@ -103,7 +118,7 @@ export async function POST(request: Request) {
         },
         body: JSON.stringify({
           model: "gpt-image-2",
-          prompt: `${prompt}. Formato final obligatorio: ${formatPrompt}. Estilo: ${payload.style || "editorial premium"}. Sensación: ${payload.mood || "impactante"}. Iluminación: ${payload.lighting || "cinematográfica"}. Composición: ${payload.composition || "espacio negativo para titular"}. Cámara y plano: ${payload.camera || "plano medio editorial"}. Acabado: ${payload.finish || "nítido y premium"}. Paleta: ${payload.palette || "coherente con marca"}. Personas: ${payload.people || "naturales si son necesarias"}. Imagen publicitaria para email marketing y comunicación digital. ${payload.transparentBackground ? "Fondo completamente transparente y recorte limpio, adecuado para superponer como elemento gráfico o logotipo." : ""} ${payload.embeddedText && payload.embeddedText !== "none" && String(payload.textContent || "").trim() ? `Integrar únicamente este texto exacto, perfectamente legible y sin añadir más palabras: "${String(payload.textContent).slice(0, 100)}".` : "Imagen limpia: absolutamente ninguna palabra, letra, cifra, rótulo, interfaz, marca de agua ni logotipo; reservar espacio negativo para superponer después texto HTML editable."}`,
+          prompt: `${contextualPrompt}. Formato final obligatorio: ${formatPrompt}. Estilo: ${payload.style || "editorial premium"}. Sensación: ${payload.mood || "impactante"}. Iluminación: ${payload.lighting || "cinematográfica"}. Composición: ${payload.composition || "espacio negativo para titular"}. Cámara y plano: ${payload.camera || "plano medio editorial"}. Acabado: ${payload.finish || "nítido y premium"}. Paleta: ${payload.palette || "coherente con marca"}. Personas: ${payload.people || "naturales si son necesarias"}. Imagen publicitaria para email marketing y comunicación digital. ${payload.transparentBackground ? "Fondo completamente transparente y recorte limpio, adecuado para superponer como elemento gráfico o logotipo." : ""} ${payload.embeddedText && payload.embeddedText !== "none" && String(payload.textContent || "").trim() ? `Integrar únicamente este texto exacto, perfectamente legible y sin añadir más palabras: "${String(payload.textContent).slice(0, 100)}".` : "Imagen limpia: absolutamente ninguna palabra, letra, cifra, rótulo, interfaz, marca de agua ni logotipo; reservar espacio negativo para superponer después texto HTML editable."}`,
           size: providerSize,
           quality,
           background: payload.transparentBackground ? "transparent" : "auto",
@@ -175,7 +190,7 @@ export async function POST(request: Request) {
         width: storedWidth,
         height: storedHeight,
         source: "openai-gpt-image-2",
-        prompt,
+        prompt: contextualPrompt,
         altText: String(payload.altText ?? prompt).slice(0, 300),
         createdAt: new Date().toISOString(),
       })
@@ -188,7 +203,7 @@ export async function POST(request: Request) {
         kind: "image",
         provider: "openai",
         status: "completed",
-        promptSummary: prompt.slice(0, 500),
+        promptSummary: contextualPrompt.slice(0, 500),
         createdAt: new Date().toISOString(),
       });
     const cost = estimateAiCost({ resolution });
@@ -212,6 +227,7 @@ export async function POST(request: Request) {
       ratio: `${storedWidth}:${storedHeight}`,
       width: storedWidth,
       height: storedHeight,
+      contextApplied: true,
     });
   } catch (error) {
     try {
@@ -223,7 +239,7 @@ export async function POST(request: Request) {
           kind: "image",
           provider: "openai",
           status: "failed",
-          promptSummary: prompt.slice(0, 500),
+          promptSummary: contextualPrompt.slice(0, 500),
           errorCode: "image_generation_failed",
           createdAt: new Date().toISOString(),
         });

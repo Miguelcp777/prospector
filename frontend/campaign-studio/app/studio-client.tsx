@@ -11,18 +11,15 @@ import {
   ArrowUp,
   Blocks,
   Bold,
-  Bot,
   BriefcaseBusiness,
   Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  CircleUserRound,
   ClipboardList,
   CloudUpload,
   Code2,
   Columns2,
-  ContactRound,
   Copy,
   Database,
   Download,
@@ -31,17 +28,22 @@ import {
   GalleryHorizontalEnd,
   GripVertical,
   History,
+  Home,
   HelpCircle,
   ImageIcon,
   Import,
   LayoutTemplate,
+  Layers3,
   LoaderCircle,
   Menu,
-  MessageSquareText,
   Minus,
   Monitor,
   MoreHorizontal,
   Palette,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen,
   Plus,
   Redo2,
   Save,
@@ -55,7 +57,6 @@ import {
   Undo2,
   WandSparkles,
   X,
-  Zap,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
@@ -73,6 +74,15 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Toaster } from "@/components/ui/sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import CampaignCommandCenter from "./campaign-command-center";
 import GuidedTour, { type TourStep } from "./guided-tour";
 import {
@@ -90,6 +100,10 @@ import {
   type GeneratedImageFormat,
 } from "@/lib/image-formats";
 import {
+  detectVisualContext,
+  type VisualGenerationContext,
+} from "@/lib/image-context";
+import {
   buildProductionDocument,
   buildOpeningShowcaseDocument,
   catalogItem,
@@ -103,6 +117,7 @@ import {
   createBlankDocument,
   createBlock,
   DEFAULT_VARIABLES,
+  type EmailBlock,
   type EmailBlockType,
   type StoredTemplate,
   type TemplateDocument,
@@ -115,12 +130,27 @@ import {
   MAX_STORED_IMAGE_BYTES,
   UPLOAD_CHUNK_BYTES,
 } from "@/lib/upload-policy";
+import {
+  STUDIO_SPACES,
+  type StudioSpace,
+} from "@/lib/studio-navigation";
 
 type StudioProps = { displayName: string };
 type Device = "desktop" | "mobile";
 type AppTheme = "dark" | "light" | "ocean" | "emerald" | "violet";
+const APP_THEMES: AppTheme[] = ["dark", "light", "ocean", "emerald", "violet"];
+const IMAGE_SIZE_MAX_PERCENT = 200;
 type ExperienceMode = "guided" | "professional";
-type WorkflowStep = "library" | "content" | "design" | "variables" | "review";
+type WorkflowStep = "library" | "content" | "design" | "variables" | "mobile" | "review";
+type TemplateTier = "recommended" | "premium" | "all" | "classic";
+const GUIDED_FLOW: Array<[WorkflowStep, string, string, string]> = [
+  ["library", "01", "Crear", "IA, plantilla, anterior, cero o HTML"],
+  ["content", "02", "Contenido", "Mensaje, CTA, enlaces y variables"],
+  ["design", "03", "Diseño", "Composición, marca e imágenes"],
+  ["mobile", "04", "Adaptación móvil", "Comparar y corregir"],
+  ["review", "05", "Revisión y exportación", "Calidad y cumplimiento"],
+];
+type CampaignLibraryFilter = "active" | "archived" | "all";
 type TextTarget = {
   scope: "block" | "subject" | "preheader";
   blockId?: string;
@@ -206,7 +236,9 @@ async function prepareImageForUpload(file: File) {
       blob = await canvasBlob(
         canvas,
         outputType,
-        outputType === "image/webp" ? Math.max(0.78, 0.94 - attempt * 0.04) : undefined,
+        outputType === "image/webp"
+          ? Math.max(0.78, 0.94 - attempt * 0.04)
+          : undefined,
       );
       if (blob.size <= MAX_STORED_IMAGE_BYTES) break;
       if (outputType === "image/png" && transparent) {
@@ -295,38 +327,74 @@ const HELP_SECTIONS = [
   {
     id: "create",
     title: "Crear con IA",
-    description: "El wizard reúne empresa, objetivo, público, oferta, tono, composición, imagen y URL para generar una campaña completa y editable.",
-    steps: ["Abre Crear con IA", "Completa las preguntas", "Revisa el resumen y el coste", "Genera y personaliza el resultado"],
+    description:
+      "El wizard reúne empresa, objetivo, público, oferta, tono, composición, imagen y URL para generar una campaña completa y editable.",
+    steps: [
+      "Abre Crear con IA",
+      "Completa las preguntas",
+      "Revisa el resumen y el coste",
+      "Genera y personaliza el resultado",
+    ],
   },
   {
     id: "blocks",
     title: "Bloques y composición",
-    description: "Añade, elimina y reordena bloques desde la columna izquierda. Cada bloque conserva sus propios estilos y ajustes móviles.",
-    steps: ["Arrastra el bloque a la posición exacta", "Selecciónalo en la maqueta", "Edita contenido y diseño a la derecha", "Comprueba escritorio y móvil"],
+    description:
+      "Añade, elimina y reordena bloques desde la columna izquierda. Cada bloque conserva sus propios estilos y ajustes móviles.",
+    steps: [
+      "Arrastra el bloque a la posición exacta",
+      "Selecciónalo en la maqueta",
+      "Edita contenido y diseño a la derecha",
+      "Comprueba escritorio y móvil",
+    ],
   },
   {
     id: "images",
     title: "Imágenes y fondos",
-    description: "Genera, sube o reutiliza imágenes. Puedes escoger formato, resolución, encaje, transparencia y fondo completo de maqueta.",
-    steps: ["Selecciona Imagen, Hero o Fondo", "Elige biblioteca, subida o IA", "Previsualiza el encaje", "Aplica solo al bloque seleccionado"],
+    description:
+      "Genera, sube o reutiliza imágenes. La IA detecta la marca, el mensaje, los bloques cercanos y si el visual será hero, imagen o fondo; siempre puedes editar ese contexto.",
+    steps: [
+      "Completa el contexto visual del Kit de marca",
+      "Selecciona Imagen, Hero o Fondo",
+      "Revisa o edita el contexto detectado",
+      "Genera, previsualiza y aplica",
+    ],
   },
   {
     id: "variables",
     title: "Variables y destinatarios",
-    description: "Inserta variables en el punto exacto del texto y previsualiza la campaña con datos de un lead antes de entregarla a Prospector.",
-    steps: ["Coloca el cursor en el texto", "Abre Personalizar", "Inserta la variable", "Verifica su valor de ejemplo"],
+    description:
+      "Inserta variables en el punto exacto del texto y previsualiza la campaña con datos de un lead antes de entregarla a Prospector.",
+    steps: [
+      "Coloca el cursor en el texto",
+      "Abre Personalizar",
+      "Inserta la variable",
+      "Verifica su valor de ejemplo",
+    ],
   },
   {
     id: "review",
     title: "Revisión y cumplimiento",
-    description: "El Centro de campaña comprueba enlaces, variables, contraste, accesibilidad, móvil, modo oscuro, spam y estructura legal.",
-    steps: ["Abre Centro de campaña", "Resuelve controles críticos", "Prepara una prueba", "Guarda una versión inmutable"],
+    description:
+      "El Centro de campaña comprueba enlaces, variables, contraste, accesibilidad, móvil, modo oscuro, spam y estructura legal.",
+    steps: [
+      "Abre Centro de campaña",
+      "Resuelve controles críticos",
+      "Prepara una prueba",
+      "Guarda una versión inmutable",
+    ],
   },
   {
     id: "export",
-    title: "Guardar y exportar",
-    description: "El autoguardado protege el borrador. Guardar crea versiones y Exportar genera HTML con imágenes y fondos absolutos.",
-    steps: ["Comprueba el estado Guardada", "Pulsa Guardar para versionar", "Abre Revisar y exportar", "Descarga HTML o EML de prueba"],
+    title: "Guardar, reutilizar y exportar",
+    description:
+      "Cada campaña queda en Mis campañas con autoguardado y versiones. Desde allí puedes abrirla, buscarla, duplicarla como nueva base, archivarla o recuperarla.",
+    steps: [
+      "Pon un nombre reconocible a la campaña",
+      "Comprueba el estado Guardada",
+      "Abre Mis campañas para reutilizarla",
+      "Duplica la base o exporta el resultado",
+    ],
   },
 ] as const;
 type Preset = {
@@ -346,6 +414,9 @@ type Preset = {
   motif: string;
   variant: number;
   imagePrompt: string;
+  premium: boolean;
+  masterName?: string;
+  variantName?: string;
 };
 type BrandKit = {
   name: string;
@@ -360,6 +431,8 @@ type BrandKit = {
   legalName: string;
   privacyUrl: string;
   privacyEmail: string;
+  brandContext: string;
+  imageGuidance: string;
 };
 type MediaAsset = {
   id: string;
@@ -445,6 +518,14 @@ const BLOCK_META: Array<{
     icon: ShieldCheck,
   },
 ];
+
+const SPACE_ICONS: Record<StudioSpace, typeof Blocks> = {
+  home: Home,
+  campaigns: LayoutTemplate,
+  templates: GalleryHorizontalEnd,
+  editor: Blocks,
+  brand: Palette,
+};
 
 const PROP_LABELS: Record<string, string> = {
   label: "Etiqueta",
@@ -566,6 +647,12 @@ const DESIGN_PROPS = new Set([
   "buttonDepthColor",
   "columnBackgroundColor",
 ]);
+const CONTENT_PROPS = new Set([
+  "label", "eyebrow", "title", "body", "text", "content", "url", "caption",
+  "imageUrl", "imageAlt", "leftTitle", "leftText", "rightTitle", "rightText",
+  "company", "address", "note", "privacyLabel", "privacyUrl",
+  "preferencesLabel", "preferencesUrl", "unsubscribeLabel", "unsubscribeUrl",
+]);
 const MEDIA_OPTIONS = [
   {
     url: "/assets/aurevanta-command-center-hero.webp",
@@ -588,7 +675,12 @@ const MEDIA_OPTIONS = [
     label: "Movimiento y salud",
   },
 ];
-const FONT_CATALOG = FONT_CATALOG_100;
+const PREMIUM_MASTER_STYLES = [
+  "Cinematográfico", "Editorial", "Asimétrico", "Tecnológico", "Corporativo premium",
+  "Oferta directa", "Lanzamiento", "Evento", "Newsletter visual", "Captación",
+  "Producto inmersivo", "Autoridad", "Caso de éxito", "Minimal de lujo", "Conversión visual",
+] as const;
+const PREMIUM_VARIANTS = ["Hero total", "Editorial", "Contraste", "Profundidad", "Móvil primero"] as const;
 
 function cloneDocument(document: TemplateDocument) {
   const next = structuredClone(document);
@@ -630,6 +722,10 @@ function cloneDocument(document: TemplateDocument) {
       shadow: "none",
       blockDepth: "none",
       blockDepthColor: "#0f172a",
+      freeX: 0,
+      freeY: 0,
+      freeZ: 0,
+      freeScale: 100,
     };
     const typography = {
       fontFamily: next.settings.fontFamily,
@@ -851,6 +947,9 @@ function buildPresets() {
       motif: design.motif,
       variant: index % 5,
       imagePrompt: image.prompt,
+      premium: index < PREMIUM_MASTER_STYLES.length * PREMIUM_VARIANTS.length,
+      masterName: index < PREMIUM_MASTER_STYLES.length * PREMIUM_VARIANTS.length ? PREMIUM_MASTER_STYLES[Math.floor(index / PREMIUM_VARIANTS.length)] : undefined,
+      variantName: index < PREMIUM_MASTER_STYLES.length * PREMIUM_VARIANTS.length ? PREMIUM_VARIANTS[index % PREMIUM_VARIANTS.length] : undefined,
     };
   });
   presets[0] = {
@@ -865,6 +964,9 @@ function buildPresets() {
     objective: "presentar una experiencia de campaña premium",
     designFamily: "AI Command Center",
     motif: "orbit",
+    premium: true,
+    masterName: "Tecnológico",
+    variantName: "Hero total",
   };
   return presets;
 }
@@ -1011,6 +1113,29 @@ function normalizeSearch(value: string) {
     .trim();
 }
 
+function campaignCover(template: StoredTemplate) {
+  const visual = template.document.blocks.find(
+    (block) => block.type === "hero" || block.type === "image",
+  );
+  return String(
+    visual?.props.imageUrl ||
+      template.document.settings.backgroundImageUrl ||
+      "",
+  );
+}
+
+function campaignUpdatedLabel(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Fecha no disponible";
+  return new Intl.DateTimeFormat("es-ES", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
 function recommendPresets(presets: Preset[], query: string) {
   const normalized = normalizeSearch(query);
   if (!normalized) return presets;
@@ -1131,9 +1256,17 @@ function RangeWithNumber({
           type="number"
           min={min}
           max={max}
-          step={step}
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
+        step={step}
+        value={draft}
+          onChange={(event) => {
+            const candidate = event.target.value;
+            setDraft(candidate);
+            if (candidate === "" || candidate === "-" || candidate === ".")
+              return;
+            const parsed = Number(candidate);
+            if (!Number.isFinite(parsed)) return;
+            onChange(Math.min(max, Math.max(min, parsed)));
+          }}
           onBlur={(event) => commit(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === "Enter") event.currentTarget.blur();
@@ -1141,6 +1274,204 @@ function RangeWithNumber({
         />
         <span>{suffix}</span>
       </label>
+    </div>
+  );
+}
+
+const HERO_LAYER_CONFIGS = [
+  {
+    key: "eyebrow",
+    label: "Antetítulo",
+    x: 22,
+    y: 18,
+    width: 38,
+    size: 14,
+    z: 4,
+    image: false,
+  },
+  {
+    key: "title",
+    label: "Titular",
+    x: 32,
+    y: 48,
+    width: 58,
+    size: 58,
+    z: 5,
+    image: false,
+  },
+  {
+    key: "body",
+    label: "Texto de apoyo",
+    x: 28,
+    y: 78,
+    width: 48,
+    size: 20,
+    z: 6,
+    image: false,
+  },
+  {
+    key: "heroImage",
+    label: "Imagen",
+    x: 72,
+    y: 50,
+    width: 48,
+    size: 62,
+    z: 2,
+    image: true,
+  },
+] as const;
+type HeroLayerKey = (typeof HERO_LAYER_CONFIGS)[number]["key"];
+
+function HeroFreeLayerControls({
+  values,
+  selectedLayer,
+  onSelect,
+  onChange,
+  onPreset,
+}: {
+  values: Record<string, string | number | boolean>;
+  selectedLayer: HeroLayerKey;
+  onSelect: (layer: HeroLayerKey) => void;
+  onChange: (key: string, value: string | number | boolean) => void;
+  onPreset: (preset: "cover" | "right" | "reset") => void;
+}) {
+  const layer =
+    HERO_LAYER_CONFIGS.find((item) => item.key === selectedLayer) ??
+    HERO_LAYER_CONFIGS[1];
+  const numberValue = (suffix: string, fallback: number) =>
+    Number(values[`${layer.key}${suffix}`] ?? fallback);
+  const changeDepth = (direction: -1 | 1) =>
+    onChange(
+      `${layer.key}Z`,
+      Math.min(20, Math.max(0, numberValue("Z", layer.z) + direction)),
+    );
+
+  return (
+    <div className="hero-free-controls">
+      <div className="hero-layer-selector" aria-label="Capas del hero">
+        {HERO_LAYER_CONFIGS.map((item) => (
+          <button
+            type="button"
+            key={item.key}
+            className={selectedLayer === item.key ? "active" : ""}
+            aria-pressed={selectedLayer === item.key}
+            onClick={() => onSelect(item.key)}
+          >
+            <strong>{item.label}</strong>
+            <small>Capa {Number(values[`${item.key}Z`] ?? item.z)}</small>
+          </button>
+        ))}
+      </div>
+      <small className="field-help hero-selection-help">
+        Selecciona aquí o pulsa directamente el elemento dentro del hero.
+      </small>
+      <div className="hero-free-presets">
+        <span>AJUSTES RÁPIDOS DE IMAGEN</span>
+        <div>
+          <button onClick={() => onPreset("cover")}>Ocupar todo el hero</button>
+          <button onClick={() => onPreset("right")}>Mitad derecha</button>
+          <button onClick={() => onPreset("reset")}>Restablecer capas</button>
+        </div>
+      </div>
+      <section
+        className="hero-layer-panel"
+        aria-label={`Editar ${layer.label}`}
+      >
+        <header>
+          <div>
+            <small>EDITANDO CAPA</small>
+            <strong>{layer.label}</strong>
+          </div>
+          <div className="hero-depth-actions">
+            <button type="button" onClick={() => changeDepth(-1)}>
+              Enviar detrás
+            </button>
+            <button type="button" onClick={() => changeDepth(1)}>
+              Traer delante
+            </button>
+          </div>
+        </header>
+        <div className="hero-layer-fields">
+          {[
+            ["Posición X", "X", -25, 125, 1, "%", layer.x],
+            ["Posición Y", "Y", -25, 125, 1, "%", layer.y],
+            ["Ancho", "Width", 10, 200, 1, "%", layer.width],
+            layer.image
+              ? ["Alto", "Height", 10, 150, 1, "%", layer.size]
+              : [
+                  "Tamaño de fuente",
+                  "FontSize",
+                  8,
+                  layer.key === "title" ? 120 : layer.key === "body" ? 72 : 48,
+                  1,
+                  "px",
+                  layer.size,
+                ],
+            ["Profundidad", "Z", 0, 20, 1, "", layer.z],
+            ["Giro", "Rotation", -30, 30, 1, "°", 0],
+            ["Opacidad", "Opacity", 0, 100, 1, "%", 100],
+          ].map(([label, suffix, min, max, step, unit, fallback]) => (
+            <div className="property-field" key={`${layer.key}${suffix}`}>
+              <label>{label}</label>
+              <RangeWithNumber
+                min={Number(min)}
+                max={Number(max)}
+                step={Number(step)}
+                suffix={String(unit)}
+                value={numberValue(String(suffix), Number(fallback))}
+                onChange={(value) => onChange(`${layer.key}${suffix}`, value)}
+              />
+            </div>
+          ))}
+          {layer.image ? (
+            <div className="property-field hero-layer-wide">
+              <label>Ajuste de imagen</label>
+              <select
+                className="studio-select"
+                value={String(values.heroImageFit ?? "cover")}
+                onChange={(event) =>
+                  onChange("heroImageFit", event.target.value)
+                }
+              >
+                <option value="cover">Cubrir el área</option>
+                <option value="contain">Mostrar completa</option>
+                <option value="fill">Estirar al área</option>
+              </select>
+            </div>
+          ) : (
+            <div className="property-field hero-layer-wide">
+              <label>Alineación propia</label>
+              <select
+                className="studio-select"
+                value={String(values[`${layer.key}TextAlign`] ?? "left")}
+                onChange={(event) =>
+                  onChange(`${layer.key}TextAlign`, event.target.value)
+                }
+              >
+                <option value="left">Izquierda</option>
+                <option value="center">Centro</option>
+                <option value="right">Derecha</option>
+                <option value="justify">Justificado</option>
+              </select>
+            </div>
+          )}
+        </div>
+      </section>
+      <div className="property-field">
+        <label>Contenido fuera del borde</label>
+        <select
+          className="studio-select"
+          value={String(values.heroOverflow ?? "hidden")}
+          onChange={(event) => onChange("heroOverflow", event.target.value)}
+        >
+          <option value="hidden">Recortar al límite del hero</option>
+          <option value="visible">Permitir que sobresalga</option>
+        </select>
+      </div>
+      <small className="field-help">
+        Las capas pueden ocupar la misma zona. La profundidad decide qué
+        elemento aparece delante y cuál queda detrás.
+      </small>
     </div>
   );
 }
@@ -1159,8 +1490,14 @@ export default function StudioClient({ displayName }: StudioProps) {
   const [selectedBlockId, setSelectedBlockId] = useState(
     document.blocks[1]?.id ?? document.blocks[0]?.id ?? "",
   );
+  const [selectedHeroLayer, setSelectedHeroLayer] =
+    useState<HeroLayerKey>("title");
   const [device, setDevice] = useState<Device>("desktop");
   const [savedTemplates, setSavedTemplates] = useState<StoredTemplate[]>([]);
+  const [campaignLibraryOpen, setCampaignLibraryOpen] = useState(false);
+  const [campaignLibraryFilter, setCampaignLibraryFilter] =
+    useState<CampaignLibraryFilter>("active");
+  const [campaignSearch, setCampaignSearch] = useState("");
   const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>([]);
   const [mediaSearch, setMediaSearch] = useState("");
   const [mediaLoading, setMediaLoading] = useState(true);
@@ -1221,6 +1558,13 @@ export default function StudioClient({ displayName }: StudioProps) {
   const [appTheme, setAppTheme] = useState<AppTheme>("dark");
   const [experienceMode, setExperienceMode] =
     useState<ExperienceMode>("guided");
+  const [mainSpace, setMainSpace] = useState<StudioSpace>("home");
+  const [leftPanelOpen, setLeftPanelOpen] = useState(true);
+  const [rightPanelOpen, setRightPanelOpen] = useState(true);
+  const [mobilePanel, setMobilePanel] = useState<"blocks" | "layers" | "edit" | "view" | null>(null);
+  const [advancedControlsOpen, setAdvancedControlsOpen] = useState(false);
+  const [templateTier, setTemplateTier] = useState<TemplateTier>("recommended");
+  const [completedWorkflowSteps, setCompletedWorkflowSteps] = useState<WorkflowStep[]>([]);
   const [commandCenterOpen, setCommandCenterOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [commandSearch, setCommandSearch] = useState("");
@@ -1274,6 +1618,12 @@ export default function StudioClient({ displayName }: StudioProps) {
     customWidth: 1600,
     customHeight: 900,
   });
+  const [imageContext, setImageContext] = useState<VisualGenerationContext>({
+    placement: "custom-asset",
+    brandContext: "",
+    screenContext: "",
+    automaticContext: true,
+  });
   const [catalogImageResolution, setCatalogImageResolution] = useState<
     "draft" | "2k" | "4k"
   >("draft");
@@ -1294,6 +1644,8 @@ export default function StudioClient({ displayName }: StudioProps) {
     legalName: "Aurevanta Labs",
     privacyUrl: "https://example.com/privacidad",
     privacyEmail: "privacidad@example.com",
+    brandContext: "",
+    imageGuidance: "",
   });
   const [mergeData, setMergeData] =
     useState<Record<string, string>>(initialMergeData);
@@ -1306,6 +1658,31 @@ export default function StudioClient({ displayName }: StudioProps) {
   const selectedBlock = document.blocks.find(
     (block) => block.id === selectedBlockId,
   );
+  const desktopCanvasWidth = Math.min(
+    1600,
+    Math.max(280, Number(document.settings.width) || 640),
+  );
+  const mobileCanvasWidth = Math.min(
+    600,
+    Math.max(280, Number(document.settings.mobileWidth) || 375),
+  );
+  const configuredCanvasHeight =
+    device === "mobile"
+      ? document.settings.mobileCanvasHeight
+      : document.settings.canvasHeight;
+  const activeCanvasWidth =
+    device === "mobile" ? mobileCanvasWidth : desktopCanvasWidth;
+  const activeCanvasHeight =
+    configuredCanvasHeight ??
+    (device === "mobile"
+      ? Math.max(
+          240,
+          Math.round(
+            (document.settings.canvasHeight ?? estimatedCanvasHeight(document)) *
+              (mobileCanvasWidth / desktopCanvasWidth),
+          ),
+        )
+      : estimatedCanvasHeight(document));
   const canvasBackgroundMode =
     document.settings.backgroundMode ??
     (document.settings.backgroundImageUrl ? "image" : "color");
@@ -1354,6 +1731,29 @@ export default function StudioClient({ displayName }: StudioProps) {
       ),
     [mediaAssets, mediaSearch],
   );
+  const activeSavedTemplates = useMemo(
+    () => savedTemplates.filter((template) => template.status !== "archived"),
+    [savedTemplates],
+  );
+  const archivedSavedTemplates = useMemo(
+    () => savedTemplates.filter((template) => template.status === "archived"),
+    [savedTemplates],
+  );
+  const visibleCampaigns = useMemo(() => {
+    const normalized = normalizeSearch(campaignSearch);
+    return savedTemplates.filter((template) => {
+      const matchesFilter =
+        campaignLibraryFilter === "all" ||
+        (campaignLibraryFilter === "archived"
+          ? template.status === "archived"
+          : template.status !== "archived");
+      if (!matchesFilter) return false;
+      if (!normalized) return true;
+      return normalizeSearch(
+        `${template.name} ${template.category} ${template.subject} ${template.preheader}`,
+      ).includes(normalized);
+    });
+  }, [campaignLibraryFilter, campaignSearch, savedTemplates]);
 
   function focusSelectedBlockInPreview(blockId: string, center = true) {
     if (!blockId || blockId === "__canvas_background__") return;
@@ -1381,6 +1781,15 @@ export default function StudioClient({ displayName }: StudioProps) {
           visual.style.outline = "2px solid #11cfe0";
           visual.style.outlineOffset = "-2px";
         }
+        row
+          .querySelectorAll<HTMLElement>("[data-hero-layer]")
+          .forEach((layer) => {
+            const active =
+              row.dataset.blockId === blockId &&
+              layer.dataset.heroLayer === selectedHeroLayer;
+            layer.style.outline = active ? "2px solid #11cfe0" : "none";
+            layer.style.outlineOffset = active ? "3px" : "0";
+          });
       }
       if (!target || !center) return;
       const rect = target.getBoundingClientRect();
@@ -1411,11 +1820,10 @@ export default function StudioClient({ displayName }: StudioProps) {
     }
     if (!frameWindow) return;
     try {
-      if (!selectedBlockId || selectedBlockId === "__canvas_background__")
-        frameWindow.scrollTo({
-          top: previewScrollRef.current,
-          behavior: "auto",
-        });
+      frameWindow.scrollTo({
+        top: previewScrollRef.current,
+        behavior: "auto",
+      });
       frameWindow.addEventListener(
         "scroll",
         () => {
@@ -1424,23 +1832,155 @@ export default function StudioClient({ displayName }: StudioProps) {
         { passive: true },
       );
       if (!frameDocument) return;
-      frameDocument.querySelectorAll<HTMLAnchorElement>("a[href]").forEach(
-        (link) => {
+      frameDocument
+        .querySelectorAll<HTMLAnchorElement>("a[href]")
+        .forEach((link) => {
           link.addEventListener("click", (event) => event.preventDefault());
           link.title = "Enlace desactivado dentro del editor";
-        },
-      );
+        });
       const rows = Array.from(
         frameDocument.querySelectorAll<HTMLElement>("[data-block-id]"),
       );
       rows.forEach((row, index) => {
         const id = row.dataset.blockId;
         if (!id) return;
-        row.draggable = true;
-        row.style.cursor = "grab";
+        row.draggable = false;
+        row.style.cursor = "move";
         row.style.transition =
           "outline-color .15s ease, box-shadow .15s ease, opacity .15s ease";
         row.addEventListener("click", () => setSelectedBlockId(id));
+        row.addEventListener("pointerdown", (event) => {
+          if (
+            event.button !== 0 ||
+            !frameDocument ||
+            (event.target as HTMLElement).closest("[data-hero-layer]")
+          )
+            return;
+          event.preventDefault();
+          setSelectedBlockId(id);
+          const startX = event.clientX;
+          const startY = event.clientY;
+          const initialX = Number(row.dataset.freeX) || 0;
+          const initialY = Number(row.dataset.freeY) || 0;
+          const scale = Number(row.dataset.freeScale) || 100;
+          const automaticFlow = row.dataset.autoFlow !== "false";
+          const isMobileLayer = Boolean(row.closest(".mobile-layout"));
+          let nextX = initialX;
+          let nextY = initialY;
+          row.style.cursor = "grabbing";
+          const move = (moveEvent: PointerEvent) => {
+            moveEvent.preventDefault();
+            nextX = Math.min(
+              800,
+              Math.max(-800, initialX + moveEvent.clientX - startX),
+            );
+            nextY = Math.min(
+              1200,
+              Math.max(-1200, initialY + moveEvent.clientY - startY),
+            );
+            row.style.transform = automaticFlow
+              ? `translate(${nextX}px,${nextY}px)`
+              : `translate(${nextX}px,${nextY}px) scale(${scale / 100})`;
+          };
+          const up = () => {
+            row.style.cursor = "move";
+            frameDocument.removeEventListener("pointermove", move);
+            frameDocument.removeEventListener("pointerup", up);
+            commitDocument((current) => {
+              const block = current.blocks.find((item) => item.id === id);
+              if (block) {
+                if (isMobileLayer) {
+                  block.mobile = {
+                    ...block.mobile,
+                    freeX: Math.round(nextX),
+                    freeY: Math.round(nextY),
+                  };
+                } else {
+                  block.props.freeX = Math.round(nextX);
+                  block.props.freeY = Math.round(nextY);
+                }
+              }
+              return current;
+            });
+          };
+          frameDocument.addEventListener("pointermove", move);
+          frameDocument.addEventListener("pointerup", up, { once: true });
+        });
+        row
+          .querySelectorAll<HTMLElement>("[data-hero-layer]")
+          .forEach((layer) => {
+            const layerKey = layer.dataset.heroLayer as
+              HeroLayerKey | undefined;
+            if (!layerKey) return;
+            layer.style.cursor = "pointer";
+            layer.draggable = false;
+            layer.addEventListener("dragstart", (event) => {
+              event.preventDefault();
+              event.stopPropagation();
+            });
+            layer.addEventListener("click", (event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              setSelectedBlockId(id);
+              setSelectedHeroLayer(layerKey);
+            });
+            layer.addEventListener("pointerdown", (event) => {
+              if (event.button !== 0 || !frameDocument) return;
+              const canvas = layer.closest<HTMLElement>(".hero-free-canvas");
+              if (!canvas) return;
+              event.preventDefault();
+              event.stopPropagation();
+              setSelectedBlockId(id);
+              setSelectedHeroLayer(layerKey);
+              const rect = canvas.getBoundingClientRect();
+              const startX = event.clientX;
+              const startY = event.clientY;
+              const initialX = Number.parseFloat(layer.style.left) || 50;
+              const initialY = Number.parseFloat(layer.style.top) || 50;
+              let nextX = initialX;
+              let nextY = initialY;
+              const move = (moveEvent: PointerEvent) => {
+                nextX = Math.min(
+                  125,
+                  Math.max(
+                    -25,
+                    initialX +
+                      ((moveEvent.clientX - startX) / rect.width) * 100,
+                  ),
+                );
+                nextY = Math.min(
+                  125,
+                  Math.max(
+                    -25,
+                    initialY +
+                      ((moveEvent.clientY - startY) / rect.height) * 100,
+                  ),
+                );
+                layer.style.left = `${nextX}%`;
+                layer.style.top = `${nextY}%`;
+              };
+              const up = () => {
+                frameDocument.removeEventListener("pointermove", move);
+                frameDocument.removeEventListener("pointerup", up);
+                commitDocument((current) => {
+                  const block = current.blocks.find((item) => item.id === id);
+                  if (block) {
+                    block.props[`${layerKey}X`] = Math.round(nextX);
+                    block.props[`${layerKey}Y`] = Math.round(nextY);
+                    block.props.heroComposition = "free";
+                    block.props.overlay = false;
+                  }
+                  return current;
+                });
+              };
+              frameDocument.addEventListener("pointermove", move);
+              frameDocument.addEventListener("pointerup", up, { once: true });
+            });
+            if (id === selectedBlockId && layerKey === selectedHeroLayer) {
+              layer.style.outline = "2px solid #11cfe0";
+              layer.style.outlineOffset = "3px";
+            }
+          });
         row.addEventListener("dragstart", (event) => {
           event.dataTransfer?.setData("application/x-aurevanta-block-id", id);
           if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
@@ -1476,7 +2016,7 @@ export default function StudioClient({ displayName }: StudioProps) {
         });
       });
       frameWindow.requestAnimationFrame(() =>
-        focusSelectedBlockInPreview(selectedBlockId, true),
+        focusSelectedBlockInPreview(selectedBlockId, false),
       );
     } catch {
       return;
@@ -1489,6 +2029,13 @@ export default function StudioClient({ displayName }: StudioProps) {
     );
     return () => window.cancelAnimationFrame(animationFrame);
   }, [selectedBlockId]);
+
+  useEffect(() => {
+    const animationFrame = window.requestAnimationFrame(() =>
+      focusSelectedBlockInPreview(selectedBlockId, false),
+    );
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, [selectedHeroLayer]);
 
   function reorderBlockById(id: string, targetIndex: number) {
     commitDocument((current) => {
@@ -1528,51 +2075,70 @@ export default function StudioClient({ displayName }: StudioProps) {
       void loadMediaLibrary();
       void loadBrandKit();
       try {
-      const savedTheme = globalThis.localStorage?.getItem(
-        "aurevanta-studio-theme",
-      ) as AppTheme | null;
-      if (
-        savedTheme &&
-        ["dark", "light", "ocean", "emerald", "violet"].includes(savedTheme)
-      )
-        setAppTheme(savedTheme);
-      const savedMode = globalThis.localStorage?.getItem(
-        "aurevanta-experience-mode",
-      ) as ExperienceMode | null;
-      if (savedMode === "guided" || savedMode === "professional")
-        setExperienceMode(savedMode);
-      const recoveryRaw = globalThis.localStorage?.getItem(
-        "aurevanta-draft-recovery",
-      );
-      if (recoveryRaw) {
-        const recovery = JSON.parse(recoveryRaw) as {
-          savedAt?: number;
-          name?: string;
-          category?: string;
-          subject?: string;
-          preheader?: string;
-          document?: TemplateDocument;
-        };
+        const savedTheme = globalThis.localStorage?.getItem(
+          "aurevanta-studio-theme",
+        ) as AppTheme | null;
         if (
-          recovery.document?.schemaVersion === 1 &&
-          Date.now() - Number(recovery.savedAt || 0) < 7 * 24 * 60 * 60 * 1000
-        ) {
-          setDocument(cloneDocument(recovery.document));
-          setName(recovery.name || "Borrador recuperado");
-          setCategory(recovery.category || "Recuperada");
-          setSubject(recovery.subject || "");
-          setPreheader(recovery.preheader || "");
-          setSelectedBlockId(recovery.document.blocks[0]?.id || "");
-          setDirty(true);
-          toast.success("Se ha recuperado el último borrador local");
+          savedTheme &&
+          ["dark", "light", "ocean", "emerald", "violet"].includes(savedTheme)
+        )
+          setAppTheme(savedTheme);
+        const savedMode = globalThis.localStorage?.getItem(
+          "aurevanta-experience-mode",
+        ) as ExperienceMode | null;
+        if (savedMode === "guided" || savedMode === "professional")
+          setExperienceMode(savedMode);
+        const savedProgress = globalThis.localStorage?.getItem(
+          "aurevanta-ux-v2-guided-progress",
+        );
+        if (savedProgress) {
+          const parsed = JSON.parse(savedProgress) as WorkflowStep[];
+          if (Array.isArray(parsed)) setCompletedWorkflowSteps(parsed);
         }
-      }
-      if (!globalThis.localStorage?.getItem("aurevanta-guided-tour-complete"))
-        window.setTimeout(() => setTourOpen(true), 700);
+        const recoveryRaw = globalThis.localStorage?.getItem(
+          "aurevanta-draft-recovery",
+        );
+        if (recoveryRaw) {
+          const recovery = JSON.parse(recoveryRaw) as {
+            savedAt?: number;
+            name?: string;
+            category?: string;
+            subject?: string;
+            preheader?: string;
+            document?: TemplateDocument;
+          };
+          if (
+            recovery.document?.schemaVersion === 1 &&
+            Date.now() - Number(recovery.savedAt || 0) < 7 * 24 * 60 * 60 * 1000
+          ) {
+            setDocument(cloneDocument(recovery.document));
+            setName(recovery.name || "Borrador recuperado");
+            setCategory(recovery.category || "Recuperada");
+            setSubject(recovery.subject || "");
+            setPreheader(recovery.preheader || "");
+            setSelectedBlockId(recovery.document.blocks[0]?.id || "");
+            setDirty(true);
+            toast.success("Se ha recuperado el último borrador local");
+          }
+        }
+        if (!globalThis.localStorage?.getItem("aurevanta-guided-tour-complete"))
+          window.setTimeout(() => setTourOpen(true), 700);
       } catch {}
     }, 0);
     return () => window.clearTimeout(initialize);
   }, []);
+
+  useEffect(() => {
+    const themeClasses = APP_THEMES.map((theme) => `theme-${theme}`);
+    window.document.documentElement.classList.remove(...themeClasses);
+    window.document.body.classList.remove(...themeClasses);
+    window.document.documentElement.classList.add(`theme-${appTheme}`);
+    window.document.body.classList.add(`theme-${appTheme}`);
+    return () => {
+      window.document.documentElement.classList.remove(...themeClasses);
+      window.document.body.classList.remove(...themeClasses);
+    };
+  }, [appTheme]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -1625,9 +2191,23 @@ export default function StudioClient({ displayName }: StudioProps) {
 
   function changeExperienceMode(mode: ExperienceMode) {
     setExperienceMode(mode);
+    if (mode === "guided") setAdvancedControlsOpen(false);
     try {
       globalThis.localStorage?.setItem("aurevanta-experience-mode", mode);
     } catch {}
+  }
+
+  function completeWorkflowStep(step: WorkflowStep) {
+    setCompletedWorkflowSteps((current) => {
+      const next = current.includes(step) ? current : [...current, step];
+      try {
+        globalThis.localStorage?.setItem(
+          "aurevanta-ux-v2-guided-progress",
+          JSON.stringify(next),
+        );
+      } catch {}
+      return next;
+    });
   }
 
   function commitDocument(
@@ -1663,7 +2243,7 @@ export default function StudioClient({ displayName }: StudioProps) {
   async function loadLibrary() {
     setLibraryLoading(true);
     try {
-      const response = await apiFetch("/api/templates");
+      const response = await apiFetch("/api/templates?view=all");
       if (response.ok) {
         const data = (await response.json()) as { templates: StoredTemplate[] };
         setSavedTemplates(data.templates);
@@ -1729,6 +2309,17 @@ export default function StudioClient({ displayName }: StudioProps) {
     });
   }
 
+  function updateMobileProp(
+    key: keyof NonNullable<EmailBlock["mobile"]>,
+    value: string | number | boolean,
+  ) {
+    commitDocument((current) => {
+      const block = current.blocks.find((item) => item.id === selectedBlockId);
+      if (block) block.mobile = { ...block.mobile, [key]: value };
+      return current;
+    });
+  }
+
   function updateCanvasSetting<K extends keyof TemplateDocument["settings"]>(
     key: K,
     value: TemplateDocument["settings"][K],
@@ -1765,7 +2356,9 @@ export default function StudioClient({ displayName }: StudioProps) {
   }
 
   function openImageStudio(target: "block" | "background") {
+    const detected = detectedImageContext(target);
     setImageTarget(target);
+    setImageContext(detected);
     setGeneratedImagePreview(null);
     setImageBrief((current) => ({
       ...current,
@@ -1779,21 +2372,55 @@ export default function StudioClient({ displayName }: StudioProps) {
     setImageOpen(true);
   }
 
-  function contextualImagePrompt(basePrompt: string) {
-    const context = [
-      aiBrief.companyName && `Empresa: ${aiBrief.companyName}`,
-      aiBrief.sector && `actividad: ${aiBrief.sector}`,
-      aiBrief.companyContext && `contexto real: ${aiBrief.companyContext}`,
-      aiBrief.objective && `objetivo de campaña: ${aiBrief.objective}`,
-      aiBrief.offer && `oferta: ${aiBrief.offer}`,
-      aiBrief.audience && `público: ${aiBrief.audience}`,
-    ]
-      .filter(Boolean)
-      .join(". ");
-    return `${basePrompt}. ${context}. La escena, objetos, entorno, vestuario y lenguaje visual deben ser específicos de esta actividad y oferta; evitar imágenes corporativas genéricas.`.slice(
-      0,
-      1800,
-    );
+  function detectedImageContext(
+    target: "block" | "background",
+    sourceDocument = document,
+    sourceBlockId: string | undefined = selectedBlockId,
+    campaignCopy?: { name?: string; subject?: string; preheader?: string },
+  ) {
+    const block =
+      target === "background"
+        ? undefined
+        : (sourceDocument.blocks.find((item) => item.id === sourceBlockId) ??
+          sourceDocument.blocks.find(
+            (item) => item.type === "hero" || item.type === "image",
+          ));
+    const blockIndex = block
+      ? sourceDocument.blocks.findIndex((item) => item.id === block.id)
+      : -1;
+    return detectVisualContext({
+      target,
+      brandName: brandKit.name,
+      brandContext: brandKit.brandContext,
+      imageGuidance: brandKit.imageGuidance,
+      primaryColor: brandKit.primaryColor,
+      accentColor: brandKit.accentColor,
+      backgroundColor: brandKit.backgroundColor,
+      campaignName: campaignCopy?.name ?? name,
+      subject: campaignCopy?.subject ?? subject,
+      preheader: campaignCopy?.preheader ?? preheader,
+      companyName: aiBrief.companyName,
+      sector: aiBrief.sector,
+      companyContext: aiBrief.companyContext,
+      objective: aiBrief.objective,
+      offer: aiBrief.offer,
+      audience: aiBrief.audience,
+      destinationUrl: aiBrief.destinationUrl,
+      block,
+      previousBlock:
+        blockIndex > 0 ? sourceDocument.blocks[blockIndex - 1] : undefined,
+      nextBlock:
+        blockIndex >= 0
+          ? sourceDocument.blocks[blockIndex + 1]
+          : sourceDocument.blocks[0],
+      canvasWidth: sourceDocument.settings.width,
+      canvasHeight: estimatedCanvasHeight(sourceDocument),
+    });
+  }
+
+  function refreshDetectedImageContext() {
+    setImageContext(detectedImageContext(imageTarget));
+    toast.success("Contexto visual recalculado desde la pantalla");
   }
 
   function applyFontPreset(font: FontPreset) {
@@ -2076,6 +2703,82 @@ export default function StudioClient({ displayName }: StudioProps) {
     toast.success(`Plantilla “${preset.name}” aplicada`);
   }
 
+  function applyPresetStyle(preset: Preset) {
+    commitDocument((current) => {
+      current.settings = { ...current.settings, ...structuredClone(preset.document.settings) };
+      const used = new Set<string>();
+      current.blocks = current.blocks.map((block) => {
+        const reference = preset.document.blocks.find(
+          (candidate) => candidate.type === block.type && !used.has(candidate.id),
+        );
+        if (!reference) return block;
+        used.add(reference.id);
+        const content = Object.fromEntries(
+          Object.entries(block.props).filter(([key]) => CONTENT_PROPS.has(key)),
+        );
+        return { ...block, props: { ...structuredClone(reference.props), ...content } };
+      });
+      return current;
+    });
+    toast.success(`Estilo de “${preset.name}” aplicado sin sustituir el contenido`);
+  }
+
+  function applyPresetStructure(preset: Preset) {
+    commitDocument((current) => {
+      const pools = new Map<EmailBlockType, EmailBlock[]>();
+      for (const block of current.blocks) {
+        const pool = pools.get(block.type) ?? [];
+        pool.push(block);
+        pools.set(block.type, pool);
+      }
+      current.blocks = structuredClone(preset.document.blocks).map((block) => {
+        const source = pools.get(block.type)?.shift();
+        if (!source) return { ...block, id: crypto.randomUUID() };
+        const content = Object.fromEntries(
+          Object.entries(source.props).filter(([key]) => CONTENT_PROPS.has(key)),
+        );
+        return { ...block, id: source.id, props: { ...block.props, ...content } };
+      });
+      return current;
+    });
+    toast.success(`Estructura de “${preset.name}” aplicada conservando el contenido compatible`);
+  }
+
+  async function saveAsMasterTemplate() {
+    try {
+      const response = await apiFetch("/api/templates", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          name: `${name} · maestra`,
+          category: "Premium · Maestra",
+          subject,
+          preheader,
+          document,
+          version: 1,
+          sourceType: "master-reference",
+        }),
+      });
+      if (!response.ok) throw new Error("No se pudo guardar la plantilla maestra");
+      await loadLibrary();
+      toast.success("Plantilla maestra guardada sin copiar datos personales adicionales");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo guardar");
+    }
+  }
+
+  function createVisualVariant() {
+    setDocument(cloneDocument(document));
+    setTemplateId(null);
+    setVersion(1);
+    setName(`${name.replace(/ · variante \d+$/, "")} · variante ${Math.max(2, version + 1)}`);
+    setHistory([]);
+    setFuture([]);
+    setDirty(true);
+    setMainSpace("editor");
+    toast.success("Variante independiente creada; el original permanece intacto");
+  }
+
   async function preparePresetImage(preset: Preset) {
     applyPreset(preset);
     const recipe = catalogItem(IMAGE_RECIPES_100, preset.imageRecipeId);
@@ -2085,7 +2788,20 @@ export default function StudioClient({ displayName }: StudioProps) {
       `Creando un visual ${catalogImageResolution === "draft" ? "normal" : catalogImageResolution.toUpperCase()} exclusivo para ${preset.name}…`,
     );
     try {
-      const prompt = contextualImagePrompt(recipe.prompt);
+      const prompt = recipe.prompt;
+      const presetBlock = preset.document.blocks.find(
+        (block) => block.type === "hero" || block.type === "image",
+      );
+      const presetContext = detectedImageContext(
+        "block",
+        preset.document,
+        presetBlock?.id,
+        {
+          name: preset.name,
+          subject: preset.subject,
+          preheader: preset.preheader,
+        },
+      );
       const response = await apiFetch("/api/generate-image", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -2105,6 +2821,7 @@ export default function StudioClient({ displayName }: StudioProps) {
           embeddedText: "none",
           resolution: catalogImageResolution,
           format: catalogImageFormat,
+          ...presetContext,
         }),
       });
       const data = (await response.json()) as {
@@ -2151,10 +2868,15 @@ export default function StudioClient({ displayName }: StudioProps) {
     setHistory([]);
     setFuture([]);
     setDirty(false);
+    setCampaignLibraryOpen(false);
     toast.success(`“${template.name}” abierta`);
   }
 
-  function newTemplate() {
+  async function newTemplate(saveCurrent = true) {
+    if (saveCurrent && dirty) {
+      const saved = await saveTemplate();
+      if (!saved) return;
+    }
     const next = createBlankDocument();
     setDocument(next);
     setSubject("Una propuesta para {{lead.company}}");
@@ -2204,12 +2926,14 @@ export default function StudioClient({ displayName }: StudioProps) {
       } catch {}
       await loadLibrary();
       toast.success(`Versión ${data.template.version} guardada`);
+      return true;
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
           : "No se pudo guardar la plantilla",
       );
+      return false;
     } finally {
       setSaving(false);
     }
@@ -2222,16 +2946,86 @@ export default function StudioClient({ displayName }: StudioProps) {
     });
     if (!response.ok) return toast.error("No se pudo archivar");
     toast.success("Plantilla archivada");
-    newTemplate();
+    await newTemplate(false);
     await loadLibrary();
   }
 
-  function duplicateTemplate() {
-    setTemplateId(null);
-    setVersion(1);
-    setName(`${name} · copia`);
-    setDirty(true);
-    toast.success("Copia independiente creada");
+  async function createCampaignCopy(template: {
+    name: string;
+    category: string;
+    subject: string;
+    preheader: string;
+    document: TemplateDocument;
+    sourceType?: string;
+  }) {
+    const response = await apiFetch("/api/templates", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        ...template,
+        name: `${template.name} · copia`,
+        document: cloneDocument(template.document),
+        sourceType: template.sourceType || "studio-copy",
+      }),
+    });
+    const data = (await response.json()) as {
+      template?: StoredTemplate;
+      error?: string;
+    };
+    if (!response.ok || !data.template)
+      throw new Error(data.error || "No se pudo crear la copia");
+    await loadLibrary();
+    openStored(data.template);
+    toast.success("Copia guardada y preparada como nueva campaña");
+  }
+
+  async function duplicateTemplate() {
+    try {
+      await createCampaignCopy({
+        name,
+        category,
+        subject,
+        preheader,
+        document,
+        sourceType: document.rawHtml ? "html-import-copy" : "studio-copy",
+      });
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "No se pudo crear la copia",
+      );
+    }
+  }
+
+  async function duplicateStoredTemplate(template: StoredTemplate) {
+    try {
+      await createCampaignCopy(template);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "No se pudo crear la copia",
+      );
+    }
+  }
+
+  async function archiveStoredTemplate(template: StoredTemplate) {
+    const response = await apiFetch(`/api/templates/${template.id}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) return toast.error("No se pudo archivar la campaña");
+    if (template.id === templateId) await newTemplate(false);
+    await loadLibrary();
+    toast.success("Campaña archivada; podrás recuperarla desde Historial");
+  }
+
+  async function restoreStoredTemplate(template: StoredTemplate) {
+    const response = await apiFetch(`/api/templates/${template.id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "restore" }),
+    });
+    if (!response.ok) return toast.error("No se pudo recuperar la campaña");
+    await loadLibrary();
+    setCampaignLibraryFilter("active");
+    toast.success("Campaña recuperada");
   }
 
   function downloadFile(content: string, filename: string, type: string) {
@@ -2293,12 +3087,23 @@ export default function StudioClient({ displayName }: StudioProps) {
         setAiProgress(
           `Generando la imagen principal en ${aiBrief.imageResolution === "draft" ? "calidad normal" : aiBrief.imageResolution.toUpperCase()}…`,
         );
-        const prompt = contextualImagePrompt(
+        const prompt =
           aiBrief.imagePrompt.trim() ||
-            `${aiBrief.companyName || "Empresa"}, ${aiBrief.sector}. Campaña para ${aiBrief.objective}. Representar ${aiBrief.offer}. Audiencia: ${aiBrief.audience}. Composición con espacio negativo para texto de email.`,
-        );
+          `${aiBrief.companyName || "Empresa"}, ${aiBrief.sector}. Campaña para ${aiBrief.objective}. Representar ${aiBrief.offer}. Audiencia: ${aiBrief.audience}. Composición con espacio negativo para texto de email.`;
         const generatedHero = generatedDocument.blocks.find(
           (block) => block.type === "hero",
+        );
+        const generatedContext = detectedImageContext(
+          aiBrief.imageSizingMode === "canvas" ? "background" : "block",
+          generatedDocument,
+          generatedHero?.id,
+          {
+            name:
+              aiBrief.campaignName ||
+              `${aiBrief.companyName || aiBrief.sector} · ${aiBrief.objective}`,
+            subject: data.subject,
+            preheader: data.preheader,
+          },
         );
         const adaptiveDimensions =
           aiBrief.imageSizingMode === "hero"
@@ -2341,6 +3146,7 @@ export default function StudioClient({ displayName }: StudioProps) {
             sizingMode: aiBrief.imageSizingMode,
             customWidth: adaptiveDimensions?.width,
             customHeight: adaptiveDimensions?.height,
+            ...generatedContext,
           }),
         });
         const imageData = (await imageResponse.json()) as {
@@ -2350,10 +3156,13 @@ export default function StudioClient({ displayName }: StudioProps) {
         };
         if (!imageResponse.ok || !imageData.url)
           throw new Error(imageData.error || "No se pudo generar la imagen");
-        const hero = generatedDocument.blocks.find(
-          (block) => block.type === "hero",
-        );
-        if (hero) {
+        const hero = generatedHero;
+        if (aiBrief.imageSizingMode === "canvas") {
+          generatedDocument.settings.backgroundImageUrl = imageData.url;
+          generatedDocument.settings.backgroundMode = "image";
+          generatedDocument.settings.backgroundImageSize = "cover";
+          generatedDocument.settings.backgroundImageRepeat = "no-repeat";
+        } else if (hero) {
           hero.props.imageUrl = imageData.url;
           hero.props.imageAlt = prompt.slice(0, 180);
         }
@@ -2417,14 +3226,14 @@ export default function StudioClient({ displayName }: StudioProps) {
   async function generateImage() {
     setImageLoading(true);
     try {
-      const contextualPrompt = contextualImagePrompt(imagePrompt);
       const response = await apiFetch("/api/generate-image", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          prompt: contextualPrompt,
+          prompt: imagePrompt,
           altText: imagePrompt,
           ...imageBrief,
+          ...imageContext,
           customWidth: selectedImageDimensions.width,
           customHeight: selectedImageDimensions.height,
         }),
@@ -2523,7 +3332,9 @@ export default function StudioClient({ displayName }: StudioProps) {
         );
         if (!response.ok) {
           const data = await responsePayload(response);
-          throw new Error(data.error || `No se pudo subir la parte ${part + 1}`);
+          throw new Error(
+            data.error || `No se pudo subir la parte ${part + 1}`,
+          );
         }
       }
       toast.loading("Reconstruyendo la imagen en tu biblioteca...", {
@@ -2596,9 +3407,7 @@ export default function StudioClient({ displayName }: StudioProps) {
     }
   }
 
-  function handleImageInputChange(
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) {
+  function handleImageInputChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.currentTarget.files?.[0];
     event.currentTarget.value = "";
     void uploadImage(file);
@@ -2815,7 +3624,15 @@ export default function StudioClient({ displayName }: StudioProps) {
     (preset) =>
       templateCategory === "Todos" || preset.category === templateCategory,
   );
-  const filteredPresets = recommendPresets(categoryPresets, search);
+  const rankedCategoryPresets = recommendPresets(categoryPresets, search);
+  const filteredPresets =
+    templateTier === "premium"
+      ? rankedCategoryPresets.filter((preset) => preset.premium)
+      : templateTier === "classic"
+        ? rankedCategoryPresets.filter((preset) => !preset.premium)
+        : templateTier === "recommended"
+          ? rankedCategoryPresets.slice(0, 20)
+          : rankedCategoryPresets;
   const groupedPresets = templateCategories
     .filter((item) => item !== "Todos")
     .map((categoryName) => ({
@@ -2840,11 +3657,26 @@ export default function StudioClient({ displayName }: StudioProps) {
   const inspectorStep =
     workflowStep === "design" || workflowStep === "variables"
       ? workflowStep
-      : "content";
+      : workflowStep === "mobile"
+        ? "design"
+        : "content";
 
   function changeWorkflowStep(step: WorkflowStep) {
     setWorkflowStep(step);
+    setMainSpace(step === "library" ? "templates" : "editor");
+    if (step === "mobile") {
+      setDevice("mobile");
+      setRightPanelOpen(true);
+    }
     if (step === "review") setCommandCenterOpen(true);
+  }
+
+  function continueGuidedFlow() {
+    completeWorkflowStep(workflowStep);
+    const index = GUIDED_FLOW.findIndex(([step]) => step === workflowStep);
+    const next = GUIDED_FLOW[index + 1]?.[0];
+    if (next) changeWorkflowStep(next);
+    else setCommandCenterOpen(true);
   }
 
   function applyExternalDocument(next: TemplateDocument) {
@@ -2900,35 +3732,42 @@ export default function StudioClient({ displayName }: StudioProps) {
             <span>PROSPECTOR</span>
           </div>
           <nav className="main-nav" aria-label="Navegación principal">
-            <span className="nav-caption">PROSPECCIÓN</span>
-            <button>
-              <ContactRound /> Leads
+            <span className="nav-caption">CAMPAIGN STUDIO</span>
+            {STUDIO_SPACES.map((space) => {
+              const Icon = SPACE_ICONS[space.id];
+              return (
+                <button
+                  key={space.id}
+                  className={mainSpace === space.id ? "active" : ""}
+                  onClick={() => {
+                    setMainSpace(space.id);
+                    if (space.id === "campaigns") {
+                      setCampaignLibraryFilter("active");
+                      setCampaignLibraryOpen(true);
+                    } else if (space.id === "templates") {
+                      setTemplateTier("recommended");
+                      setWorkflowStep("library");
+                    } else if (space.id === "editor") {
+                      if (workflowStep === "library") setWorkflowStep("content");
+                    } else if (space.id === "brand") {
+                      setBrandOpen(true);
+                    }
+                  }}
+                >
+                  <Icon />
+                  <span className="nav-space-copy">
+                    <strong>{space.label}</strong>
+                    <small>{space.description}</small>
+                  </span>
+                </button>
+              );
+            })}
+            <span className="nav-caption second">ACCESOS CONTEXTUALES</span>
+            <button onClick={() => setCommandPaletteOpen(true)}>
+              <Search /> Buscar acciones <kbd>Ctrl K</kbd>
             </button>
-            <button>
-              <Zap /> Campañas
-            </button>
-            <button>
-              <MessageSquareText /> Mensajes
-            </button>
-            <span className="nav-caption second">CAMPAIGN STUDIO</span>
-            <button
-              className="active"
-              onClick={() => changeWorkflowStep("library")}
-            >
-              <LayoutTemplate /> Plantillas <i>Activo</i>
-            </button>
-            <button onClick={() => setBrandOpen(true)}>
-              <Palette /> Kit de marca
-            </button>
-            <button>
-              <History /> Historial
-            </button>
-            <span className="nav-caption second">ADMINISTRACIÓN</span>
-            <button>
-              <ShieldCheck /> Supresiones
-            </button>
-            <button>
-              <CircleUserRound /> Cuenta
+            <button onClick={() => setHelpOpen(true)}>
+              <HelpCircle /> Ayuda y guía
             </button>
           </nav>
           <div className="sidebar-signal">
@@ -2937,7 +3776,7 @@ export default function StudioClient({ displayName }: StudioProps) {
             </span>
             <div>
               <strong>Sistema conectado</strong>
-              <small>Módulo preparado · v0.3.1</small>
+              <small>Módulo preparado · v0.4.4</small>
             </div>
           </div>
           <div className="user-chip">
@@ -2961,7 +3800,7 @@ export default function StudioClient({ displayName }: StudioProps) {
               <div className="breadcrumb">
                 <span>Prospector</span>
                 <ChevronRight />
-                <span>Plantillas</span>
+                <span>{STUDIO_SPACES.find((space) => space.id === mainSpace)?.label}</span>
                 <ChevronRight />
                 <strong>{name}</strong>
               </div>
@@ -2997,26 +3836,6 @@ export default function StudioClient({ displayName }: StudioProps) {
                   <option value="professional">Profesional</option>
                 </select>
               </label>
-              <label
-                className="theme-picker"
-                title="Apariencia de la aplicación"
-              >
-                <Palette />
-                <span>Tema</span>
-                <select
-                  aria-label="Tema visual de la aplicación"
-                  value={appTheme}
-                  onChange={(event) =>
-                    changeAppTheme(event.target.value as AppTheme)
-                  }
-                >
-                  <option value="dark">Noche Aurevanta</option>
-                  <option value="light">Claro mineral</option>
-                  <option value="ocean">Océano profundo</option>
-                  <option value="emerald">Esmeralda ejecutiva</option>
-                  <option value="violet">Violeta creativo</option>
-                </select>
-              </label>
               <Button
                 variant="ghost"
                 size="icon-sm"
@@ -3038,11 +3857,19 @@ export default function StudioClient({ displayName }: StudioProps) {
               <span className="top-divider" />
               <Button
                 variant="outline"
-                className="dark-button campaign-center-button"
-                data-tour="review"
-                onClick={() => setCommandCenterOpen(true)}
+                className={`device-quick ${device === "desktop" ? "active" : ""}`}
+                onClick={() => setDevice("desktop")}
+                aria-label="Vista de escritorio"
               >
-                <ShieldCheck /> Centro de campaña
+                <Monitor /> Escritorio
+              </Button>
+              <Button
+                variant="outline"
+                className={`device-quick ${device === "mobile" ? "active" : ""}`}
+                onClick={() => setDevice("mobile")}
+                aria-label="Vista móvil"
+              >
+                <Smartphone /> Móvil
               </Button>
               <Button
                 variant="outline"
@@ -3050,15 +3877,6 @@ export default function StudioClient({ displayName }: StudioProps) {
                 onClick={() => setPreviewOpen(true)}
               >
                 <Eye /> Vista previa
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => setHelpOpen(true)}
-                aria-label="Abrir centro de ayuda"
-                title="Ayuda y guía"
-              >
-                <HelpCircle />
               </Button>
               <Button
                 className="save-button"
@@ -3069,6 +3887,33 @@ export default function StudioClient({ displayName }: StudioProps) {
                 {saving ? <LoaderCircle className="animate-spin" /> : <Save />}{" "}
                 Guardar
               </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="dark-button more-actions-button">
+                    <MoreHorizontal /> Más acciones
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="studio-more-menu">
+                  <DropdownMenuLabel>Campaña</DropdownMenuLabel>
+                  <DropdownMenuItem onSelect={() => void duplicateTemplate()}><Copy /> Duplicar</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={createVisualVariant}><Sparkles /> Crear variante</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => setImportOpen(true)}><Import /> Importar HTML</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => downloadFile(exportableHtml(), `${name.replace(/\W+/g, "-").toLowerCase() || "plantilla"}.html`, "text/html")}><Download /> Exportar HTML</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => void saveAsMasterTemplate()}><Sparkles /> Guardar como plantilla maestra</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Apariencia</DropdownMenuLabel>
+                  {(["dark", "light", "ocean", "emerald", "violet"] as AppTheme[]).map((theme) => (
+                    <DropdownMenuItem key={theme} onSelect={() => changeAppTheme(theme)}>
+                      <Palette /> {theme === "dark" ? "Noche Aurevanta" : theme === "light" ? "Claro mineral" : theme === "ocean" ? "Océano profundo" : theme === "emerald" ? "Esmeralda ejecutiva" : "Violeta creativo"}
+                      {appTheme === theme && <Check />}
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem data-tour="review" onSelect={() => setCommandCenterOpen(true)}><ShieldCheck /> Centro de revisión</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => setHelpOpen(true)}><HelpCircle /> Ayuda y guía<DropdownMenuShortcut>?</DropdownMenuShortcut></DropdownMenuItem>
+                  {templateId && <DropdownMenuItem variant="destructive" onSelect={() => void archiveTemplate()}><Archive /> Archivar campaña</DropdownMenuItem>}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </header>
 
@@ -3078,25 +3923,17 @@ export default function StudioClient({ displayName }: StudioProps) {
             aria-label="Flujo de creación de plantilla"
           >
             <div className="workflow-heading">
-              <span>FLUJO DE TRABAJO</span>
-              <small>Completa las fases de izquierda a derecha</small>
+              <span>MODO GUIADO</span>
+              <small>{completedWorkflowSteps.length}/5 fases completadas · progreso guardado</small>
             </div>
             <div className="workflow-steps">
-              {(
-                [
-                  ["library", "01", "Elegir plantilla", "Base o diseño propio"],
-                  ["content", "02", "Editar contenido", "Bloques y mensaje"],
-                  ["design", "03", "Diseño y marca", "Estilo visual"],
-                  ["variables", "04", "Personalizar", "Datos dinámicos"],
-                  ["review", "05", "Revisar y exportar", "Control final"],
-                ] as Array<[WorkflowStep, string, string, string]>
-              ).map(([step, number, label, detail]) => (
+              {GUIDED_FLOW.map(([step, number, label, detail]) => (
                 <button
                   key={step}
-                  className={workflowStep === step ? "active" : ""}
+                  className={`${workflowStep === step ? "active" : ""} ${completedWorkflowSteps.includes(step) ? "complete" : ""}`}
                   onClick={() => changeWorkflowStep(step)}
                 >
-                  <b>{number}</b>
+                  <b>{completedWorkflowSteps.includes(step) ? <Check /> : number}</b>
                   <span>
                     <strong>{label}</strong>
                     <small>{detail}</small>
@@ -3105,77 +3942,87 @@ export default function StudioClient({ displayName }: StudioProps) {
                 </button>
               ))}
             </div>
+            <div className="guided-next">
+              <small>{workflowStep === "library" ? "Elige el punto de partida que mejor encaje." : workflowStep === "content" ? "Completa primero asunto, preheader y llamada a la acción." : workflowStep === "design" ? "Comprueba jerarquía, imagen, fondo y contraste." : workflowStep === "mobile" ? "Corrige solo lo necesario para móvil sin alterar escritorio." : "Resuelve los avisos críticos antes de exportar."}</small>
+              <Button onClick={continueGuidedFlow}>Continuar <ChevronRight /></Button>
+            </div>
           </div>
 
           <div className="studio-commandbar">
             <div className="command-group">
-              <Button variant="ghost" size="sm" onClick={newTemplate}>
-                <FilePlus2 /> Nueva
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setLeftPanelOpen((value) => !value)}
+              >
+                {leftPanelOpen ? <PanelLeftClose /> : <PanelLeftOpen />} Bloques y capas
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                data-tour="ai"
-                onClick={() => setAiOpen(true)}
-                className="ai-command"
+                onClick={() => setRightPanelOpen((value) => !value)}
               >
-                <WandSparkles /> Crear con IA
+                {rightPanelOpen ? <PanelRightClose /> : <PanelRightOpen />} Propiedades
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setImportOpen(true)}
+                onClick={() => setAdvancedControlsOpen((value) => !value)}
               >
-                <Import /> Importar HTML
+                <Layers3 /> {advancedControlsOpen ? "Ocultar avanzados" : "Mostrar controles avanzados"}
               </Button>
+            </div>
+            <div className="command-group right">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setCommandPaletteOpen(true)}
               >
-                <Search /> Acciones <kbd>Ctrl K</kbd>
-              </Button>
-            </div>
-            <div className="command-group right">
-              <Button variant="ghost" size="sm" onClick={duplicateTemplate}>
-                <Copy /> Duplicar
+                <Search /> Buscar acción <kbd>Ctrl K</kbd>
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() =>
-                  downloadFile(
-                    exportableHtml(),
-                    `${name.replace(/\W+/g, "-").toLowerCase() || "plantilla"}.html`,
-                    "text/html",
-                  )
-                }
+                data-tour="review"
+                onClick={() => setCommandCenterOpen(true)}
               >
-                <Download /> Exportar
+                <ShieldCheck /> Revisión
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setBrandOpen(true)}
-              >
-                <Palette /> Marca
-              </Button>
-              {templateId && (
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className="danger-ghost"
-                  onClick={archiveTemplate}
-                  aria-label="Archivar"
-                >
-                  <Archive />
-                </Button>
-              )}
             </div>
           </div>
 
-          <section className="workspace-grid">
-            <aside className="palette-panel" data-tour="blocks">
+          {mainSpace === "home" && (
+            <section className="start-hub" aria-label="Inicio de Campaign Studio">
+              <header>
+                <div>
+                  <span>CAMPAIGN STUDIO UX V2</span>
+                  <h1>¿Qué quieres crear hoy?</h1>
+                  <p>Empieza por una opción clara. Todas las herramientas profesionales seguirán disponibles dentro del editor.</p>
+                </div>
+                <Button onClick={() => setMainSpace("editor")}><Blocks /> Continuar “{name}”</Button>
+              </header>
+              <div className="start-actions">
+                <button data-tour="ai" onClick={() => { setMainSpace("editor"); setAiOpen(true); }}><span><WandSparkles /></span><strong>Crear con IA</strong><small>Campaña completa a partir de un briefing guiado</small><ChevronRight /></button>
+                <button onClick={() => { setMainSpace("templates"); setTemplateTier("recommended"); setWorkflowStep("library"); }}><span><Sparkles /></span><strong>Elegir plantilla Premium</strong><small>Diseños avanzados, variantes y adaptación por sector</small><ChevronRight /></button>
+                <button onClick={() => { void newTemplate(); setMainSpace("editor"); setWorkflowStep("content"); }}><span><FilePlus2 /></span><strong>Crear desde cero</strong><small>Empieza con una maqueta limpia y editable</small><ChevronRight /></button>
+                <button onClick={() => { setMainSpace("editor"); setImportOpen(true); }}><span><Import /></span><strong>Importar HTML</strong><small>Convierte una campaña existente en una base editable</small><ChevronRight /></button>
+              </div>
+              <div className="recent-campaigns">
+                <div className="recent-heading"><div><span>RECIENTES</span><strong>Continúa donde lo dejaste</strong></div><button onClick={() => { setCampaignLibraryFilter("all"); setCampaignLibraryOpen(true); }}>Ver todas <ChevronRight /></button></div>
+                <div className="recent-grid">
+                  {activeSavedTemplates.slice(0, 4).map((template) => (
+                    <button key={template.id} onClick={() => { openStored(template); setMainSpace("editor"); }}>
+                      <span>{template.category}</span><strong>{template.name}</strong><small>Versión {template.version} · {campaignUpdatedLabel(template.updatedAt)}</small>
+                    </button>
+                  ))}
+                  {!activeSavedTemplates.length && <div className="recent-empty"><LayoutTemplate /><strong>Aún no hay campañas guardadas</strong><small>Tu primera campaña aparecerá aquí automáticamente.</small></div>}
+                </div>
+              </div>
+            </section>
+          )}
+
+          <section className={`workspace-grid ${mainSpace === "home" ? "workspace-hidden" : ""} ${leftPanelOpen ? "" : "left-collapsed"} ${rightPanelOpen ? "" : "right-collapsed"} ${advancedControlsOpen || experienceMode === "professional" ? "show-advanced" : "hide-advanced"}`}>
+            <aside className={`palette-panel ${mobilePanel === "blocks" || mobilePanel === "layers" ? "mobile-open" : ""}`} data-tour="blocks">
               <Tabs
                 value={workflowStep === "library" ? "library" : "blocks"}
                 onValueChange={(value) =>
@@ -3377,6 +4224,20 @@ export default function StudioClient({ displayName }: StudioProps) {
                       }}
                     />
                   </div>
+                  <div className="template-tier-tabs" aria-label="Tipo de plantilla">
+                    {([
+                      ["recommended", "Recomendadas"],
+                      ["premium", "Premium"],
+                      ["all", "Todas"],
+                      ["classic", "Clásicas"],
+                    ] as Array<[TemplateTier, string]>).map(([tier, label]) => (
+                      <button key={tier} className={templateTier === tier ? "active" : ""} onClick={() => setTemplateTier(tier)}>{label}</button>
+                    ))}
+                  </div>
+                  <div className="visual-reference-bar">
+                    <div><Sparkles /><span><strong>Convierte tu última composición en sistema</strong><small>Se conserva la dirección visual; no se copian textos ni datos personales.</small></span></div>
+                    <Button variant="outline" onClick={() => void saveAsMasterTemplate()}>Usar esta campaña como referencia visual</Button>
+                  </div>
                   <div className="catalog-controls">
                     <select
                       value={templateCategory}
@@ -3450,7 +4311,7 @@ export default function StudioClient({ displayName }: StudioProps) {
                     </label>
                   </div>
                   <div className="library-section-label catalog-title">
-                    <span>100 NEGOCIOS · 100 DIRECCIONES VISUALES</span>
+                    <span>15 MAESTRAS PREMIUM · 5 VARIANTES · 100 DISEÑOS</span>
                     <button
                       onClick={() =>
                         setOpenTemplateGroups(
@@ -3568,15 +4429,22 @@ export default function StudioClient({ displayName }: StudioProps) {
                                       </b>
                                     )}
                                     <span className="preset-meta">
-                                      <small>{preset.designFamily}</small>
+                                      <small>{preset.premium ? `PREMIUM · ${preset.masterName} · ${preset.variantName}` : `CLÁSICA · ${preset.designFamily}`}</small>
                                       <strong>{preset.name}</strong>
                                       <em>{preset.objective}</em>
                                     </span>
                                   </button>
                                   <div className="preset-actions">
-                                    <button onClick={() => applyPreset(preset)}>
-                                      Usar estructura
-                                    </button>
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <button><Layers3 /> Aplicar plantilla</button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="start" className="studio-more-menu">
+                                        <DropdownMenuItem onSelect={() => applyPresetStyle(preset)}><Palette /> Aplicar solo estilo</DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={() => applyPresetStructure(preset)}><Blocks /> Aplicar solo estructura</DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={() => applyPreset(preset)}><Sparkles /> Aplicar estilo y estructura</DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
                                     <button
                                       disabled={imageLoading}
                                       onClick={() =>
@@ -3613,17 +4481,17 @@ export default function StudioClient({ displayName }: StudioProps) {
                     </div>
                   )}
                   <div className="library-section-label saved">
-                    <span>MIS PLANTILLAS</span>
-                    <small>{savedTemplates.length}</small>
+                    <span>MIS CAMPAÑAS</span>
+                    <small>{activeSavedTemplates.length}</small>
                   </div>
                   {libraryLoading ? (
                     <div className="library-loading">
                       <LoaderCircle className="animate-spin" /> Cargando
                       espacio...
                     </div>
-                  ) : savedTemplates.length ? (
+                  ) : activeSavedTemplates.length ? (
                     <div className="saved-list">
-                      {savedTemplates.map((template) => (
+                      {activeSavedTemplates.map((template) => (
                         <button
                           key={template.id}
                           onClick={() => openStored(template)}
@@ -3640,6 +4508,22 @@ export default function StudioClient({ displayName }: StudioProps) {
                           <ChevronRight />
                         </button>
                       ))}
+                      <button
+                        className="open-campaign-library"
+                        onClick={() => {
+                          setCampaignLibraryFilter("active");
+                          setCampaignLibraryOpen(true);
+                        }}
+                      >
+                        <span>
+                          <LayoutTemplate />
+                        </span>
+                        <div>
+                          <strong>Ver todas mis campañas</strong>
+                          <small>Buscar, abrir, copiar o archivar</small>
+                        </div>
+                        <ChevronRight />
+                      </button>
                     </div>
                   ) : (
                     <div className="empty-library">
@@ -3804,19 +4688,28 @@ export default function StudioClient({ displayName }: StudioProps) {
                 </div>
                 <div className="canvas-meta">
                   <span className="live-dot" /> Vista compatible <i />{" "}
-                  {document.settings.width}px
+                  {activeCanvasWidth} × {Math.round(activeCanvasHeight)} px
                 </div>
               </div>
               <div className="canvas-stage">
                 <div className="canvas-drag-hint">
                   <GripVertical />
                   <span>
-                    Arrastra cualquier bloque directamente en la maqueta
+                    Arrastra cualquier bloque para moverlo, solaparlo y
+                    superponerlo libremente
                   </span>
                 </div>
                 <div
                   className={`device-frame ${device}`}
                   style={{
+                    width: `${activeCanvasWidth}px`,
+                    maxWidth: "none",
+                    ...(configuredCanvasHeight
+                      ? {
+                          height: `${configuredCanvasHeight + (device === "mobile" ? 26 : 0)}px`,
+                          minHeight: 0,
+                        }
+                      : {}),
                     transform: `scale(${canvasZoom / 100})`,
                     transformOrigin: "top center",
                   }}
@@ -3862,13 +4755,13 @@ export default function StudioClient({ displayName }: StudioProps) {
                     </span>
                   ))}
                 </div>
-                <button onClick={() => setPreviewOpen(true)}>
-                  Ver informe <ChevronRight />
+                <button onClick={() => { setWorkflowStep("review"); setCommandCenterOpen(true); }}>
+                  Abrir revisión <ChevronRight />
                 </button>
               </div>
             </section>
 
-            <aside className="inspector-panel" data-tour="inspector">
+            <aside className={`inspector-panel ${mobilePanel === "edit" ? "mobile-open" : ""}`} data-tour="inspector">
               <Tabs
                 value={inspectorStep}
                 onValueChange={(value) =>
@@ -4023,54 +4916,286 @@ export default function StudioClient({ displayName }: StudioProps) {
                           <span>POSICIÓN Y TAMAÑO · SOLO ESTE BLOQUE</span>
                         </div>
                         {selectedBlock.type === "hero" && (
-                          <div className="property-field">
-                            <label>Posición del texto dentro del hero</label>
-                            <div className="position-grid">
-                              {[
-                                "top-left",
-                                "top-center",
-                                "top-right",
-                                "center-left",
-                                "center-center",
-                                "center-right",
-                                "bottom-left",
-                                "bottom-center",
-                                "bottom-right",
-                              ].map((position) => {
-                                const [vertical, horizontal] =
-                                  position.split("-");
-                                const active =
-                                  selectedBlock.props.verticalAlign ===
-                                    vertical &&
-                                  (selectedBlock.props.textAlign ??
-                                    selectedBlock.props.align) === horizontal;
-                                return (
-                                  <button
-                                    key={position}
-                                    title={`${vertical} ${horizontal}`}
-                                    aria-label={`${vertical} ${horizontal}`}
-                                    className={active ? "active" : ""}
-                                    onClick={() =>
-                                      commitDocument((current) => {
-                                        const block = current.blocks.find(
-                                          (item) => item.id === selectedBlockId,
-                                        );
-                                        if (block) {
-                                          block.props.verticalAlign = vertical;
-                                          block.props.textAlign = horizontal;
-                                        }
-                                        return current;
-                                      })
-                                    }
-                                  >
-                                    <i />
-                                  </button>
-                                );
-                              })}
+                          <div className="hero-layout-controls">
+                            <HeroFreeLayerControls
+                              values={selectedBlock.props}
+                              selectedLayer={selectedHeroLayer}
+                              onSelect={setSelectedHeroLayer}
+                              onChange={updateBlockProp}
+                              onPreset={(preset) =>
+                                commitDocument((current) => {
+                                  const block = current.blocks.find(
+                                    (item) => item.id === selectedBlockId,
+                                  );
+                                  if (!block) return current;
+                                  block.props.heroComposition = "free";
+                                  block.props.overlay = false;
+                                  const presets = {
+                                    cover: {
+                                      heroImageX: 50,
+                                      heroImageY: 50,
+                                      heroImageWidth: 100,
+                                      heroImageHeight: 100,
+                                      heroImageZ: 1,
+                                    },
+                                    right: {
+                                      heroImageX: 75,
+                                      heroImageY: 50,
+                                      heroImageWidth: 50,
+                                      heroImageHeight: 100,
+                                      heroImageZ: 2,
+                                    },
+                                    reset: {
+                                      eyebrowX: 22,
+                                      eyebrowY: 18,
+                                      eyebrowWidth: 38,
+                                      eyebrowFontSize: 14,
+                                      eyebrowZ: 4,
+                                      titleX: 32,
+                                      titleY: 48,
+                                      titleWidth: 58,
+                                      titleFontSize: 58,
+                                      titleZ: 5,
+                                      bodyX: 28,
+                                      bodyY: 78,
+                                      bodyWidth: 48,
+                                      bodyFontSize: 20,
+                                      bodyZ: 6,
+                                      heroImageX: 72,
+                                      heroImageY: 50,
+                                      heroImageWidth: 48,
+                                      heroImageHeight: 62,
+                                      heroImageZ: 2,
+                                    },
+                                  } as const;
+                                  Object.assign(block.props, presets[preset]);
+                                  return current;
+                                })
+                              }
+                            />
+                          </div>
+                        )}
+                        <div className="global-layer-controls">
+                          <div className="global-layer-heading">
+                            <div>
+                              <small>CAPA LIBRE SELECCIONADA</small>
+                              <strong>
+                                {BLOCK_META.find(
+                                  (item) => item.type === selectedBlock.type,
+                                )?.label ?? selectedBlock.type}
+                              </strong>
                             </div>
+                            <div>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  commitDocument((current) => {
+                                    const block = current.blocks.find(
+                                      (item) => item.id === selectedBlockId,
+                                    );
+                                    if (block) {
+                                      const minimum = Math.min(
+                                        ...current.blocks.map(
+                                          (item) => Number(item.props.freeZ) || 0,
+                                        ),
+                                      );
+                                      block.props.freeZ = Math.max(
+                                        -50,
+                                        minimum - 1,
+                                      );
+                                    }
+                                    return current;
+                                  })
+                                }
+                              >
+                                Enviar detrás
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  commitDocument((current) => {
+                                    const block = current.blocks.find(
+                                      (item) => item.id === selectedBlockId,
+                                    );
+                                    if (block) {
+                                      const maximum = Math.max(
+                                        ...current.blocks.map(
+                                          (item) => Number(item.props.freeZ) || 0,
+                                        ),
+                                      );
+                                      block.props.freeZ = Math.min(
+                                        100,
+                                        maximum + 1,
+                                      );
+                                    }
+                                    return current;
+                                  })
+                                }
+                              >
+                                Traer delante
+                              </button>
+                            </div>
+                          </div>
+                          <label className="auto-flow-toggle">
+                            <input
+                              type="checkbox"
+                              checked={selectedBlock.props.autoFlow !== false}
+                              onChange={(event) =>
+                                updateBlockProp("autoFlow", event.target.checked)
+                              }
+                            />
+                            <span>
+                              <strong>Autoajustar espacio</strong>
+                              <small>
+                                El bloque ocupa solo su tamaño visual y acerca
+                                automáticamente los elementos siguientes.
+                              </small>
+                            </span>
+                          </label>
+                          <label className="auto-flow-toggle intentional-overlap">
+                            <input
+                              type="checkbox"
+                              checked={selectedBlock.props.overlapIntentional === true}
+                              onChange={(event) => updateBlockProp("overlapIntentional", event.target.checked)}
+                            />
+                            <span>
+                              <strong>Solapamiento intencionado</strong>
+                              <small>Márcalo cuando la superposición forme parte del diseño para que la revisión no la trate como un error accidental.</small>
+                            </span>
+                          </label>
+                          <div className="global-layer-grid">
+                            {[
+                              ["Posición X", "freeX", -800, 800, "px", 0],
+                              ["Posición Y", "freeY", -1200, 1200, "px", 0],
+                              ["Escala", "freeScale", 25, 300, "%", 100],
+                              ["Profundidad", "freeZ", -50, 100, "", 0],
+                            ].map(
+                              ([label, key, min, max, suffix, fallback]) => (
+                                <div className="property-field" key={String(key)}>
+                                  <label>{label}</label>
+                                  <RangeWithNumber
+                                    min={Number(min)}
+                                    max={Number(max)}
+                                    suffix={String(suffix)}
+                                    value={Number(
+                                      selectedBlock.props[String(key)] ??
+                                        fallback,
+                                    )}
+                                    onChange={(value) =>
+                                      updateBlockProp(String(key), value)
+                                    }
+                                  />
+                                </div>
+                              ),
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            className="reset-free-layer"
+                            onClick={() =>
+                              commitDocument((current) => {
+                                const block = current.blocks.find(
+                                  (item) => item.id === selectedBlockId,
+                                );
+                                if (block)
+                                  Object.assign(block.props, {
+                                    freeX: 0,
+                                    freeY: 0,
+                                    freeZ: 0,
+                                    freeScale: 100,
+                                  });
+                                return current;
+                              })
+                            }
+                          >
+                            Restablecer posición y tamaño iniciales
+                          </button>
+                          <small className="field-help">
+                            También puedes arrastrar este bloque directamente en
+                            la maqueta. Puede cruzarse y superponerse con cualquier
+                            otro bloque.
+                          </small>
+                        </div>
+                        {device === "mobile" && (
+                          <div className="mobile-responsive-controls">
+                            <div className="mobile-responsive-heading">
+                              <div>
+                                <small>COMPOSICIÓN MÓVIL</small>
+                                <strong>Adaptación inteligente</strong>
+                              </div>
+                              <label className="responsive-switch">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedBlock.mobile?.autoResponsive !== false}
+                                  onChange={(event) =>
+                                    updateMobileProp("autoResponsive", event.target.checked)
+                                  }
+                                />
+                                <span>Automática</span>
+                              </label>
+                            </div>
+                            <p>
+                              Reorganiza los bloques, compacta márgenes y reserva
+                              espacio legible para cada texto. Los ajustes manuales
+                              siguen disponibles cuando quieras superponer algo.
+                            </p>
+                            <div className="global-layer-grid">
+                              {[
+                                ["Texto", "fontScale", 50, 140, "%", 100],
+                                ["Ancho", "widthPercent", 30, 200, "%", 100],
+                                ["Posición X", "freeX", -400, 400, "px", 0],
+                                ["Posición Y", "freeY", -800, 800, "px", 0],
+                                ["Escala", "freeScale", 40, 180, "%", 100],
+                                ["Profundidad", "freeZ", -50, 100, "", 0],
+                              ].map(([label, key, min, max, suffix, fallback]) => (
+                                <div className="property-field" key={String(key)}>
+                                  <label>{label}</label>
+                                  <RangeWithNumber
+                                    min={Number(min)}
+                                    max={Number(max)}
+                                    suffix={String(suffix)}
+                                    value={Number(
+                                      selectedBlock.mobile?.[
+                                        key as keyof NonNullable<EmailBlock["mobile"]>
+                                      ] ?? fallback,
+                                    )}
+                                    onChange={(value) =>
+                                      updateMobileProp(
+                                        key as keyof NonNullable<EmailBlock["mobile"]>,
+                                        value,
+                                      )
+                                    }
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                            <button
+                              type="button"
+                              className="reset-free-layer"
+                              onClick={() =>
+                                commitDocument((current) => {
+                                  const block = current.blocks.find(
+                                    (item) => item.id === selectedBlockId,
+                                  );
+                                  if (block) {
+                                    const { hidden, order, imageUrl } = block.mobile ?? {};
+                                    block.mobile = {
+                                      ...(hidden === undefined ? {} : { hidden }),
+                                      ...(order === undefined ? {} : { order }),
+                                      ...(imageUrl ? { imageUrl } : {}),
+                                      autoResponsive: true,
+                                    };
+                                  }
+                                  return current;
+                                })
+                              }
+                            >
+                              Recuperar adaptación móvil automática
+                            </button>
                             <small className="field-help">
-                              Solo mueve el texto; no desplaza ni redimensiona
-                              el hero.
+                              Estos valores solo afectan al móvil y cambian la
+                              maqueta al instante. También puedes arrastrar el
+                              bloque dentro del teléfono.
                             </small>
                           </div>
                         )}
@@ -4083,7 +5208,7 @@ export default function StudioClient({ displayName }: StudioProps) {
                           </label>
                           <RangeWithNumber
                             min={30}
-                            max={100}
+                            max={IMAGE_SIZE_MAX_PERCENT}
                             step={5}
                             suffix="%"
                             value={Number(
@@ -4093,6 +5218,10 @@ export default function StudioClient({ displayName }: StudioProps) {
                               updateBlockProp("blockWidth", value)
                             }
                           />
+                          <small className="field-help">
+                            Hasta 200 %. Puedes combinar el ancho con la escala
+                            libre para ampliar cualquier tipo de elemento.
+                          </small>
                         </div>
                         <div className="property-field">
                           <label>
@@ -4336,8 +5465,10 @@ export default function StudioClient({ displayName }: StudioProps) {
                               />
                               <button
                                 className={
-                                  selectedBlock.props.backgroundColor ===
-                                  "transparent"
+                                  (selectedBlock.type === "button"
+                                    ? selectedBlock.props.buttonStyle === "ghost"
+                                    : selectedBlock.props.backgroundColor ===
+                                      "transparent")
                                     ? "active"
                                     : ""
                                 }
@@ -4349,22 +5480,29 @@ export default function StudioClient({ displayName }: StudioProps) {
                                     if (block) {
                                       block.props.backgroundColor =
                                         "transparent";
-                                      if (block.type === "button")
+                                      if (block.type === "button") {
                                         block.props.buttonStyle = "ghost";
+                                        block.props.buttonDepth = "none";
+                                        block.props.blockDepth = "none";
+                                        block.props.shadow = "none";
+                                        block.props.borderWidth = 0;
+                                      }
                                     }
                                     return current;
                                   })
                                 }
                               >
-                                {selectedBlock.props.backgroundColor ===
-                                "transparent"
+                                {(selectedBlock.type === "button"
+                                  ? selectedBlock.props.buttonStyle === "ghost"
+                                  : selectedBlock.props.backgroundColor ===
+                                    "transparent")
                                   ? "✓ Sin fondo"
                                   : "Sin fondo"}
                               </button>
                             </div>
                             <small className="field-help">
                               {selectedBlock.type === "button"
-                                ? "Sin fondo elimina también el relleno oscuro del botón."
+                                ? "Sin fondo elimina relleno, borde, sombra y profundidad 3D."
                                 : "Sin fondo deja ver la capa de la maqueta."}
                             </small>
                           </label>
@@ -4439,48 +5577,150 @@ export default function StudioClient({ displayName }: StudioProps) {
                           </select>
                         </div>
                         <div className="property-field">
-                          <label>Profundidad 3D del bloque</label>
+                          <label>
+                            {selectedBlock.type === "button"
+                              ? "Profundidad 3D del botón"
+                              : "Profundidad 3D del bloque"}
+                          </label>
                           <select
                             className="studio-select"
                             value={String(
-                              selectedBlock.props.blockDepth ?? "none",
+                              selectedBlock.type === "button"
+                                ? selectedBlock.props.buttonDepth ?? "none"
+                                : selectedBlock.props.blockDepth ?? "none",
                             )}
-                            onChange={(event) =>
-                              updateBlockProp("blockDepth", event.target.value)
-                            }
+                            onChange={(event) => {
+                              if (selectedBlock.type !== "button") {
+                                updateBlockProp(
+                                  "blockDepth",
+                                  event.target.value,
+                                );
+                                return;
+                              }
+                              const mode = event.target.value;
+                              commitDocument((current) => {
+                                const block = current.blocks.find(
+                                  (item) => item.id === selectedBlockId,
+                                );
+                                if (!block) return current;
+                                block.props.buttonDepth = mode;
+                                block.props.blockDepth = "none";
+                                if (mode === "raised")
+                                  block.props.buttonDepthOffset = 6;
+                                if (mode === "deep")
+                                  block.props.buttonDepthOffset = 10;
+                                if (mode === "glass")
+                                  block.props.buttonDepthOffset = 12;
+                                return current;
+                              });
+                            }}
                           >
-                            <option value="none">Sin profundidad</option>
-                            <option value="lifted">Elevado 3D</option>
-                            <option value="deep">Extrusión profunda</option>
-                            <option value="floating">Flotante premium</option>
+                            {selectedBlock.type === "button" ? (
+                              <>
+                                <option value="none">Plano · sin profundidad</option>
+                                <option value="raised">Elevado 3D</option>
+                                <option value="deep">Extrusión profunda</option>
+                                <option value="glass">Cristal flotante</option>
+                              </>
+                            ) : (
+                              <>
+                                <option value="none">Sin profundidad</option>
+                                <option value="lifted">Elevado 3D</option>
+                                <option value="deep">Extrusión profunda</option>
+                                <option value="floating">Flotante premium</option>
+                              </>
+                            )}
                           </select>
                         </div>
-                        {selectedBlock.props.blockDepth !== "none" && (
+                        {(selectedBlock.type === "button"
+                          ? selectedBlock.props.buttonDepth !== "none"
+                          : selectedBlock.props.blockDepth !== "none") && (
                           <label className="color-field">
-                            <span>Color de profundidad</span>
+                            <span>
+                              {selectedBlock.type === "button"
+                                ? "Color de profundidad del botón"
+                                : "Color de profundidad"}
+                            </span>
                             <div>
                               <input
                                 type="color"
                                 value={String(
-                                  selectedBlock.props.blockDepthColor ??
-                                    "#0f172a",
+                                  selectedBlock.type === "button"
+                                    ? selectedBlock.props.buttonDepthColor ??
+                                        "#064852"
+                                    : selectedBlock.props.blockDepthColor ??
+                                        "#0f172a",
                                 )}
                                 onChange={(event) =>
                                   updateBlockProp(
-                                    "blockDepthColor",
+                                    selectedBlock.type === "button"
+                                      ? "buttonDepthColor"
+                                      : "blockDepthColor",
                                     event.target.value,
                                   )
                                 }
                               />
                               <code>
                                 {String(
-                                  selectedBlock.props.blockDepthColor ??
-                                    "#0f172a",
+                                  selectedBlock.type === "button"
+                                    ? selectedBlock.props.buttonDepthColor ??
+                                        "#064852"
+                                    : selectedBlock.props.blockDepthColor ??
+                                        "#0f172a",
                                 )}
                               </code>
                             </div>
                           </label>
                         )}
+                        {selectedBlock.type === "button" &&
+                          selectedBlock.props.buttonDepth !== "none" && (
+                            <div className="button-depth-grid">
+                              {[
+                                [
+                                  "Distancia 3D",
+                                  "buttonDepthOffset",
+                                  0,
+                                  24,
+                                  "px",
+                                  6,
+                                ],
+                                [
+                                  "Desenfoque",
+                                  "buttonDepthBlur",
+                                  0,
+                                  48,
+                                  "px",
+                                  20,
+                                ],
+                                [
+                                  "Intensidad",
+                                  "buttonDepthOpacity",
+                                  0,
+                                  100,
+                                  "%",
+                                  100,
+                                ],
+                              ].map(
+                                ([label, key, min, max, suffix, fallback]) => (
+                                  <div className="property-field" key={String(key)}>
+                                    <label>{label}</label>
+                                    <RangeWithNumber
+                                      min={Number(min)}
+                                      max={Number(max)}
+                                      suffix={String(suffix)}
+                                      value={Number(
+                                        selectedBlock.props[String(key)] ??
+                                          fallback,
+                                      )}
+                                      onChange={(value) =>
+                                        updateBlockProp(String(key), value)
+                                      }
+                                    />
+                                  </div>
+                                ),
+                              )}
+                            </div>
+                          )}
                       </div>
                       <div className="inspector-section fields-section">
                         <div className="section-label">
@@ -4649,7 +5889,7 @@ export default function StudioClient({ displayName }: StudioProps) {
                                     : key === "widthPercent"
                                       ? {
                                           min: 30,
-                                          max: 100,
+                                          max: IMAGE_SIZE_MAX_PERCENT,
                                           step: 5,
                                           suffix: "%",
                                         }
@@ -4791,6 +6031,70 @@ export default function StudioClient({ displayName }: StudioProps) {
                   value="design"
                   className="tab-scroll inspector-scroll"
                 >
+                  <div className="inspector-section fields-section canvas-size-editor">
+                    <div className="section-label">
+                      <span>TAMAÑO DE LA MAQUETA</span>
+                      <small>{device === "mobile" ? "MÓVIL" : "ESCRITORIO"}</small>
+                    </div>
+                    <div className="canvas-size-grid">
+                      <div className="property-field">
+                        <label>
+                          Anchura <span>{activeCanvasWidth}px</span>
+                        </label>
+                        <RangeWithNumber
+                          min={280}
+                          max={device === "mobile" ? 600 : 1600}
+                          step={10}
+                          suffix="px"
+                          value={activeCanvasWidth}
+                          onChange={(value) =>
+                            device === "mobile"
+                              ? updateCanvasSetting("mobileWidth", value)
+                              : updateCanvasSetting("width", value)
+                          }
+                        />
+                      </div>
+                      <div className="property-field">
+                        <label>
+                          Altura{" "}
+                          <span>
+                            {configuredCanvasHeight
+                              ? `${configuredCanvasHeight}px`
+                              : `AUTO · ${Math.round(activeCanvasHeight)}px`}
+                          </span>
+                        </label>
+                        <RangeWithNumber
+                          min={240}
+                          max={6000}
+                          step={10}
+                          suffix="px"
+                          value={Math.round(activeCanvasHeight)}
+                          onChange={(value) =>
+                            device === "mobile"
+                              ? updateCanvasSetting("mobileCanvasHeight", value)
+                              : updateCanvasSetting("canvasHeight", value)
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div className="canvas-size-actions">
+                      <button
+                        type="button"
+                        disabled={configuredCanvasHeight === undefined}
+                        onClick={() =>
+                          device === "mobile"
+                            ? updateCanvasSetting("mobileCanvasHeight", undefined)
+                            : updateCanvasSetting("canvasHeight", undefined)
+                        }
+                      >
+                        Ajustar altura al contenido
+                      </button>
+                      <small>
+                        La altura manual recorta lo que quede fuera del lienzo;
+                        puedes mover y escalar los bloques para encajarlos.
+                      </small>
+                    </div>
+                  </div>
                   <div className="inspector-section fields-section canvas-background-editor">
                     <div className="section-label">
                       <span>FONDO COMPLETO DE LA MAQUETA</span>
@@ -5183,7 +6487,7 @@ export default function StudioClient({ displayName }: StudioProps) {
                                   </label>
                                   <RangeWithNumber
                                     min={18}
-                                    max={72}
+                                    max={120}
                                     suffix="px"
                                     value={Number(
                                       selectedBlock.props.titleFontSize ?? 34,
@@ -5202,7 +6506,7 @@ export default function StudioClient({ displayName }: StudioProps) {
                                   </label>
                                   <RangeWithNumber
                                     min={10}
-                                    max={36}
+                                    max={72}
                                     suffix="px"
                                     value={Number(
                                       selectedBlock.props.bodyFontSize ?? 17,
@@ -5509,60 +6813,6 @@ export default function StudioClient({ displayName }: StudioProps) {
                               </div>
                             </label>
                           )}
-                          {selectedBlock.type === "button" && (
-                            <>
-                              <div className="property-field">
-                                <label>Profundidad 3D del botón</label>
-                                <select
-                                  className="studio-select"
-                                  value={String(
-                                    selectedBlock.props.buttonDepth ?? "none",
-                                  )}
-                                  onChange={(event) =>
-                                    updateBlockProp(
-                                      "buttonDepth",
-                                      event.target.value,
-                                    )
-                                  }
-                                >
-                                  <option value="none">Plano</option>
-                                  <option value="raised">Elevado 3D</option>
-                                  <option value="deep">
-                                    Extrusión profunda
-                                  </option>
-                                  <option value="glass">
-                                    Cristal flotante
-                                  </option>
-                                </select>
-                              </div>
-                              {selectedBlock.props.buttonDepth !== "none" && (
-                                <label className="color-field">
-                                  <span>Color de profundidad del botón</span>
-                                  <div>
-                                    <input
-                                      type="color"
-                                      value={String(
-                                        selectedBlock.props.buttonDepthColor ??
-                                          "#064852",
-                                      )}
-                                      onChange={(event) =>
-                                        updateBlockProp(
-                                          "buttonDepthColor",
-                                          event.target.value,
-                                        )
-                                      }
-                                    />
-                                    <code>
-                                      {String(
-                                        selectedBlock.props.buttonDepthColor ??
-                                          "#064852",
-                                      )}
-                                    </code>
-                                  </div>
-                                </label>
-                              )}
-                            </>
-                          )}
                           {selectedBlock.type === "columns" && (
                             <label className="color-field">
                               <span>Fondo interior de las columnas</span>
@@ -5850,6 +7100,12 @@ export default function StudioClient({ displayName }: StudioProps) {
                 </TabsContent>
               </Tabs>
             </aside>
+            <nav className="mobile-editor-bar" aria-label="Herramientas del editor móvil">
+              <button className={mobilePanel === "blocks" ? "active" : ""} onClick={() => { setMobilePanel(mobilePanel === "blocks" ? null : "blocks"); setWorkflowStep("content"); }}><Blocks /><span>Bloques</span></button>
+              <button className={mobilePanel === "layers" ? "active" : ""} onClick={() => { setMobilePanel(mobilePanel === "layers" ? null : "layers"); setWorkflowStep("content"); }}><Layers3 /><span>Capas</span></button>
+              <button className={mobilePanel === "edit" ? "active" : ""} onClick={() => setMobilePanel(mobilePanel === "edit" ? null : "edit")}><SquareMousePointer /><span>Editar</span></button>
+              <button className={device === "mobile" ? "active" : ""} onClick={() => { setDevice(device === "mobile" ? "desktop" : "mobile"); setMobilePanel(null); }}><Monitor /><span>Vista</span></button>
+            </nav>
           </section>
         </main>
 
@@ -5886,35 +7142,236 @@ export default function StudioClient({ displayName }: StudioProps) {
           steps={TOUR_STEPS}
         />
 
+        <Dialog
+          open={campaignLibraryOpen}
+          onOpenChange={setCampaignLibraryOpen}
+        >
+          <DialogContent className="studio-dialog campaign-library-dialog">
+            <DialogHeader>
+              <div className="dialog-kicker">
+                <span>
+                  <LayoutTemplate />
+                </span>
+                BIBLIOTECA DE CAMPAÑAS
+              </div>
+              <DialogTitle>Todas tus campañas, siempre disponibles</DialogTitle>
+              <DialogDescription>
+                Cada campaña se guarda en tu espacio. Ábrela para continuar o
+                crea una copia independiente para utilizarla como base sin
+                modificar el original.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="campaign-library-summary">
+              <article>
+                <strong>{activeSavedTemplates.length}</strong>
+                <span>Campañas activas</span>
+              </article>
+              <article>
+                <strong>{archivedSavedTemplates.length}</strong>
+                <span>Archivadas recuperables</span>
+              </article>
+              <aside>
+                <span>
+                  {saving ? "Guardando cambios…" : "Guardado automático activo"}
+                </span>
+                <small>
+                  {lastAutosaveAt
+                    ? `Último guardado: ${lastAutosaveAt.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`
+                    : "Las campañas se conservan entre sesiones"}
+                </small>
+              </aside>
+            </div>
+            <div className="campaign-library-toolbar">
+              <div className="campaign-library-search">
+                <Search />
+                <Input
+                  autoFocus
+                  value={campaignSearch}
+                  onChange={(event) => setCampaignSearch(event.target.value)}
+                  placeholder="Buscar por nombre, asunto, categoría o contenido…"
+                />
+              </div>
+              <Button
+                className="save-button"
+                onClick={async () => {
+                  await newTemplate();
+                  setCampaignLibraryOpen(false);
+                }}
+              >
+                <FilePlus2 /> Nueva campaña
+              </Button>
+            </div>
+            <div className="campaign-library-filters" role="tablist">
+              {(
+                [
+                  ["active", "Activas", activeSavedTemplates.length],
+                  ["archived", "Archivadas", archivedSavedTemplates.length],
+                  ["all", "Todas", savedTemplates.length],
+                ] as Array<[CampaignLibraryFilter, string, number]>
+              ).map(([filter, label, count]) => (
+                <button
+                  key={filter}
+                  role="tab"
+                  aria-selected={campaignLibraryFilter === filter}
+                  className={campaignLibraryFilter === filter ? "active" : ""}
+                  onClick={() => setCampaignLibraryFilter(filter)}
+                >
+                  {label} <span>{count}</span>
+                </button>
+              ))}
+              <button className="refresh" onClick={() => void loadLibrary()}>
+                <History /> Actualizar
+              </button>
+            </div>
+            <div className="campaign-library-grid">
+              {libraryLoading ? (
+                <div className="campaign-library-empty">
+                  <LoaderCircle className="animate-spin" />
+                  <strong>Cargando tus campañas…</strong>
+                </div>
+              ) : visibleCampaigns.length ? (
+                visibleCampaigns.map((template) => {
+                  const cover = campaignCover(template);
+                  const archived = template.status === "archived";
+                  return (
+                    <article
+                      key={template.id}
+                      className={archived ? "archived" : ""}
+                    >
+                      <div
+                        className="campaign-card-cover"
+                        style={{
+                          background: cover
+                            ? `linear-gradient(90deg,rgba(4,12,18,.93),rgba(4,12,18,.24)),url(${cover}) center/cover`
+                            : `linear-gradient(135deg,${template.document.settings.backgroundColor},${template.document.settings.primaryColor}55)`,
+                        }}
+                      >
+                        <span>{archived ? "ARCHIVADA" : "GUARDADA"}</span>
+                        <b>v{template.version}</b>
+                      </div>
+                      <div className="campaign-card-copy">
+                        <small>{template.category}</small>
+                        <strong>{template.name}</strong>
+                        <p>{template.subject || "Sin asunto definido"}</p>
+                        <time>{campaignUpdatedLabel(template.updatedAt)}</time>
+                      </div>
+                      <div className="campaign-card-actions">
+                        {archived ? (
+                          <Button
+                            variant="outline"
+                            onClick={() => void restoreStoredTemplate(template)}
+                          >
+                            <History /> Recuperar
+                          </Button>
+                        ) : (
+                          <>
+                            <Button onClick={() => openStored(template)}>
+                              <Eye /> Abrir
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() =>
+                                void duplicateStoredTemplate(template)
+                              }
+                            >
+                              <Copy /> Usar como base
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              className="danger-ghost"
+                              aria-label={`Archivar ${template.name}`}
+                              title="Archivar; podrás recuperarla después"
+                              onClick={() =>
+                                void archiveStoredTemplate(template)
+                              }
+                            >
+                              <Archive />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </article>
+                  );
+                })
+              ) : (
+                <div className="campaign-library-empty">
+                  <LayoutTemplate />
+                  <strong>
+                    {campaignSearch
+                      ? "No hay campañas que coincidan"
+                      : campaignLibraryFilter === "archived"
+                        ? "No tienes campañas archivadas"
+                        : "Todavía no hay campañas guardadas"}
+                  </strong>
+                  <small>
+                    {campaignSearch
+                      ? "Prueba con otro nombre, asunto o categoría."
+                      : "Crea una campaña y quedará disponible aquí automáticamente."}
+                  </small>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
         <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
           <DialogContent className="studio-dialog help-center-dialog">
             <DialogHeader>
-              <div className="dialog-kicker"><span><HelpCircle /></span> AYUDA INTEGRADA</div>
+              <div className="dialog-kicker">
+                <span>
+                  <HelpCircle />
+                </span>{" "}
+                AYUDA INTEGRADA
+              </div>
               <DialogTitle>¿Qué necesitas hacer?</DialogTitle>
               <DialogDescription>
-                Consulta una fase concreta o inicia el recorrido visual sobre la propia aplicación.
+                Consulta una fase concreta o inicia el recorrido visual sobre la
+                propia aplicación.
               </DialogDescription>
             </DialogHeader>
             <div className="help-center-actions">
-              <Button onClick={() => { setHelpOpen(false); setTourOpen(true); }}>
+              <Button
+                onClick={() => {
+                  setHelpOpen(false);
+                  setTourOpen(true);
+                }}
+              >
                 <Sparkles /> Iniciar recorrido guiado
               </Button>
-              <Button variant="outline" onClick={() => { setHelpOpen(false); setCommandPaletteOpen(true); }}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setHelpOpen(false);
+                  setCommandPaletteOpen(true);
+                }}
+              >
                 <Search /> Buscar una acción
               </Button>
             </div>
             <div className="help-topic-grid">
               {HELP_SECTIONS.map((section, index) => (
                 <article key={section.id}>
-                  <header><span>{String(index + 1).padStart(2, "0")}</span><strong>{section.title}</strong></header>
+                  <header>
+                    <span>{String(index + 1).padStart(2, "0")}</span>
+                    <strong>{section.title}</strong>
+                  </header>
                   <p>{section.description}</p>
-                  <ol>{section.steps.map((step) => <li key={step}>{step}</li>)}</ol>
+                  <ol>
+                    {section.steps.map((step) => (
+                      <li key={step}>{step}</li>
+                    ))}
+                  </ol>
                 </article>
               ))}
             </div>
             <div className="help-center-note">
               <ShieldCheck />
-              <span><strong>Antes de utilizar una campaña</strong> Revisa los controles críticos y recuerda que Prospector validará destinatarios, base legal, oposición y supresiones en el flujo de envío.</span>
+              <span>
+                <strong>Antes de utilizar una campaña</strong> Revisa los
+                controles críticos y recuerda que Prospector validará
+                destinatarios, base legal, oposición y supresiones en el flujo
+                de envío.
+              </span>
             </div>
           </DialogContent>
         </Dialog>
@@ -5944,6 +7401,16 @@ export default function StudioClient({ displayName }: StudioProps) {
             </div>
             <div className="command-results">
               {[
+                {
+                  label: "Abrir Mis campañas",
+                  keywords:
+                    "campañas guardadas biblioteca historial reutilizar base",
+                  icon: LayoutTemplate,
+                  run: () => {
+                    setCampaignLibraryFilter("active");
+                    setCampaignLibraryOpen(true);
+                  },
+                },
                 {
                   label: "Crear campaña completa con IA",
                   keywords: "generar wizard ia",
@@ -6892,6 +8359,80 @@ export default function StudioClient({ displayName }: StudioProps) {
                 onChange={(event) => setImagePrompt(event.target.value)}
               />
             </label>
+            <section className="visual-context-panel">
+              <div className="visual-context-heading">
+                <div>
+                  <span>CONTEXTO VISUAL</span>
+                  <strong>
+                    {imageContext.automaticContext
+                      ? "Detectado desde marca y pantalla"
+                      : "Contexto personalizado"}
+                  </strong>
+                </div>
+                <em>
+                  {imageContext.placement === "canvas-background"
+                    ? "FONDO"
+                    : imageContext.placement === "hero"
+                      ? "HERO"
+                      : imageContext.placement === "image-block"
+                        ? "IMAGEN"
+                        : "RECURSO"}
+                </em>
+              </div>
+              <label className="visual-context-toggle">
+                <input
+                  type="checkbox"
+                  checked={imageContext.automaticContext !== false}
+                  onChange={(event) =>
+                    event.target.checked
+                      ? refreshDetectedImageContext()
+                      : setImageContext({
+                          ...imageContext,
+                          automaticContext: false,
+                        })
+                  }
+                />
+                <span>
+                  Detectar automáticamente la marca, campaña, bloque y posición
+                  de la imagen
+                </span>
+              </label>
+              <div className="visual-context-fields">
+                <label>
+                  <span>Identidad y reglas visuales de marca</span>
+                  <Textarea
+                    rows={3}
+                    value={imageContext.brandContext}
+                    placeholder="Ej.: estudio de arquitectura mediterránea; materiales naturales, luz cálida, sin clichés corporativos…"
+                    onChange={(event) =>
+                      setImageContext({
+                        ...imageContext,
+                        brandContext: event.target.value,
+                        automaticContext: false,
+                      })
+                    }
+                  />
+                </label>
+                <label>
+                  <span>Contexto de pantalla y función de la imagen</span>
+                  <Textarea
+                    rows={4}
+                    value={imageContext.screenContext}
+                    placeholder="Describe qué comunica esta pantalla, qué hay alrededor de la imagen y dónde se utilizará."
+                    onChange={(event) =>
+                      setImageContext({
+                        ...imageContext,
+                        screenContext: event.target.value,
+                        automaticContext: false,
+                      })
+                    }
+                  />
+                </label>
+              </div>
+              <button type="button" onClick={refreshDetectedImageContext}>
+                <WandSparkles /> Recalcular desde la pantalla actual
+              </button>
+            </section>
             <div className="image-format-section">
               <div>
                 <strong>Formato de salida</strong>
@@ -7300,7 +8841,15 @@ export default function StudioClient({ displayName }: StudioProps) {
         </Dialog>
 
         <Dialog open={brandOpen} onOpenChange={setBrandOpen}>
-          <DialogContent className="studio-dialog brand-dialog">
+          <DialogContent
+            className="studio-dialog brand-dialog"
+            onKeyDown={(event) => {
+              if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+                event.preventDefault();
+                void saveBrandKit();
+              }
+            }}
+          >
             <DialogHeader>
               <div className="dialog-kicker">
                 <span>
@@ -7314,171 +8863,231 @@ export default function StudioClient({ displayName }: StudioProps) {
                 coherencia.
               </DialogDescription>
             </DialogHeader>
-            <div
-              className="brand-preview"
-              style={{
-                background: `linear-gradient(135deg,${brandKit.backgroundColor},#0b1724)`,
-              }}
-            >
-              <span style={{ background: brandKit.primaryColor }} />
-              <i style={{ background: brandKit.accentColor }} />
-              <strong>{brandKit.name || "TU MARCA"}</strong>
-              <small>CAMPO DE IDENTIDAD</small>
-            </div>
-            <div className="dialog-form grid-two">
-              <label className="wide">
-                <span>Nombre de marca</span>
-                <Input
-                  value={brandKit.name}
-                  onChange={(event) =>
-                    setBrandKit({ ...brandKit, name: event.target.value })
-                  }
-                />
-              </label>
-              <label className="wide">
-                <span>Logotipo (URL o imagen de la galería)</span>
-                <Input
-                  value={brandKit.logoUrl || ""}
-                  onChange={(event) =>
-                    setBrandKit({ ...brandKit, logoUrl: event.target.value })
-                  }
-                  placeholder="https://…/logo.png"
-                />
-                {mediaAssets.length > 0 && (
-                  <select
+            <div className="brand-dialog-scroll" tabIndex={0}>
+              <div
+                className="brand-preview"
+                style={{
+                  background: `linear-gradient(135deg,${brandKit.backgroundColor},#0b1724)`,
+                }}
+              >
+                <span style={{ background: brandKit.primaryColor }} />
+                <i style={{ background: brandKit.accentColor }} />
+                <strong>{brandKit.name || "TU MARCA"}</strong>
+                <small>CAMPO DE IDENTIDAD</small>
+              </div>
+              <div className="dialog-form grid-two">
+                <label className="wide">
+                  <span>Nombre de marca</span>
+                  <Input
+                    value={brandKit.name}
+                    onChange={(event) =>
+                      setBrandKit({ ...brandKit, name: event.target.value })
+                    }
+                  />
+                </label>
+                <label className="wide">
+                  <span>Logotipo (URL o imagen de la galería)</span>
+                  <Input
                     value={brandKit.logoUrl || ""}
                     onChange={(event) =>
                       setBrandKit({ ...brandKit, logoUrl: event.target.value })
                     }
-                  >
-                    <option value="">Sin logotipo gráfico</option>
-                    {mediaAssets.map((asset) => (
-                      <option key={asset.id} value={asset.url}>
-                        {asset.filename}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </label>
-              {(
-                ["primaryColor", "accentColor", "backgroundColor"] as const
-              ).map((key) => (
-                <label key={key}>
-                  <span>
-                    {
-                      (
-                        {
-                          primaryColor: "Color principal",
-                          accentColor: "Acento",
-                          backgroundColor: "Fondo",
-                        } as const
-                      )[key]
-                    }
-                  </span>
-                  <div className="dialog-color">
-                    <input
-                      type="color"
-                      value={brandKit[key]}
+                    placeholder="https://…/logo.png"
+                  />
+                  {mediaAssets.length > 0 && (
+                    <select
+                      value={brandKit.logoUrl || ""}
                       onChange={(event) =>
-                        setBrandKit({ ...brandKit, [key]: event.target.value })
+                        setBrandKit({
+                          ...brandKit,
+                          logoUrl: event.target.value,
+                        })
                       }
-                    />
-                    <Input
-                      value={brandKit[key]}
-                      onChange={(event) =>
-                        setBrandKit({ ...brandKit, [key]: event.target.value })
-                      }
-                    />
-                  </div>
+                    >
+                      <option value="">Sin logotipo gráfico</option>
+                      {mediaAssets.map((asset) => (
+                        <option key={asset.id} value={asset.url}>
+                          {asset.filename}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </label>
-              ))}
-              <label>
-                <span>Remitente</span>
-                <Input
-                  value={brandKit.senderName}
-                  onChange={(event) =>
-                    setBrandKit({ ...brandKit, senderName: event.target.value })
-                  }
-                />
-              </label>
-              <label>
-                <span>Email remitente</span>
-                <Input
-                  type="email"
-                  value={brandKit.senderEmail}
-                  onChange={(event) =>
-                    setBrandKit({
-                      ...brandKit,
-                      senderEmail: event.target.value,
-                    })
-                  }
-                />
-              </label>
-              <label className="wide">
-                <span>Razón social o identidad legal</span>
-                <Input
-                  value={brandKit.legalName}
-                  onChange={(event) =>
-                    setBrandKit({ ...brandKit, legalName: event.target.value })
-                  }
-                  placeholder="Empresa Ejemplo, S.L."
-                />
-              </label>
-              <label className="wide">
-                <span>Dirección postal</span>
-                <Input
-                  value={brandKit.postalAddress}
-                  onChange={(event) =>
-                    setBrandKit({
-                      ...brandKit,
-                      postalAddress: event.target.value,
-                    })
-                  }
-                />
-              </label>
-              <label className="wide">
-                <span>URL de la política de privacidad</span>
-                <Input
-                  type="url"
-                  value={brandKit.privacyUrl}
-                  onChange={(event) =>
-                    setBrandKit({ ...brandKit, privacyUrl: event.target.value })
-                  }
-                  placeholder="https://empresa.es/privacidad"
-                />
-              </label>
-              <label className="wide">
-                <span>Email de privacidad</span>
-                <Input
-                  type="email"
-                  value={brandKit.privacyEmail}
-                  onChange={(event) =>
-                    setBrandKit({
-                      ...brandKit,
-                      privacyEmail: event.target.value,
-                    })
-                  }
-                />
-              </label>
-              <div className="wide compliance-box">
-                <ShieldCheck />
-                <div>
-                  <strong>Responsabilidad compartida</strong>
-                  <small>
-                    El constructor prepara identidad, privacidad, preferencias y
-                    baja. Prospector validará la base aplicable, la procedencia,
-                    las exclusiones y el derecho de oposición antes del envío.
-                  </small>
+                <label className="wide">
+                  <span>
+                    Contexto de marca para generar imágenes
+                    <small>{brandKit.brandContext.length}/1200</small>
+                  </span>
+                  <Textarea
+                    rows={4}
+                    maxLength={1200}
+                    className="compact-scroll-textarea"
+                    value={brandKit.brandContext}
+                    onChange={(event) =>
+                      setBrandKit({
+                        ...brandKit,
+                        brandContext: event.target.value,
+                      })
+                    }
+                    placeholder="Qué hace la marca, para quién, qué la diferencia, productos, servicios y escenarios reales."
+                  />
+                </label>
+                <label className="wide">
+                  <span>
+                    Dirección visual para imágenes
+                    <small>{brandKit.imageGuidance.length}/1200</small>
+                  </span>
+                  <Textarea
+                    rows={4}
+                    maxLength={1200}
+                    className="compact-scroll-textarea"
+                    value={brandKit.imageGuidance}
+                    onChange={(event) =>
+                      setBrandKit({
+                        ...brandKit,
+                        imageGuidance: event.target.value,
+                      })
+                    }
+                    placeholder="Estética, materiales, entornos, motivos recurrentes y elementos que deben evitarse."
+                  />
+                </label>
+                {(
+                  ["primaryColor", "accentColor", "backgroundColor"] as const
+                ).map((key) => (
+                  <label key={key}>
+                    <span>
+                      {
+                        (
+                          {
+                            primaryColor: "Color principal",
+                            accentColor: "Acento",
+                            backgroundColor: "Fondo",
+                          } as const
+                        )[key]
+                      }
+                    </span>
+                    <div className="dialog-color">
+                      <input
+                        type="color"
+                        value={brandKit[key]}
+                        onChange={(event) =>
+                          setBrandKit({
+                            ...brandKit,
+                            [key]: event.target.value,
+                          })
+                        }
+                      />
+                      <Input
+                        value={brandKit[key]}
+                        onChange={(event) =>
+                          setBrandKit({
+                            ...brandKit,
+                            [key]: event.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                  </label>
+                ))}
+                <label>
+                  <span>Remitente</span>
+                  <Input
+                    value={brandKit.senderName}
+                    onChange={(event) =>
+                      setBrandKit({
+                        ...brandKit,
+                        senderName: event.target.value,
+                      })
+                    }
+                  />
+                </label>
+                <label>
+                  <span>Email remitente</span>
+                  <Input
+                    type="email"
+                    value={brandKit.senderEmail}
+                    onChange={(event) =>
+                      setBrandKit({
+                        ...brandKit,
+                        senderEmail: event.target.value,
+                      })
+                    }
+                  />
+                </label>
+                <label className="wide">
+                  <span>Razón social o identidad legal</span>
+                  <Input
+                    value={brandKit.legalName}
+                    onChange={(event) =>
+                      setBrandKit({
+                        ...brandKit,
+                        legalName: event.target.value,
+                      })
+                    }
+                    placeholder="Empresa Ejemplo, S.L."
+                  />
+                </label>
+                <label className="wide">
+                  <span>Dirección postal</span>
+                  <Input
+                    value={brandKit.postalAddress}
+                    onChange={(event) =>
+                      setBrandKit({
+                        ...brandKit,
+                        postalAddress: event.target.value,
+                      })
+                    }
+                  />
+                </label>
+                <label className="wide">
+                  <span>URL de la política de privacidad</span>
+                  <Input
+                    type="url"
+                    value={brandKit.privacyUrl}
+                    onChange={(event) =>
+                      setBrandKit({
+                        ...brandKit,
+                        privacyUrl: event.target.value,
+                      })
+                    }
+                    placeholder="https://empresa.es/privacidad"
+                  />
+                </label>
+                <label className="wide">
+                  <span>Email de privacidad</span>
+                  <Input
+                    type="email"
+                    value={brandKit.privacyEmail}
+                    onChange={(event) =>
+                      setBrandKit({
+                        ...brandKit,
+                        privacyEmail: event.target.value,
+                      })
+                    }
+                  />
+                </label>
+                <div className="wide compliance-box">
+                  <ShieldCheck />
+                  <div>
+                    <strong>Responsabilidad compartida</strong>
+                    <small>
+                      El constructor prepara identidad, privacidad, preferencias
+                      y baja. Prospector validará la base aplicable, la
+                      procedencia, las exclusiones y el derecho de oposición
+                      antes del envío.
+                    </small>
+                  </div>
                 </div>
               </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className="dialog-actions-sticky">
               <Button variant="ghost" onClick={() => setBrandOpen(false)}>
-                Cancelar
+                Cerrar sin aplicar
               </Button>
               <Button className="save-button" onClick={saveBrandKit}>
                 <Save /> Guardar y aplicar
               </Button>
+              <small>Ctrl + Enter para guardar</small>
             </DialogFooter>
           </DialogContent>
         </Dialog>

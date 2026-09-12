@@ -164,6 +164,8 @@ test("renders responsive hero positioning and scalable images", async () => {
     verticalAlign: "bottom",
     imagePosition: "left",
     paddingX: 54,
+    titleTextAlign: "right",
+    autoFlow: false,
   };
   const image = createBlock("image");
   image.props = { ...image.props, widthPercent: 65, align: "right" };
@@ -174,10 +176,60 @@ test("renders responsive hero positioning and scalable images", async () => {
     "Contenido responsive preparado para cualquier dispositivo y cliente de correo",
   );
   assert.match(html, /height:520px/);
-  assert.match(html, /background-position:left/);
+  assert.match(html, /object-position:left/);
   assert.match(html, /text-align:right/);
   assert.match(html, /width:65%/);
   assert.match(html, /@media\(max-width:600px\)/);
+});
+
+test("renders oversized images and freely overlapping hero layers", async () => {
+  const { createBlankDocument, createBlock } = await vite.ssrLoadModule(
+    "/lib/template-types.ts",
+  );
+  const { renderEmailHtml } = await vite.ssrLoadModule(
+    "/lib/email-renderer.ts",
+  );
+  const document = createBlankDocument();
+  const hero = document.blocks.find((block) => block.type === "hero");
+  Object.assign(hero.props, {
+    heroComposition: "free",
+    overlay: false,
+    titleX: 50,
+    titleY: 50,
+    titleWidth: 120,
+    titleFontSize: 110,
+    titleZ: 9,
+    heroImageX: 50,
+    heroImageY: 50,
+    heroImageWidth: 100,
+    heroImageHeight: 100,
+    heroImageZ: 2,
+    heroImageFit: "cover",
+    autoFlow: false,
+  });
+  const image = createBlock("image");
+  Object.assign(image.props, { blockWidth: 150, widthPercent: 175 });
+  document.blocks.splice(-1, 0, image);
+  const html = renderEmailHtml(
+    document,
+    "Hero libre",
+    "Posiciones independientes",
+  );
+  assert.match(html, /hero-free-canvas/);
+  assert.match(html, /data-hero-layer="heroImage"/);
+  assert.match(html, /data-hero-layer="eyebrow"/);
+  assert.match(html, /data-hero-layer="title"/);
+  assert.match(html, /data-hero-layer="body"/);
+  assert.match(
+    html,
+    /hero-image-layer[^>]+left:50%;top:50%;width:100%;z-index:2[^>]+height:100%;object-fit:cover/,
+  );
+  assert.match(
+    html,
+    /hero-title-layer[^>]+left:50%;top:50%;width:120%;z-index:9[^>]+font-size:110px/,
+  );
+  assert.match(html, /width="150%"/);
+  assert.match(html, /width:175%;max-width:none/);
 });
 
 test("renders the hero as one unified visual block", async () => {
@@ -210,16 +262,19 @@ test("renders the hero as one unified visual block", async () => {
   );
   assert.match(
     html,
-    /<tr data-block-id="hero-[^"]+"><td style="padding:12px 6px 32px;"><table role="presentation" width="76%"/,
+    /<tr data-block-id="hero-[^"]+"[^>]*><td style="padding:12px 6px 32px;"><table role="presentation" width="76%"/,
   );
   assert.match(html, /border-radius:42px/);
   assert.match(html, /border:3px solid #12c9d8/);
   assert.match(html, /transform:rotate\(2deg\) skewX\(-3deg\)/);
-  assert.match(html, /background-image:linear-gradient/);
+  assert.match(html, /class="hero-free-canvas"/);
   const heroStart = html.indexOf(`data-block-id="${hero.id}"`);
   const nextBlock = html.indexOf("data-block-id=", heroStart + 1);
   const heroMarkup = html.slice(heroStart, nextBlock);
-  assert.equal((heroMarkup.match(/<table role="presentation"/g) || []).length, 1);
+  assert.equal(
+    (heroMarkup.match(/<table role="presentation"/g) || []).length,
+    1,
+  );
 });
 
 test("creates hero blocks with unified geometry", async () => {
@@ -262,6 +317,7 @@ test("renders independent block layout and button styling", async () => {
     buttonTextColor: "#7c3aed",
     buttonDepth: "deep",
     buttonDepthColor: "#331166",
+    buttonDepthOffset: 10,
   };
   const html = renderEmailHtml(
     document,
@@ -271,7 +327,7 @@ test("renders independent block layout and button styling", async () => {
   assert.match(html, /width:70%/);
   assert.match(
     html,
-    /<tr data-block-id="button-[^"]+"><td style="padding:16px 0px 40px;"><table role="presentation" width="70%"/,
+    /<tr data-block-id="button-[^"]+"[^>]*><td style="padding:16px 0px 40px;"><table role="presentation" width="70%"/,
   );
   assert.match(html, /border-radius:24px/);
   assert.match(html, /transform:rotate\(3deg\) skewX\(-4deg\)/);
@@ -281,6 +337,29 @@ test("renders independent block layout and button styling", async () => {
   assert.match(html, /margin:0 0 0 auto/);
   assert.match(html, /text-align:right/);
   assert.match(html, /box-shadow:0 10px 0 #331166/);
+});
+
+test("flat buttons override legacy block depth and remove the colored extrusion", async () => {
+  const { createBlankDocument, createBlock } = await vite.ssrLoadModule(
+    "/lib/template-types.ts",
+  );
+  const { renderEmailHtml } = await vite.ssrLoadModule(
+    "/lib/email-renderer.ts",
+  );
+  const document = createBlankDocument();
+  const button = createBlock("button");
+  Object.assign(button.props, {
+    buttonColor: "#e5b900",
+    buttonDepth: "none",
+    buttonDepthColor: "#00a8c6",
+    blockDepth: "deep",
+    blockDepthColor: "#00a8c6",
+    shadow: "strong",
+  });
+  document.blocks = [button];
+  const html = renderEmailHtml(document, "Botón plano", "Sin franja azul");
+  assert.match(html, /background:#e5b900[^>]+box-shadow:none/);
+  assert.doesNotMatch(html, /0 12px 0 #00a8c6/);
 });
 
 test("creates button blocks as a single unified visual element", async () => {
@@ -475,7 +554,7 @@ test("accepts isolated anonymous browser sessions", async () => {
   assert.equal(missing.response.status, 401);
 });
 
-test("marks every rendered block for direct visual reordering", async () => {
+test("marks every rendered block as a freely positionable layer", async () => {
   const { createBlankDocument } = await vite.ssrLoadModule(
     "/lib/template-types.ts",
   );
@@ -483,6 +562,12 @@ test("marks every rendered block for direct visual reordering", async () => {
     "/lib/email-renderer.ts",
   );
   const document = createBlankDocument();
+  Object.assign(document.blocks[0].props, {
+    freeX: 140,
+    freeY: -60,
+    freeZ: 9,
+    freeScale: 175,
+  });
   const html = renderEmailHtml(
     document,
     "Un asunto suficientemente completo",
@@ -490,6 +575,120 @@ test("marks every rendered block for direct visual reordering", async () => {
   );
   for (const block of document.blocks)
     assert.match(html, new RegExp(`data-block-id="${block.id}"`));
+  assert.match(
+    html,
+    /data-free-x="140" data-free-y="-60" data-free-z="9" data-free-scale="175" data-auto-flow="true"[^>]+transform:translate\(140px,-60px\)/,
+  );
+  assert.match(html, /width="175%"[^>]+style="width:175%;max-width:none/);
+});
+
+test("automatic flow makes scale affect layout footprint and can be disabled", async () => {
+  const { createBlankDocument } = await vite.ssrLoadModule(
+    "/lib/template-types.ts",
+  );
+  const { renderEmailHtml } = await vite.ssrLoadModule(
+    "/lib/email-renderer.ts",
+  );
+  const document = createBlankDocument();
+  const block = document.blocks[0];
+  Object.assign(block.props, { freeScale: 50, paddingBottom: 90 });
+  let html = renderEmailHtml(document, "Asunto", "Preheader");
+  assert.match(html, /data-auto-flow="true"[^>]+transform:translate\(0px,0px\)/);
+  assert.match(html, /width="50%"[^>]+style="width:50%;max-width:100%/);
+  assert.match(html, /padding:15px 0 40px/);
+  block.props.autoFlow = false;
+  html = renderEmailHtml(document, "Asunto", "Preheader");
+  assert.match(html, /data-auto-flow="false"[^>]+scale\(0.5\)/);
+  assert.match(html, /padding:30px 0 90px/);
+});
+
+test("automatic flow trims unused hero canvas without moving its layers", async () => {
+  const { createBlankDocument } = await vite.ssrLoadModule(
+    "/lib/template-types.ts",
+  );
+  const { renderEmailHtml } = await vite.ssrLoadModule(
+    "/lib/email-renderer.ts",
+  );
+  const document = createBlankDocument();
+  const hero = document.blocks.find((block) => block.type === "hero");
+  Object.assign(hero.props, {
+    minHeight: 500,
+    eyebrow: "Breve",
+    eyebrowY: 8,
+    title: "Titular breve",
+    titleY: 18,
+    titleFontSize: 28,
+    body: "",
+    heroImageY: 24,
+    heroImageHeight: 20,
+  });
+  const html = renderEmailHtml(document, "Asunto", "Preheader");
+  assert.match(html, /hero-free-canvas" style="[^"]+height:220px/);
+  assert.match(html, /hero-image-layer"[^>]+top:54\.54545/);
+  hero.props.autoFlow = false;
+  const fixed = renderEmailHtml(document, "Asunto", "Preheader");
+  assert.match(fixed, /hero-free-canvas" style="[^"]+height:500px/);
+});
+
+test("automatic hero scaling changes its real desktop and mobile footprint", async () => {
+  const { createBlankDocument } = await vite.ssrLoadModule(
+    "/lib/template-types.ts",
+  );
+  const { renderEmailHtml } = await vite.ssrLoadModule(
+    "/lib/email-renderer.ts",
+  );
+  const document = createBlankDocument();
+  const hero = document.blocks.find((block) => block.type === "hero");
+  Object.assign(hero.props, {
+    freeScale: 50,
+    minHeight: 500,
+    eyebrow: "",
+    title: "",
+    body: "",
+    heroImageY: 24,
+    heroImageHeight: 20,
+  });
+  const html = renderEmailHtml(document, "Asunto", "Preheader");
+  assert.match(html, /width="50%"[^>]+style="width:50%;max-width:100%/);
+  assert.match(html, /hero-free-canvas" style="[^"]+height:110px/);
+  assert.match(html, /class="mobile-layout"/);
+  assert.doesNotMatch(html, /zoom:/);
+});
+
+test("renders mobile columns stacked with compact outer spacing", async () => {
+  const { createBlankDocument, createBlock } = await vite.ssrLoadModule(
+    "/lib/template-types.ts",
+  );
+  const { renderEmailHtml } = await vite.ssrLoadModule(
+    "/lib/email-renderer.ts",
+  );
+  const document = createBlankDocument();
+  document.blocks.push(createBlock("columns"));
+  const html = renderEmailHtml(document, "Asunto", "Preheader");
+  assert.match(html, /class="email-shell"/);
+  assert.match(html, /email-shell\{padding:10px 6px!important\}/);
+  assert.match(html, /height:8px;font-size:0;line-height:0/);
+});
+
+test("renders independently adjustable desktop and mobile canvas dimensions", async () => {
+  const { createBlankDocument } = await vite.ssrLoadModule(
+    "/lib/template-types.ts",
+  );
+  const { renderEmailHtml } = await vite.ssrLoadModule(
+    "/lib/email-renderer.ts",
+  );
+  const document = createBlankDocument();
+  Object.assign(document.settings, {
+    width: 980,
+    canvasHeight: 1800,
+    mobileWidth: 390,
+    mobileCanvasHeight: 920,
+  });
+  const html = renderEmailHtml(document, "Asunto", "Preheader");
+  assert.match(html, /class="desktop-layout"[^>]+width="980"/);
+  assert.match(html, /class="mobile-layout"[^>]+width="390"/);
+  assert.match(html, /class="canvas-height-viewport" style="height:1800px;overflow:hidden/);
+  assert.match(html, /class="canvas-height-viewport" style="height:920px;overflow:hidden/);
 });
 
 test("keeps upload chunks safely below the request limit", async () => {

@@ -134,3 +134,23 @@ export async function DELETE(request: Request, context: Context) {
   if (!row) return Response.json({ error: "Plantilla no encontrada" }, { status: 404 });
   return Response.json({ archived: true, id: row.id });
 }
+
+export async function PATCH(request: Request, context: Context) {
+  const auth = requireRequestUser(request);
+  if (!auth.user) return auth.response;
+  const { id } = await context.params;
+  const payload = (await request.json().catch(() => ({}))) as {
+    action?: string;
+  };
+  if (payload.action !== "restore") {
+    return Response.json({ error: "Acción no válida" }, { status: 400 });
+  }
+  const [row] = await getDb()
+    .update(templates)
+    .set({ status: "draft", updatedAt: new Date().toISOString() })
+    .where(and(eq(templates.id, id), eq(templates.ownerId, auth.user.id)))
+    .returning();
+  if (!row)
+    return Response.json({ error: "Campaña no encontrada" }, { status: 404 });
+  return Response.json({ template: mapTemplate(row) });
+}

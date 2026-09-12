@@ -16,13 +16,15 @@ const DEFAULT_KIT = {
   legalName: "Aurevanta Labs",
   privacyUrl: "https://example.com/privacidad",
   privacyEmail: "privacidad@example.com",
+  brandContext: "",
+  imageGuidance: "",
   settingsJson: "{}",
 };
 
 function publicKit(row: Record<string, unknown>) {
   let legal: Record<string, unknown> = {};
   try { legal = JSON.parse(String(row.settingsJson || "{}")); } catch { legal = {}; }
-  return { ...row, legalName: String(legal.legalName || row.name || DEFAULT_KIT.legalName), privacyUrl: String(legal.privacyUrl || DEFAULT_KIT.privacyUrl), privacyEmail: String(legal.privacyEmail || DEFAULT_KIT.privacyEmail) };
+  return { ...row, legalName: String(legal.legalName || row.name || DEFAULT_KIT.legalName), privacyUrl: String(legal.privacyUrl || DEFAULT_KIT.privacyUrl), privacyEmail: String(legal.privacyEmail || DEFAULT_KIT.privacyEmail), brandContext: String(legal.brandContext || DEFAULT_KIT.brandContext), imageGuidance: String(legal.imageGuidance || DEFAULT_KIT.imageGuidance) };
 }
 
 export async function GET(request: Request) {
@@ -53,7 +55,7 @@ export async function PUT(request: Request) {
       senderName: String(payload.senderName ?? "").slice(0, 120),
       senderEmail: String(payload.senderEmail ?? "").slice(0, 180),
       postalAddress: String(payload.postalAddress ?? "").slice(0, 300),
-      settingsJson: JSON.stringify({ legalName: String(payload.legalName ?? payload.name ?? DEFAULT_KIT.legalName).slice(0, 180), privacyUrl: String(payload.privacyUrl ?? DEFAULT_KIT.privacyUrl).slice(0, 1000), privacyEmail: String(payload.privacyEmail ?? DEFAULT_KIT.privacyEmail).slice(0, 180) }).slice(0, 4000),
+      settingsJson: JSON.stringify({ legalName: String(payload.legalName ?? payload.name ?? DEFAULT_KIT.legalName).slice(0, 180), privacyUrl: String(payload.privacyUrl ?? DEFAULT_KIT.privacyUrl).slice(0, 1000), privacyEmail: String(payload.privacyEmail ?? DEFAULT_KIT.privacyEmail).slice(0, 180), brandContext: String(payload.brandContext ?? DEFAULT_KIT.brandContext).slice(0, 1200), imageGuidance: String(payload.imageGuidance ?? DEFAULT_KIT.imageGuidance).slice(0, 1200) }).slice(0, 8000),
       updatedAt: now,
     };
     const db = getDb();

@@ -18,27 +18,251 @@ function clone<T>(value: T): T {
 
 export function mobileDocument(document: TemplateDocument) {
   const next = clone(document);
-  const originalOrder = new Map(next.blocks.map((block, index) => [block.id, index]));
+  const configuredWidth = Number(next.settings.width) || 640;
+  const desktopWidth = Math.min(1600, Math.max(280, configuredWidth));
+  const mobileWidth = Math.min(
+    600,
+    Math.max(
+      280,
+      Number(next.settings.mobileWidth) || Math.min(375, configuredWidth),
+    ),
+  );
+  const layoutRatio = mobileWidth / desktopWidth;
+  const originalOrder = new Map(
+    next.blocks.map((block, index) => [block.id, index]),
+  );
+  const clamp = (value: number, minimum: number, maximum: number) =>
+    Math.min(maximum, Math.max(minimum, value));
+  const number = (value: unknown, fallback: number) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  };
+  const textHeight = (
+    value: unknown,
+    widthPercent: number,
+    fontSize: number,
+    lineHeight: number,
+  ) => {
+    const content = String(value ?? "").trim();
+    if (!content) return 0;
+    const usableWidth = Math.max(120, (mobileWidth * widthPercent) / 100);
+    const charactersPerLine = Math.max(
+      8,
+      Math.floor(usableWidth / Math.max(5, fontSize * 0.54)),
+    );
+    const lines = Math.max(
+      1,
+      content
+        .split(/\n/)
+        .reduce(
+          (total, line) =>
+            total + Math.max(1, Math.ceil(line.length / charactersPerLine)),
+          0,
+        ),
+    );
+    return Math.ceil(lines * fontSize * lineHeight);
+  };
+  const responsiveHero = (
+    block: EmailBlock,
+    typeScale: number,
+    automatic: boolean,
+  ) => {
+    if (!automatic) return {};
+    const props = block.props;
+    const eyebrowFontSize = clamp(
+      Math.round(number(props.eyebrowFontSize, 14) * typeScale),
+      11,
+      18,
+    );
+    const titleFontSize = clamp(
+      Math.round(number(props.titleFontSize, 58) * typeScale),
+      24,
+      48,
+    );
+    const bodyFontSize = clamp(
+      Math.round(number(props.bodyFontSize, 20) * typeScale),
+      15,
+      22,
+    );
+    const eyebrowWidth = clamp(number(props.eyebrowWidth, 38), 72, 92);
+    const titleWidth = clamp(number(props.titleWidth, 58), 82, 94);
+    const bodyWidth = clamp(number(props.bodyWidth, 48), 82, 94);
+    const initialHeight = clamp(
+      Math.round(number(props.minHeight, 360) * 0.92),
+      360,
+      540,
+    );
+    const eyebrowHeight = textHeight(
+      props.eyebrow,
+      eyebrowWidth,
+      eyebrowFontSize,
+      1.25,
+    );
+    const titleHeight = textHeight(
+      props.title,
+      titleWidth,
+      titleFontSize,
+      clamp(number(props.lineHeight, 1.08), 1, 1.35),
+    );
+    const bodyHeight = textHeight(
+      props.body,
+      bodyWidth,
+      bodyFontSize,
+      1.5,
+    );
+    let cursor = 20;
+    const place = (desiredY: number, height: number, gap: number) => {
+      if (!height) return desiredY;
+      const desiredTop = (desiredY / 100) * initialHeight - height / 2;
+      const top = Math.max(cursor, desiredTop);
+      cursor = top + height + gap;
+      return top + height / 2;
+    };
+    const eyebrowCenter = place(number(props.eyebrowY, 18), eyebrowHeight, 12);
+    const titleCenter = place(number(props.titleY, 48), titleHeight, 16);
+    const bodyCenter = place(number(props.bodyY, 78), bodyHeight, 20);
+    const finalHeight = clamp(Math.max(initialHeight, Math.ceil(cursor + 20)), 360, 620);
+    const safeX = (value: unknown, width: number) =>
+      clamp(number(value, 50), width / 2 + 3, 97 - width / 2);
+    return {
+      minHeight: finalHeight,
+      paddingX: Math.min(18, number(props.paddingX, 38)),
+      eyebrowFontSize,
+      titleFontSize,
+      bodyFontSize,
+      eyebrowWidth,
+      titleWidth,
+      bodyWidth,
+      eyebrowX: safeX(props.eyebrowX, eyebrowWidth),
+      titleX: safeX(props.titleX, titleWidth),
+      bodyX: safeX(props.bodyX, bodyWidth),
+      eyebrowY: Math.round((eyebrowCenter / finalHeight) * 100),
+      titleY: Math.round((titleCenter / finalHeight) * 100),
+      bodyY: Math.round((bodyCenter / finalHeight) * 100),
+      eyebrowZ: Math.max(4, number(props.eyebrowZ, 4)),
+      titleZ: Math.max(5, number(props.titleZ, 5)),
+      bodyZ: Math.max(6, number(props.bodyZ, 6)),
+      heroImageWidth: clamp(number(props.heroImageWidth, 48), 35, 100),
+      heroImageHeight: clamp(number(props.heroImageHeight, 62), 28, 100),
+      heroImageX: clamp(number(props.heroImageX, 72), 18, 82),
+      heroImageY: clamp(number(props.heroImageY, 50), 18, 82),
+      heroImageZ: Math.min(2, number(props.heroImageZ, 2)),
+    };
+  };
   next.blocks = next.blocks
     .filter((block) => !block.mobile?.hidden)
-    .sort((a, b) => (a.mobile?.order ?? originalOrder.get(a.id) ?? 0) - (b.mobile?.order ?? originalOrder.get(b.id) ?? 0))
+    .sort(
+      (a, b) =>
+        (a.mobile?.order ?? originalOrder.get(a.id) ?? 0) -
+        (b.mobile?.order ?? originalOrder.get(b.id) ?? 0),
+    )
     .map((block) => {
-      const scale = Math.min(140, Math.max(60, block.mobile?.fontScale ?? 100)) / 100;
-      const scaled = (key: string) => block.props[key] === undefined ? {} : { [key]: Math.round(Number(block.props[key]) * scale) };
+      const automatic = block.mobile?.autoResponsive !== false;
+      const automaticFontScale = automatic
+        ? clamp(layoutRatio + 0.18, 0.82, 0.92)
+        : 1;
+      const manualFontScale =
+        clamp(block.mobile?.fontScale ?? 100, 50, 140) / 100;
+      const typeScale = automaticFontScale * manualFontScale;
+      const minimumFont =
+        block.type === "heading" || block.type === "artText"
+          ? 22
+          : block.type === "text" || block.type === "columns"
+            ? 15
+            : block.type === "button"
+              ? 14
+              : 12;
+      const scaledFont = (key: string, minimum = minimumFont) =>
+        block.props[key] === undefined
+          ? {}
+          : {
+              [key]: Math.max(
+                minimum,
+                Math.round(number(block.props[key], minimum) * typeScale),
+              ),
+            };
+      const compactSpacing = (
+        key: string,
+        maximum: number,
+        fallback: number,
+      ) =>
+        automatic
+          ? {
+              [key]: clamp(
+                Math.round(
+                  number(block.props[key], fallback) * layoutRatio * 0.62,
+                ),
+                0,
+                maximum,
+              ),
+            }
+          : block.props[key] === undefined
+            ? {}
+            : { [key]: block.props[key] };
+      const desktopWidthPercent = number(block.props.blockWidth, 100);
+      const automaticWidth =
+        block.type === "button"
+          ? clamp(desktopWidthPercent, 72, 100)
+          : block.type === "image"
+            ? clamp(desktopWidthPercent, 88, 100)
+            : clamp(desktopWidthPercent, 94, 100);
+      const desktopScale = number(block.props.freeScale, 100);
+      const responsiveScale = automatic
+        ? clamp(desktopScale, 70, 115)
+        : desktopScale;
       return {
         ...block,
         props: {
           ...block.props,
-          ...(block.mobile?.widthPercent ? { blockWidth: block.mobile.widthPercent } : {}),
+          blockWidth:
+            block.mobile?.widthPercent ??
+            (automatic ? automaticWidth : block.props.blockWidth),
           ...(block.mobile?.imageUrl ? { imageUrl: block.mobile.imageUrl } : {}),
-          ...scaled("fontSize"),
-          ...scaled("titleFontSize"),
-          ...scaled("bodyFontSize"),
-          ...(block.type === "hero" ? { minHeight: Math.min(520, Math.max(220, Number(block.props.minHeight || 360) * .82)), paddingX: Math.min(28, Number(block.props.paddingX || 38)) } : {}),
+          freeX:
+            block.mobile?.freeX ??
+            (automatic ? 0 : number(block.props.freeX, 0)),
+          freeY:
+            block.mobile?.freeY ??
+            (automatic ? 0 : number(block.props.freeY, 0)),
+          freeZ: block.mobile?.freeZ ?? block.props.freeZ ?? 0,
+          freeScale: block.mobile?.freeScale ?? responsiveScale,
+          ...scaledFont("fontSize"),
+          ...compactSpacing("edgePadding", 14, 40),
+          ...compactSpacing("paddingTop", 28, 0),
+          ...compactSpacing("paddingBottom", 32, 24),
+          ...compactSpacing("paddingX", 18, 38),
+          ...(automatic && block.type === "image"
+            ? { widthPercent: 100 }
+            : {}),
+          ...(automatic && block.type === "columns"
+            ? { mobileStack: true }
+            : {}),
+          ...(automatic && block.type === "spacer"
+            ? { height: clamp(Math.round(number(block.props.height, 24) * 0.6), 8, 36) }
+            : {}),
+          ...(automatic
+            ? {
+                rotation: number(block.props.rotation, 0) * 0.45,
+                skewX: number(block.props.skewX, 0) * 0.45,
+              }
+            : {}),
+          ...(block.type === "hero"
+            ? responsiveHero(block, typeScale, automatic)
+            : {}),
         },
       };
     });
-  next.settings.width = Math.min(420, next.settings.width);
+  next.settings.width = mobileWidth;
+  const desktopCanvasHeight = Number(document.settings.canvasHeight);
+  const mobileCanvasHeight = Number(document.settings.mobileCanvasHeight);
+  if (Number.isFinite(mobileCanvasHeight) && mobileCanvasHeight >= 240)
+    next.settings.canvasHeight = Math.min(6000, mobileCanvasHeight);
+  else if (Number.isFinite(desktopCanvasHeight) && desktopCanvasHeight >= 240)
+    next.settings.canvasHeight = Math.min(
+      6000,
+      Math.max(240, Math.round(desktopCanvasHeight * layoutRatio)),
+    );
+  else delete next.settings.canvasHeight;
   return next;
 }
 
