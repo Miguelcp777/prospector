@@ -77,24 +77,58 @@ tiene su propia pantalla —restaurar y borrado definitivo— que V45 no trae y
 que existe por `compliance.md`: una plantilla que compuso un correo enviado
 no se borra.
 
+## El `freeMode = true` de V45
+
+Lo más caro que traía la rama, y no se ve leyendo el diff.
+
+`email-renderer.ts` de V45 tiene `const freeMode = true`: pinta **todo**
+hero con capas colocadas a mano, que es la novedad de la versión. Pero eso
+no distingue entre un hero nuevo y uno que ya existe, y en la base hay **33
+plantillas con hero, ninguna con `heroComposition`** —se guardaron antes de
+que esa prop existiera—. Tal cual venía, las 33 cambiaban de aspecto al
+abrirlas, sin que nadie lo hubiera pedido.
+
+Se queda condicionado: `freeMode = props.heroComposition === "free"`. Esa
+prop no es una conjetura, es la señal que el propio editor escribe cuando el
+usuario arrastra una capa o aplica un preset. La composición libre es una
+decisión suya, y hasta que la toma el hero se pinta como siempre.
+
+Para que la novedad no quede escondida, el documento en blanco nace ya con
+ella: `createBlankDocument` declara `heroComposition: "free"`. V45 era
+incoherente en esto —su documento en blanco decía `overlay: true` y el
+renderizador lo ignoraba—, y aquí las dos cosas dicen lo mismo.
+
+Lo protege `pruebas-porte/hero-heredado.test.mjs`, que es lo que impide que
+ese `true` vuelva en el próximo porte.
+
+## Lo que cambia igualmente en los correos
+
+**V45 exporta dos maquetaciones**, una de escritorio y otra de móvil, y el
+correo pasa a llevar las dos con `display:none` cruzados. Medido sobre una
+plantilla mínima: de 5.678 a 14.331 caracteres, dos veces y media. Para una
+plantilla real conviene mirarlo, porque Gmail recorta lo que pasa de 102 KB
+y enseña «[Mensaje recortado]». No se ha medido todavía con una de las que
+hay guardadas.
+
 ## Estado
 
 - `tsc` limpio y build de producción correcto.
-- **46 de 50** pruebas de V45 pasan contra los módulos portados. Las cuatro
-  que fallan son las adaptaciones de arriba, una por una: la sesión de
-  invitado que ya no existe, el adaptador HTTP del proyecto Next, el
-  troceado de subida que Storage no necesita, y la clase del tema en el
-  shell en vez de en `<html>`. Se ejecutan con `npm run test:studio`.
+- **49 de 53** pruebas pasan (las 50 de V45 más tres propias del hero
+  heredado). Las cuatro que fallan son las adaptaciones de arriba, una por
+  una: la sesión de invitado que ya no existe, el adaptador HTTP del
+  proyecto Next, el troceado de subida que Storage no necesita, y la clase
+  del tema en el shell en vez de en `<html>`. Se ejecutan con
+  `npm run test:studio`.
 - **No se ha abierto el studio en un navegador con sesión.** Compila, monta
   y no rompe nada de lo que las pruebas cubren; que el editor se vea bien es
   otra cosa y todavía está sin comprobar.
 
 ## Pendiente
 
-- Mirarlo con una cuenta real: abrir una plantilla guardada de antes y
-  comprobar que se ve como se veía. El riesgo conocido está en el hero —V45
-  cambia el defecto `overlay` de `true` a `false` y estrena composición
-  libre—, y las plantillas del V31 no llevan esos campos.
+- Mirarlo con una cuenta real. El riesgo del hero está medido y atado,
+  pero medir no es ver: falta abrir una de las 33 en el editor.
+- Medir el peso del correo con las dos maquetaciones sobre una plantilla de
+  verdad, no sobre una mínima. Los 102 KB de Gmail son el límite.
 - Que un fisioterapeuta —o quien sea— diseñe un correo entero con esto
   antes de darlo por bueno. Las pruebas dicen que el contrato se respeta;
   no dicen que la pantalla se entienda.

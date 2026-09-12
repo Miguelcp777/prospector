@@ -429,7 +429,16 @@ function renderBlock(
         props.backgroundColor === "transparent"
           ? "transparent"
           : safeColor(props.backgroundColor, "#071019");
-      const freeMode = true;
+      // V45 traía esto como `true` fijo, y eso reescribe el pasado: las 33
+      // plantillas que hay guardadas con hero no llevan `heroComposition`
+      // —se guardaron antes de que existiera— y habrían pasado a pintarse
+      // con capas colocadas a mano, distinto de como las dejó su dueño.
+      //
+      // La composición libre es una decisión del usuario y el editor la
+      // marca cuando la toma: arrastrar una capa o aplicar un preset
+      // escriben `heroComposition = "free"`. Hasta entonces, el hero
+      // clásico, que es lo que había.
+      const freeMode = props.heroComposition === "free";
       const layerNumber = (
         key: string,
         minimum: number,

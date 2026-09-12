@@ -306,7 +306,12 @@ export function createBlankDocument(): TemplateDocument {
           body: "Hola {{lead.first_name}}, hemos identificado una oportunidad concreta para mejorar vuestro proceso comercial.",
           imageUrl: "/assets/ai-campaign.webp",
           imageAlt: "Inteligencia comercial y campañas",
-          overlay: true,
+          // Una plantilla nueva nace en composición libre, que es la novedad
+          // de V45. Las guardadas antes no llevan esta prop y siguen en el
+          // hero clásico hasta que su dueño mueva una capa: ver el comentario
+          // de `freeMode` en email-renderer.ts.
+          heroComposition: "free",
+          overlay: false,
           minHeight: 360,
           align: "left",
           verticalAlign: "center",

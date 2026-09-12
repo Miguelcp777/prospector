@@ -16,7 +16,7 @@ versiones del mismo archivo.
 
 ## Cuatro fallan, y tienen que fallar
 
-**46 de 50.** Los cuatro fallos son las adaptaciones que el traslado hizo a
+**49 de 53.** Los cuatro fallos son las adaptaciones que el traslado hizo a
 propósito, y por eso no se «arreglan»: arreglarlos sería deshacerlas.
 
 | Prueba | Por qué falla aquí |
