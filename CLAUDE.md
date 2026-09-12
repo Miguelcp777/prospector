@@ -40,6 +40,7 @@ endpoints: el esquema es la fuente de verdad.
 - Riesgo legal y decisiones de producto derivadas: @docs/compliance.md
 - Decisiones técnicas: @docs/decisiones/
 - Campaign Studio, por qué está sin conectar: @docs/decisiones/0003-campaign-studio-aparcado.md
+- La V45 del studio, qué entró en la app y qué no: @docs/decisiones/0005-v45-al-studio-de-la-app.md
 - De quién sale el correo y qué falta antes de enviar: @docs/decisiones/0004-quien-es-el-remitente.md
 - Esquema y RLS: @supabase/schema.sql
 - Descubrimiento troceado y cuota de la demo: @supabase/002_descubrimiento_y_demo.sql

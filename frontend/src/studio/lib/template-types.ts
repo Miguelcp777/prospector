@@ -43,6 +43,11 @@ export type EmailBlock = {
     widthPercent?: number;
     fontScale?: number;
     imageUrl?: string;
+    autoResponsive?: boolean;
+    freeX?: number;
+    freeY?: number;
+    freeZ?: number;
+    freeScale?: number;
   };
 };
 
@@ -50,6 +55,9 @@ export type TemplateDocument = {
   schemaVersion: 1;
   settings: {
     width: number;
+    canvasHeight?: number;
+    mobileWidth?: number;
+    mobileCanvasHeight?: number;
     backgroundColor: string;
     backgroundMode?: "color" | "image" | "transparent";
     backgroundImageUrl?: string;
@@ -249,6 +257,7 @@ export function createBlankDocument(): TemplateDocument {
     schemaVersion: 1,
     settings: {
       width: 640,
+      mobileWidth: 375,
       backgroundColor: "#eef3f6",
       backgroundMode: "color",
       backgroundImageUrl: "",
@@ -369,7 +378,43 @@ export function createBlock(
       body: "Explica el valor principal con claridad y una sola idea.",
       imageUrl: "/assets/ai-campaign.webp",
       imageAlt: "Imagen principal de campaña",
-      overlay: true,
+      overlay: false,
+      heroComposition: "free",
+      eyebrowPosition: "top-left",
+      titlePosition: "center-left",
+      bodyPosition: "bottom-left",
+      heroImagePosition: "center-right",
+      eyebrowX: 22,
+      eyebrowY: 18,
+      eyebrowWidth: 38,
+      eyebrowFontSize: 14,
+      eyebrowZ: 4,
+      eyebrowRotation: 0,
+      eyebrowOpacity: 100,
+      eyebrowTextAlign: "left",
+      titleX: 32,
+      titleY: 48,
+      titleWidth: 58,
+      titleZ: 5,
+      titleRotation: 0,
+      titleOpacity: 100,
+      titleTextAlign: "left",
+      bodyX: 28,
+      bodyY: 78,
+      bodyWidth: 48,
+      bodyZ: 6,
+      bodyRotation: 0,
+      bodyOpacity: 100,
+      bodyTextAlign: "left",
+      heroImageX: 72,
+      heroImageY: 50,
+      heroImageWidth: 48,
+      heroImageHeight: 62,
+      heroImageZ: 2,
+      heroImageRotation: 0,
+      heroImageOpacity: 100,
+      heroImageFit: "cover",
+      heroOverflow: "hidden",
       minHeight: 360,
       align: "left",
       textAlign: "left",
@@ -455,6 +500,9 @@ export function createBlock(
       buttonTextColor: "#ffffff",
       buttonDepth: "none",
       buttonDepthColor: "#064852",
+      buttonDepthOffset: 6,
+      buttonDepthBlur: 20,
+      buttonDepthOpacity: 100,
       textDepth: "none",
       textDepthColor: "#071019",
       blockWidth: 40,
@@ -528,6 +576,10 @@ export function createBlock(
       shadow: "none",
       blockDepth: "none",
       blockDepthColor: "#0f172a",
+      freeX: 0,
+      freeY: 0,
+      freeZ: 0,
+      freeScale: 100,
       ...presets[type],
     },
   };
