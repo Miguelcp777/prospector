@@ -10,6 +10,16 @@ Campaign Studio se mantiene en `frontend/campaign-studio/` como subaplicación a
 - Contrato `TemplateDocument v1` conservado como fuente canónica; HTML y texto siguen siendo derivados.
 - UX V2 con cinco espacios, modo guiado, edición móvil y biblioteca Premium validada.
 
+## Lo que sí está en la aplicación
+
+El studio que usan los clientes no es esta carpeta, sino `frontend/src/studio/`.
+Las mejoras de V45 —hero de composición libre, biblioteca Premium, adaptación
+móvil, paleta de comandos y los cinco temas— están portadas ahí. Lo que se
+quedó fuera, y por qué, en `docs/decisiones/0005-v45-al-studio-de-la-app.md`.
+
+Esta carpeta sigue sin conectarse a nada, con las cinco condiciones de la
+0003 pendientes.
+
 ## Integración recomendada
 
 1. Revisar `frontend/campaign-studio/PROSPECTOR_INTEGRATION.md` y `frontend/campaign-studio/docs/PROSPECTOR_GIT_HANDOFF.md`.

@@ -38,9 +38,14 @@ const blockSchema = z.object({
   mobile: z.object({
     hidden: z.boolean().optional(),
     order: z.number().int().min(0).max(500).optional(),
-    widthPercent: z.number().min(1).max(100).optional(),
+    widthPercent: z.number().min(1).max(200).optional(),
     fontScale: z.number().min(25).max(300).optional(),
     imageUrl: z.string().max(20_000).optional(),
+    autoResponsive: z.boolean().optional(),
+    freeX: z.number().min(-800).max(800).optional(),
+    freeY: z.number().min(-1_200).max(1_200).optional(),
+    freeZ: z.number().min(-50).max(100).optional(),
+    freeScale: z.number().min(25).max(300).optional(),
   }).strict().optional(),
 }).strict();
 
@@ -48,6 +53,9 @@ export const templateDocumentV1Schema = z.object({
   schemaVersion: z.literal(TEMPLATE_DOCUMENT_SCHEMA_VERSION),
   settings: z.object({
     width: z.number().int().min(280).max(1_600),
+    canvasHeight: z.number().int().min(240).max(6_000).optional(),
+    mobileWidth: z.number().int().min(280).max(600).optional(),
+    mobileCanvasHeight: z.number().int().min(240).max(6_000).optional(),
     backgroundColor: z.string().max(80),
     backgroundMode: z.enum(["color", "image", "transparent"]).optional(),
     backgroundImageUrl: z.string().max(20_000).optional(),
