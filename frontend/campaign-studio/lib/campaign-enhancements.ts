@@ -5,6 +5,7 @@ import {
   type EmailBlockType,
   type TemplateDocument,
 } from "./template-types";
+import { mobileDocument } from "./studio-finalization";
 
 export type LeadProfile = {
   id: string;
@@ -341,34 +342,7 @@ export function documentForLead(
   const next = structuredClone(document);
   next.blocks = next.blocks.filter((block) => matchesCondition(block, data));
   if (device === "mobile") {
-    next.blocks = next.blocks
-      .filter((block) => !block.mobile?.hidden)
-      .sort(
-        (a, b) =>
-          (a.mobile?.order ?? next.blocks.indexOf(a)) -
-          (b.mobile?.order ?? next.blocks.indexOf(b)),
-      )
-      .map((block) => ({
-        ...block,
-        props: {
-          ...block.props,
-          ...(block.mobile?.widthPercent
-            ? { blockWidth: block.mobile.widthPercent }
-            : {}),
-          ...(block.mobile?.imageUrl
-            ? { imageUrl: block.mobile.imageUrl }
-            : {}),
-          ...(block.mobile?.fontScale
-            ? {
-                fontSize: Math.round(
-                  (Number(block.props.fontSize || 16) *
-                    block.mobile.fontScale) /
-                    100,
-                ),
-              }
-            : {}),
-        },
-      }));
+    return { document: mobileDocument(next), mergeData: data };
   }
   return { document: next, mergeData: data };
 }

@@ -102,7 +102,7 @@
         },
         "mobile": {
           "type": "object", "additionalProperties": false,
-          "properties": { "hidden": { "type": "boolean" }, "order": { "type": "integer", "minimum": 0, "maximum": 500 }, "widthPercent": { "type": "number", "minimum": 1, "maximum": 100 }, "fontScale": { "type": "number", "minimum": 25, "maximum": 300 }, "imageUrl": { "type": "string", "maxLength": 20000 } }
+          "properties": { "hidden": { "type": "boolean" }, "order": { "type": "integer", "minimum": 0, "maximum": 500 }, "widthPercent": { "type": "number", "minimum": 1, "maximum": 200 }, "fontScale": { "type": "number", "minimum": 25, "maximum": 300 }, "imageUrl": { "type": "string", "maxLength": 20000 }, "autoResponsive": { "type": "boolean" }, "freeX": { "type": "number", "minimum": -800, "maximum": 800 }, "freeY": { "type": "number", "minimum": -1200, "maximum": 1200 }, "freeZ": { "type": "number", "minimum": -50, "maximum": 100 }, "freeScale": { "type": "number", "minimum": 25, "maximum": 300 } }
         }
       }
     }

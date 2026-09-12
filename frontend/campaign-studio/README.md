@@ -2,7 +2,15 @@
 
 Producto independiente para diseñar, personalizar, revisar, versionar y exportar campañas de email marketing, preparado para integrarse en Prospector mediante un puerto estable.
 
-## Centro de campaña v0.3.1 · Sites v31
+## Campaign Studio UX V2 · Sites v45
+
+- Cinco espacios principales: Inicio, Crear, Diseñar, Revisar y Plantillas.
+- Modo guiado persistente de cinco fases y modo profesional completo.
+- Cabecera compacta, paneles laterales plegables y lienzo con mayor prioridad visual.
+- Biblioteca con 15 plantillas maestras Premium y cinco variantes por maestra.
+- Aplicación independiente de estilo, estructura o ambos; creación de variantes y maestras desde una campaña.
+- Edición móvil con barra inferior y paneles deslizables.
+- Registro central de espacios y acciones para ampliar la experiencia sin duplicar navegación.
 
 - Revisión previa al envío: enlaces públicos, variables, textos alternativos, contraste, densidad, baja, riesgo de spam y ajustes móviles.
 - Previsualización con perfiles de lead y simulación diferenciada de Gmail, Outlook y Apple Mail en oscuro, independiente del tema de la aplicación.
@@ -44,14 +52,14 @@ npm run db:generate
 npm run dev
 ```
 
-## Verificación
+## Verificación de V45
 
 ```bash
 npm run lint
 npm test
 ```
 
-`npm test` realiza un build de producción y valida renderer, fondos/recursos exportados, responsive móvil, merge tags, sanitización, catálogo, perfiles oscuros, mezcla de variantes, atención, costes y ranking de galería.
+La entrega V45 superó el build de producción, ESLint sin errores y 72/72 pruebas automáticas. `npm test` valida renderer, fondos/recursos exportados, responsive móvil, merge tags, sanitización, catálogo, perfiles oscuros, mezcla de variantes, atención, costes, navegación UX V2 y ranking de galería.
 
 ## Persistencia
 

@@ -30,12 +30,25 @@ export async function GET(request: Request) {
   if (!auth.user) return auth.response;
   try {
     const db = getDb();
+    const view = new URL(request.url).searchParams.get("view");
+    const visibility =
+      view === "all"
+        ? eq(templates.ownerId, auth.user.id)
+        : view === "archived"
+          ? and(
+              eq(templates.ownerId, auth.user.id),
+              eq(templates.status, "archived"),
+            )
+          : and(
+              eq(templates.ownerId, auth.user.id),
+              ne(templates.status, "archived"),
+            );
     const rows = await db
       .select()
       .from(templates)
-      .where(and(eq(templates.ownerId, auth.user.id), ne(templates.status, "archived")))
+      .where(visibility)
       .orderBy(desc(templates.updatedAt))
-      .limit(100);
+      .limit(250);
     return Response.json({ templates: rows.map(mapTemplate) });
   } catch (error) {
     return Response.json(
