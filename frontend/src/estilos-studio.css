@@ -871,3 +871,21 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   min-height: 0;
 }
 .mode-guided .studio-main > .workspace-grid { flex: 1; min-height: 0; }
+
+/* Las paletas de los temas del studio.
+
+   El selector de temas volvió con la V45, pero su CSS no: el traslado lo
+   había quitado al mapear las variables del studio a las de Prospector, y
+   el parche de la V45 solo traía lo que V45 añadía sobre V31. Resultado:
+   cinco opciones en un menú que no pintaban nada. Se vio midiendo `--cyan`
+   con los cinco puestos: el mismo valor siempre.
+
+   `dark` se queda sin paleta propia a propósito: es el que sigue el aspecto
+   de Prospector, que ya tiene su claro y su oscuro. Los otros tres traen la
+   suya, como en el studio original.
+
+   Van acotadas con `.studio` por lo de siempre: fuera de aquí manda la
+   aplicación. */
+.studio .theme-ocean{--background:#061522;--foreground:#e8f8ff;--card:#092033;--card-foreground:#e8f8ff;--popover:#092033;--popover-foreground:#e8f8ff;--primary:#38bdf8;--primary-foreground:#03141d;--secondary:#0b2b42;--secondary-foreground:#d8f3ff;--muted:#0b2639;--muted-foreground:#88adbf;--accent:#103753;--accent-foreground:#fff;--border:rgba(94,190,235,.2);--input:rgba(94,190,235,.25);--ring:#38bdf8;--cyan:#38bdf8;--cyan-bright:#a5e8ff;--violet:#2dd4bf;--ink-0:#020b13;--ink-1:#051522;--ink-2:#082033;--ink-3:#0c2b40;--line:rgba(94,190,235,.18);--muted-text:#7ba7bb;--soft-text:#b7d9e6}
+.studio .theme-emerald{--background:#071712;--foreground:#edf9f3;--card:#0b211a;--card-foreground:#edf9f3;--popover:#0b211a;--popover-foreground:#edf9f3;--primary:#2dd4a7;--primary-foreground:#031610;--secondary:#153127;--secondary-foreground:#dcf6eb;--muted:#102a21;--muted-foreground:#86aa9c;--accent:#19382c;--accent-foreground:#fff;--border:rgba(88,192,151,.2);--input:rgba(88,192,151,.25);--ring:#2dd4a7;--cyan:#2dd4a7;--cyan-bright:#a7f3d0;--violet:#d6b46c;--ink-0:#030c09;--ink-1:#071711;--ink-2:#0b2119;--ink-3:#123025;--line:rgba(88,192,151,.18);--muted-text:#7ca496;--soft-text:#b8d6cc}
+.studio .theme-violet{--background:#160d22;--foreground:#fbf3ff;--card:#21122f;--card-foreground:#fbf3ff;--popover:#21122f;--popover-foreground:#fbf3ff;--primary:#d17cff;--primary-foreground:#1d0828;--secondary:#301a42;--secondary-foreground:#f4e5fb;--muted:#2b173b;--muted-foreground:#b39bc0;--accent:#3a2050;--accent-foreground:#fff;--border:rgba(207,133,242,.22);--input:rgba(207,133,242,.27);--ring:#d17cff;--cyan:#d17cff;--cyan-bright:#f1c7ff;--violet:#ff7ab6;--ink-0:#0d0714;--ink-1:#170c22;--ink-2:#21122f;--ink-3:#2d193e;--line:rgba(207,133,242,.19);--muted-text:#a68bb3;--soft-text:#d7c0e0}
