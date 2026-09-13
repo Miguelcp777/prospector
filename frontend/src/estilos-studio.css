@@ -613,6 +613,30 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
    para que se vea dónde acaba uno y empieza el otro. */
 .studio .studio-main { border-left: 1px solid var(--borde); }
 
+/* Los `input type=file` que el studio esconde detrás de un botón llevan la
+   utilidad `.sr-only` de Tailwind, que los reduce a 1px. Aquí no funcionaba,
+   y el motivo no es la especificidad sino las capas: `estilos.css` declara
+   `input, textarea, select { width: 100% }` FUERA de capas, y lo que está
+   fuera le gana a cualquier cosa dentro de una —`.sr-only` vive en la capa
+   `utilities`—. Así que el input se estiraba al ancho del panel y, al estar
+   en `position: absolute` sin anclaje, se salía de la pantalla: el studio
+   arrastraba scroll horizontal con un campo que nadie ve.
+
+   Se redeclara aquí, fuera de capas, para que juegue en la misma liga. Con
+   `.studio` delante: esto no es un arreglo global, es una costura entre dos
+   hojas que no se conocían. */
+.studio .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
 /* ============================================================
    Correcciones sobre el remapeo automático
    ============================================================

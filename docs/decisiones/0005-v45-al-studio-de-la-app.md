@@ -153,13 +153,31 @@ bloques: `diff -u v31.css v45.css | patch cuerpo.css`, con el bloque de
 integración separado antes y añadido después, porque tiene que ser el
 último en ganar.
 
-## Un desbordamiento que no es de aqui
+## El scroll horizontal: dos hojas que no se conocian
 
-En produccion, el studio arrastra scroll horizontal: lo causa un
-`input.sr-only` de 1.393 px colocado fuera de la vista, no el editor. Esta
-igual antes y despues del porte —los dos `sr-only` del archivo son los
-mismos— y el CSS del porte no lo toca. Queda anotado como lo que es: algo de
-antes que conviene arreglar aparte, con su propia comprobacion.
+Encontrado al revisar el studio ya desplegado, y anterior al porte. El
+studio esconde sus `input type=file` detras de un boton con la utilidad
+`.sr-only`, que deberia dejarlos en 1 px. No lo hacia: salian al 100 % del
+panel y, en `position: absolute` sin anclaje, se iban fuera de la pantalla.
+El studio arrastraba scroll horizontal por un campo que nadie ve.
+
+El motivo no es la especificidad, es la cascada de capas:
+
+| Regla | Donde vive | Gana |
+|---|---|---|
+| `input, textarea, select { width: 100% }` de `estilos.css` | fuera de capas | si |
+| `.sr-only { width: 1px }` de Tailwind | capa `utilities` | no |
+
+Una declaracion fuera de capas le gana a cualquiera dentro de una, por poca
+especificidad que tenga. Es la clase de choque que solo aparece cuando se
+mete un proyecto entero dentro de otro, y no lo ve ni el build ni una prueba
+de contrato: hay que abrir la pantalla y preguntarle al navegador que regla
+manda.
+
+Se arregla redeclarando la utilidad en el bloque de integracion, que tambien
+esta fuera de capas, acotada con `.studio` para que no sea un parche global.
+Comprobado en produccion antes de subirlo: el ancho computado pasa de
+`100%` a `1px`.
 
 ## Pendiente
 
