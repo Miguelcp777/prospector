@@ -179,11 +179,51 @@ esta fuera de capas, acotada con `.studio` para que no sea un parche global.
 Comprobado en produccion antes de subirlo: el ancho computado pasa de
 `100%` a `1px`.
 
+## Los temas: reponer el selector no era reponer el tema
+
+El error mas caro del porte, y fue mio. Se repuso el selector de cinco temas
+en el codigo sin comprobar que tuviera detras el CSS que lo hace visible: el
+traslado habia quitado las paletas al mapear las variables del studio a las
+de Prospector. Quedaron cinco opciones en un menu que no cambiaban un solo
+color. Se vio midiendo `--cyan` con los cinco puestos: el mismo valor
+siempre.
+
+Y reponer solo las paletas empeoro las cosas. El studio se pinta con las
+variables de la aplicacion —`--fondo`, `--texto`, `--superficie`, `--cian`—,
+asi que el shell se ponia oscuro y los paneles se quedaban claros, con
+textos grises encima: **catorce textos por debajo del minimo legible, alguno
+en 1,04 de contraste**.
+
+Lo que funciona es mapear tambien esas variables, con los valores que V45 ya
+declara por tema (`--contrast-surface`, `--contrast-text`, `--contrast-soft`,
+`--contrast-muted`). Con eso los tres temas de color bajan a uno, y ese uno
+es un falso positivo del medidor —un numero sobre un degradado, que se mide
+por `background-image` y no por `background-color`—.
+
+La leccion, para el proximo porte: **una pieza de interfaz no esta portada
+hasta que se comprueba que hace algo**. Compilar, montar y aparecer en el
+menu no es funcionar.
+
+## Contraste: lo que ya estaba flojo
+
+Medido en el tema por defecto, con la aplicacion en claro: seis textos por
+debajo de 4,5 —el minimo de WCAG AA para texto normal—, entre 2,38 y 3,9.
+Los peores son los contadores del editor: «59/60», «65/110» y «Lista para
+validar», en 2,38.
+
+Es anterior al porte y no se ha tocado: son colores de la aplicacion, no del
+studio, y cambiarlos afecta a mas pantallas que esta. Queda medido para
+cuando se quiera abordar.
+
 ## Pendiente
 
 - Diseñar un correo entero con esto delante, de principio a fin. Lo que está
   comprobado es que monta, que respeta lo guardado y que las reglas caen
   donde deben; no que la pantalla se entienda.
+- El tema `light` no hace nada distinto de `dark`: los dos siguen a la
+  aplicacion. O se mapea como los de color —seria un claro fijo, visible
+  solo con la aplicacion en oscuro— o sobra del menu.
+- Los seis textos de contraste flojo de arriba.
 - Que un fisioterapeuta —o quien sea— diseñe un correo entero con esto
   antes de darlo por bueno. Las pruebas dicen que el contrato se respeta;
   no dicen que la pantalla se entienda.
