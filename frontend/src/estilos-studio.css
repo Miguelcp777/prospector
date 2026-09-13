@@ -889,3 +889,32 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .studio .theme-ocean{--background:#061522;--foreground:#e8f8ff;--card:#092033;--card-foreground:#e8f8ff;--popover:#092033;--popover-foreground:#e8f8ff;--primary:#38bdf8;--primary-foreground:#03141d;--secondary:#0b2b42;--secondary-foreground:#d8f3ff;--muted:#0b2639;--muted-foreground:#88adbf;--accent:#103753;--accent-foreground:#fff;--border:rgba(94,190,235,.2);--input:rgba(94,190,235,.25);--ring:#38bdf8;--cyan:#38bdf8;--cyan-bright:#a5e8ff;--violet:#2dd4bf;--ink-0:#020b13;--ink-1:#051522;--ink-2:#082033;--ink-3:#0c2b40;--line:rgba(94,190,235,.18);--muted-text:#7ba7bb;--soft-text:#b7d9e6}
 .studio .theme-emerald{--background:#071712;--foreground:#edf9f3;--card:#0b211a;--card-foreground:#edf9f3;--popover:#0b211a;--popover-foreground:#edf9f3;--primary:#2dd4a7;--primary-foreground:#031610;--secondary:#153127;--secondary-foreground:#dcf6eb;--muted:#102a21;--muted-foreground:#86aa9c;--accent:#19382c;--accent-foreground:#fff;--border:rgba(88,192,151,.2);--input:rgba(88,192,151,.25);--ring:#2dd4a7;--cyan:#2dd4a7;--cyan-bright:#a7f3d0;--violet:#d6b46c;--ink-0:#030c09;--ink-1:#071711;--ink-2:#0b2119;--ink-3:#123025;--line:rgba(88,192,151,.18);--muted-text:#7ca496;--soft-text:#b8d6cc}
 .studio .theme-violet{--background:#160d22;--foreground:#fbf3ff;--card:#21122f;--card-foreground:#fbf3ff;--popover:#21122f;--popover-foreground:#fbf3ff;--primary:#d17cff;--primary-foreground:#1d0828;--secondary:#301a42;--secondary-foreground:#f4e5fb;--muted:#2b173b;--muted-foreground:#b39bc0;--accent:#3a2050;--accent-foreground:#fff;--border:rgba(207,133,242,.22);--input:rgba(207,133,242,.27);--ring:#d17cff;--cyan:#d17cff;--cyan-bright:#f1c7ff;--violet:#ff7ab6;--ink-0:#0d0714;--ink-1:#170c22;--ink-2:#21122f;--ink-3:#2d193e;--line:rgba(207,133,242,.19);--muted-text:#a68bb3;--soft-text:#d7c0e0}
+
+/* Un tema propio tiene que cambiar la piel entera, no solo el fondo.
+
+   Reponer las paletas no bastaba: el studio se pinta con las variables de
+   Prospector —`--fondo`, `--texto`, `--superficie`, `--cian`— y esas
+   seguían siendo las de la aplicación. El shell se ponía oscuro y los
+   paneles se quedaban claros, con textos grises encima: medido, catorce
+   textos por debajo del mínimo legible, alguno en 1,04.
+
+   Así que el tema mapea también esas variables. Los valores no se inventan:
+   V45 ya declara `--contrast-*` por tema, pensados justo para esto.
+
+   `dark` y `light` no entran: siguen a la aplicación, que ya resuelve su
+   claro y su oscuro. Con el mapeo, los tres temas de color bajan de catorce
+   textos flojos a uno. */
+.studio .theme-ocean,
+.studio .theme-emerald,
+.studio .theme-violet {
+  --fondo: var(--contrast-surface);
+  --superficie: color-mix(in srgb, var(--contrast-text) 7%, var(--contrast-surface));
+  --superficie-2: color-mix(in srgb, var(--contrast-text) 12%, var(--contrast-surface));
+  --texto: var(--contrast-text);
+  --texto-2: var(--contrast-soft);
+  --texto-3: var(--contrast-muted);
+  --borde: color-mix(in srgb, var(--contrast-text) 16%, transparent);
+  --line: color-mix(in srgb, var(--contrast-text) 16%, transparent);
+  --cian: var(--cyan);
+  --acento-suave: color-mix(in srgb, var(--cyan) 16%, transparent);
+}
