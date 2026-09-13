@@ -93,6 +93,13 @@ prop no es una conjetura, es la señal que el propio editor escribe cuando el
 usuario arrastra una capa o aplica un preset. La composición libre es una
 decisión suya, y hasta que la toma el hero se pinta como siempre.
 
+Comprobado después en produccion: **el catalogo Premium tampoco usa la
+composicion libre**. No define una sola prop de capas —ni `titleX`, ni
+`heroImageX`, ni `freeX`— y V45 no lo toco. Sus plantillas se disenaron con
+`overlay` y el texto en su franja, asi que aquel `true` no solo habria
+descolocado las 33 guardadas: habria descolocado tambien las mas de cien del
+catalogo que la propia V45 presume.
+
 Para que la novedad no quede escondida, el documento en blanco nace ya con
 ella: `createBlankDocument` declara `heroComposition: "free"`. V45 era
 incoherente en esto —su documento en blanco decía `overlay: true` y el
@@ -145,6 +152,14 @@ La forma correcta es aplicar el cambio **como parche**, que conserva los
 bloques: `diff -u v31.css v45.css | patch cuerpo.css`, con el bloque de
 integración separado antes y añadido después, porque tiene que ser el
 último en ganar.
+
+## Un desbordamiento que no es de aqui
+
+En produccion, el studio arrastra scroll horizontal: lo causa un
+`input.sr-only` de 1.393 px colocado fuera de la vista, no el editor. Esta
+igual antes y despues del porte —los dos `sr-only` del archivo son los
+mismos— y el CSS del porte no lo toca. Queda anotado como lo que es: algo de
+antes que conviene arreglar aparte, con su propia comprobacion.
 
 ## Pendiente
 
