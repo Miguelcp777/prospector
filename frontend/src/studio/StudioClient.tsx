@@ -2209,6 +2209,16 @@ export default function StudioClient({ displayName }: StudioProps) {
     version,
   ]);
 
+  /**
+   * Abre el asistente de IA. Si viene de una búsqueda sin resultados, lo que
+   * se buscó entra como sector: es lo que el usuario acaba de decir que
+   * quiere, y volver a escribirlo sería pedirle lo mismo dos veces.
+   */
+  function abrirIA(desdeBusqueda?: string) {
+    if (desdeBusqueda) setAiBrief((actual) => ({ ...actual, sector: desdeBusqueda }));
+    setAiOpen(true);
+  }
+
   function changeAppTheme(theme: AppTheme) {
     setAppTheme(theme);
     try {
@@ -4373,6 +4383,28 @@ Deja de aparecer en la biblioteca y ` +
                       <button key={tier} className={templateTier === tier ? "active" : ""} onClick={() => setTemplateTier(tier)}>{label}</button>
                     ))}
                   </div>
+                  {/* Crear con IA, con su botón.
+
+                      Se llegaba únicamente por la paleta de comandos —Ctrl K—
+                      porque el acceso visible vivía en el lateral de V45, que
+                      aquí no entra. Un atajo de teclado no es una puerta: quien
+                      no lo conoce no encuentra la función. */}
+                  <div className="crear-con-ia">
+                    <div>
+                      <WandSparkles />
+                      <span>
+                        <strong>Crear con IA</strong>
+                        <small>
+                          Describe el negocio y monta la campaña entera: textos,
+                          imágenes y diseño.
+                        </small>
+                      </span>
+                    </div>
+                    <Button variant="outline" onClick={() => abrirIA()}>
+                      Empezar con IA
+                    </Button>
+                  </div>
+
                   <div className="visual-reference-bar">
                     <div><Sparkles /><span><strong>Convierte tu última composición en sistema</strong><small>Se conserva la dirección visual; no se copian textos ni datos personales.</small></span></div>
                     <Button variant="outline" onClick={() => void saveAsMasterTemplate()}>Usar esta campaña como referencia visual</Button>
@@ -4514,6 +4546,28 @@ Deja de aparecer en la biblioteca y ` +
                       </label>
                     </div>
                   </div>
+                  {/* Buscar y no encontrar no puede ser quedarse en blanco.
+
+                      El buscador filtra de verdad —descarta lo que puntúa
+                      cero—, así que una búsqueda como «tattoo», que no está en
+                      el catálogo, vaciaba la lista sin decir nada. Parecía
+                      averiado y además dejaba sin salida: justo el momento en
+                      que la IA es la respuesta. */}
+                  {search.trim() && groupedPresets.length === 0 && (
+                    <div className="catalogo-vacio">
+                      <p>
+                        Ninguna plantilla del catálogo encaja con{" "}
+                        <strong>«{search.trim()}»</strong>.
+                      </p>
+                      <Button variant="outline" onClick={() => abrirIA(search.trim())}>
+                        <WandSparkles /> Crear una con IA para «{search.trim()}»
+                      </Button>
+                      <button className="enlace" onClick={() => setSearch("")}>
+                        o ver el catálogo entero
+                      </button>
+                    </div>
+                  )}
+
                   <div className="template-families">
                     {groupedPresets.map((group) => {
                       const open = openTemplateGroups.includes(group.category);
