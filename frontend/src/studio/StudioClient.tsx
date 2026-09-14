@@ -2140,6 +2140,33 @@ export default function StudioClient({ displayName }: StudioProps) {
   // delante el aspecto de Campañas, Leads y Mensajes. La clase la pone el
   // shell, unas líneas más abajo, y el CSS cuelga de ahí.
 
+  // ------------------------------------------------------------
+  // «Capas», en la barra del editor móvil.
+  //
+  // Las capas no son un panel propio: viven al final de la pestaña
+  // «Bloques», debajo del catálogo de bloques que se pueden añadir. Así que
+  // pulsar «Capas» abría el panel por arriba, enseñando «AÑADE BLOQUES», y
+  // la lista de capas se quedaba fuera de la pantalla. Dos botones distintos
+  // para la misma vista.
+  //
+  // Aquí se lleva al sitio: si el panel está en la pestaña de plantillas se
+  // cambia a la de bloques —que es donde están las capas— y se desplaza
+  // hasta ellas. El desplazamiento espera un fotograma porque el panel se
+  // abre en este mismo render.
+  // ------------------------------------------------------------
+  useEffect(() => {
+    if (mobilePanel !== "layers") return;
+    if (workflowStep === "library") setWorkflowStep("content");
+    const id = window.requestAnimationFrame(() => {
+      // `document` aquí dentro es el documento de la plantilla, no el del
+      // navegador: por eso `window.document`.
+      window.document
+        .querySelector(".palette-panel .structure-title")
+        ?.scrollIntoView({ block: "start", behavior: "smooth" });
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [mobilePanel, workflowStep]);
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
