@@ -967,3 +967,12 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .studio .mobile-editor-bar {
   padding-right: calc(6px + var(--hueco-insignia, 0px));
 }
+
+/* La etiqueta BASE de la capa de fondo se cortaba por la derecha: es un
+   `span` en `display: block` dentro de una rejilla, así que no crecía con su
+   texto. Con `width: max-content` se ajusta a lo que ocupa —de 19 a 29 px— y
+   la fila sigue cabiendo en el panel. */
+.studio .layer-lock {
+  display: inline-block;
+  width: max-content;
+}

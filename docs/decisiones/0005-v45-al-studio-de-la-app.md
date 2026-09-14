@@ -215,6 +215,28 @@ Es anterior al porte y no se ha tocado: son colores de la aplicacion, no del
 studio, y cambiarlos afecta a mas pantallas que esta. Queda medido para
 cuando se quiera abordar.
 
+## El modo compacto, revisado aparte
+
+Por debajo de 900 px el editor cambia de forma: los dos paneles se esconden
+y se manejan desde una barra inferior —Bloques, Capas, Editar, Vista—. Esa
+disposicion la trae V45 y no se habia mirado. Aparecieron dos cosas:
+
+**La paleta no se abria.** El CSS del compacto solo muestra un panel con la
+clase `mobile-open`. El inspector la recibia; la paleta no, asi que
+«Bloques» y «Capas» se encendian y no ensenaban nada. V45 si se la ponia: se
+perdio al resolver un conflicto del porte, y no se ve en escritorio, donde
+el panel esta siempre visible y la clase no pinta nada.
+
+**La insignia del hosting se comia dos botones.** Netlify inyecta «Powered
+by Netlify» como un iframe fijo abajo a la derecha con z-index 2147483645,
+justo encima de la barra del editor: los clics de «Editar» y «Vista» iban a
+la insignia. Comprobado con `elementFromPoint` sobre el centro de cada
+boton.
+
+Se desactivo en el sitio (`built_with_badge_enabled`), y ademas el editor
+mide la insignia si existe y aparta la barra lo justo. Depender solo del
+ajuste seria confiar en que nadie cambie de plan.
+
 ## Pendiente
 
 - Diseñar un correo entero con esto delante, de principio a fin. Lo que está
