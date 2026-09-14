@@ -60,3 +60,8 @@ verify_jwt = false
 # verificación las toca después con service_role, dentro.
 [functions.dominio-correo]
 verify_jwt = true
+
+# El texto de las campañas del studio. Va con JWT: la escribe el
+# cliente desde su sesión y el gasto se imputa a su cuenta.
+[functions.componer-campana]
+verify_jwt = true

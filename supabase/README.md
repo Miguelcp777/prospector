@@ -942,6 +942,54 @@ de vuelta). **El Vault está vacío de claves de modelo**: hoy todo tira del
 secreto de entorno de Anthropic, y la clave de OpenAI no se ha puesto nunca
 —así que generar imágenes en el studio no funciona todavía—.
 
+## «Crear con IA» del studio, que no usaba IA
+
+Hasta la Edge Function `componer-campana`, el botón «Crear con IA» del
+studio **no llamaba a ningún modelo**. El navegador componía el correo con
+`guidedCopy`, una plantilla determinista, y tomaba la primera receta del
+catálogo —que es de tecnología—. Un estudio de tatuajes recibía un correo
+con la etiqueta TECNOLOGÍA, una foto de oficina y el pie de los datos de
+ejemplo del renderizador. Lo único suyo era la oferta, que la plantilla
+insertaba literal.
+
+Ahora el texto lo escribe **OpenAI** —el mismo proveedor que ya generaba las
+imágenes, para que el correo entero salga de un sitio— y devuelve asunto,
+preencabezado, antetítulo, titular, cuerpo, sección, llamada a la acción y
+**la descripción de la imagen**, que es la que se le pasa después a
+`generar-imagen`.
+
+El resto del producto sigue con Anthropic: segmentos, mensajes y landings.
+Aquí el proveedor lo eligió quien paga.
+
+### Lo que el prompt prohíbe
+
+No inventar clientes, cifras, premios, testimonios, certificaciones ni
+plazos, y conservar literalmente las variables `{{campo.ruta}}`. Lo primero
+porque un correo comercial con un dato inventado es un problema legal, no un
+texto mejorable; lo segundo porque una variable traducida sale como un hueco
+sin rellenar en la bandeja de alguien.
+
+### Si el modelo falla, se compone igual — y se dice
+
+Sin clave o con el proveedor caído, el correo se monta con la plantilla de
+siempre y la pantalla avisa de que **ese texto no lo ha escrito el modelo**.
+Dejar el editor en blanco sería peor, y hacer pasar una plantilla por un
+texto escrito para ese negocio, también.
+
+### Lo que cuesta y lo que tarda
+
+Medido en la primera campaña real: **934 tokens de entrada y 6.658 de
+salida** en dos llamadas, y unos **47 segundos** por campaña. Es lento para
+una pantalla: el asistente enseña «Creando estrategia, textos y estructura…»
+todo ese rato. Si molesta, se acorta acotando la longitud de la respuesta,
+con el riesgo de que el JSON salga truncado.
+
+### El sector ya no es siempre tecnología
+
+`elegirReceta` puntúa lo que se ha escrito contra el nombre, la categoría y
+el objetivo de cada receta del catálogo, igual que el buscador. Si nada
+encaja, se queda la que hubiera: inventar un sector es peor que no acertar.
+
 ## Y la clave de cada cliente (047)
 
 Las de arriba son **del servicio**: una por proveedor, y con ellas se paga la

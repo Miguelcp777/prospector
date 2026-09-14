@@ -344,6 +344,46 @@ export function guidedCopy(brief: Brief): GeneratedCopy {
   };
 }
 
+/**
+ * Qué receta del catálogo encaja con lo que el usuario ha escrito.
+ *
+ * El brief nace con `TEMPLATE_RECIPES_100[0]`, que es de tecnología, y quien
+ * no toca el selector se lleva esa: un estudio de tatuajes recibía un correo
+ * con la etiqueta TECNOLOGÍA y una foto de oficina. El texto lo escribe el
+ * modelo, pero la imagen de catálogo y la categoría salen de aquí.
+ *
+ * Se puntúa contra el nombre, la categoría y el objetivo de cada receta, que
+ * es lo mismo que hace el buscador del catálogo. Si nada encaja, se queda la
+ * que hubiera: inventar un sector es peor que no acertar.
+ */
+export function elegirReceta(brief: Brief): string | undefined {
+  const texto = [brief.sector, brief.companyContext, brief.companyName]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "");
+  const palabras = texto.split(/\s+/).filter((p) => p.length > 3);
+  if (!palabras.length) return brief.templatePresetId;
+
+  const normal = (v: string) =>
+    v.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+
+  let mejor = { id: brief.templatePresetId, puntos: 0 };
+  for (const receta of TEMPLATE_RECIPES_100) {
+    const nombre = normal(receta.name);
+    const categoria = normal(receta.category);
+    let puntos = 0;
+    for (const palabra of palabras) {
+      if (nombre.includes(palabra)) puntos += 10;
+      if (categoria.includes(palabra)) puntos += 6;
+      if (normal(receta.objective).includes(palabra)) puntos += 2;
+    }
+    if (puntos > mejor.puntos) mejor = { id: receta.id, puntos };
+  }
+  return mejor.id;
+}
+
 export function generarDocumento(brief: Brief, copy: GeneratedCopy) {
   const receta = catalogItem(TEMPLATE_RECIPES_100, brief.templatePresetId);
   const documento = buildProductionDocument({

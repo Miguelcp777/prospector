@@ -3220,19 +3220,33 @@ Deja de aparecer en la biblioteca y ` +
         document?: TemplateDocument;
         subject?: string;
         preheader?: string;
+        imagePrompt?: string | null;
         mode?: string;
+        aviso?: string | null;
         error?: string;
       };
       if (!response.ok || !data.document)
         throw new Error(data.error || "No se pudo generar");
+
+      // Si el modelo no pudo escribir, se compone con la plantilla de
+      // siempre — pero se dice. Hacer pasar un texto de plantilla por uno
+      // escrito para este negocio es peor que no tenerlo.
+      if (data.aviso)
+        toast.warning("El texto no lo ha escrito el modelo", {
+          description: data.aviso,
+        });
       const generatedDocument = cloneDocument(data.document);
       let generatedImageUrl: string | null = null;
       if (aiBrief.generateImage) {
         setAiProgress(
           `Generando la imagen principal en ${aiBrief.imageResolution === "draft" ? "calidad normal" : aiBrief.imageResolution.toUpperCase()}…`,
         );
+        // La descripción que ha escrito el modelo para esta campaña manda:
+        // conoce el negocio y el texto que acaba de redactar. Lo que el
+        // usuario haya puesto a mano va primero, que para eso lo puso.
         const prompt =
           aiBrief.imagePrompt.trim() ||
+          data.imagePrompt?.trim() ||
           `${aiBrief.companyName || "Empresa"}, ${aiBrief.sector}. Campaña para ${aiBrief.objective}. Representar ${aiBrief.offer}. Audiencia: ${aiBrief.audience}. Composición con espacio negativo para texto de email.`;
         const generatedHero = generatedDocument.blocks.find(
           (block) => block.type === "hero",

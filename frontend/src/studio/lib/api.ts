@@ -21,7 +21,7 @@
 import { supabase } from "../../lib/supabase";
 import { renderEmailHtml, renderEmailText } from "./email-renderer";
 import type { StoredTemplate, TemplateDocument } from "./template-types";
-import { generarDocumento, guidedCopy, type Brief } from "./generacion";
+import { elegirReceta, generarDocumento, guidedCopy, type Brief } from "./generacion";
 
 /** Fila de `plantillas` tal y como la devuelve Postgres. */
 type FilaPlantilla = {
@@ -305,14 +305,59 @@ async function listarImagenes() {
 // fue local. Por eso esto funciona hoy, al instante y gratis.
 // ------------------------------------------------------------
 
-function componer(brief: Brief) {
-  const copy = guidedCopy(brief);
-  const documento = generarDocumento(brief, copy);
+async function componer(brief: Brief) {
+  // El texto lo escribe el modelo. Antes lo escribía `guidedCopy`, una
+  // plantilla determinista: asunto fijo, titular fijo y la primera receta
+  // del catálogo —de tecnología— dijera lo que dijera el brief. El botón
+  // decía «Crear con IA» y no llamaba a ninguna.
+  //
+  // Si el modelo falla, se compone igual con la plantilla y se avisa: que
+  // el proveedor esté caído o falte la clave no debe dejar al usuario con
+  // el editor en blanco. Pero se dice, porque un correo de plantilla que
+  // pasa por generado con IA es peor que uno que se presenta como lo que es.
+  let copy = guidedCopy(brief);
+  let modo = "guided-preview";
+  let aviso: string | null = null;
+
+  const { data, error: fallo } = await supabase.functions.invoke("componer-campana", {
+    body: brief,
+  });
+
+  if (fallo) {
+    const ctx = (fallo as { context?: Response }).context;
+    aviso = fallo.message;
+    try { aviso = JSON.parse(await ctx!.text()).error ?? aviso; } catch { /* sin cuerpo */ }
+  } else if ((data as { copy?: Record<string, string> })?.copy) {
+    const escrito = (data as { copy: Record<string, string> }).copy;
+    copy = {
+      subject: escrito.subject || copy.subject,
+      preheader: escrito.preheader || copy.preheader,
+      eyebrow: escrito.eyebrow || copy.eyebrow,
+      title: escrito.title || copy.title,
+      body: escrito.body || copy.body,
+      sectionTitle: escrito.sectionTitle || copy.sectionTitle,
+      sectionBody: escrito.sectionBody || copy.sectionBody,
+      ctaLabel: escrito.ctaLabel || copy.ctaLabel,
+    };
+    modo = "ia";
+    // La descripción de la imagen viaja aparte: la usa el paso siguiente,
+    // que es el que llama a `generar-imagen`.
+    if (escrito.imagePrompt) brief = { ...brief, imagePrompt: escrito.imagePrompt };
+  }
+
+  // El sector del catálogo sale de lo que se ha escrito, no del primero de
+  // la lista. Ver `elegirReceta`.
+  const documento = generarDocumento(
+    { ...brief, templatePresetId: elegirReceta(brief) },
+    copy,
+  );
   return json({
     document: documento,
     subject: copy.subject,
     preheader: copy.preheader,
-    mode: "guided-preview",
+    imagePrompt: (brief as { imagePrompt?: string }).imagePrompt ?? null,
+    mode: modo,
+    aviso,
   });
 }
 
@@ -470,7 +515,7 @@ export async function apiFetch(
     }
 
     if (ruta === "/api/generate" && metodo === "POST")
-      return componer(cuerpo as Brief);
+      return await componer(cuerpo as Brief);
 
     // Las herramientas de texto sí van al modelo, y por eso pasan por una
     // Edge Function: la clave de Anthropic no puede estar en el navegador.
