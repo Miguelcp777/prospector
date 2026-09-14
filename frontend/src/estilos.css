@@ -950,3 +950,60 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e1) 0; width: 
   cursor: pointer; user-select: none;
 }
 .celda-interruptor input { accent-color: var(--acento); cursor: pointer; }
+
+/* ---------------- la bienvenida ---------------- */
+/* Los datos del negocio, antes de entrar. Sin menú lateral a propósito: es
+   una pantalla de la que solo se sale completándola o saliendo de la
+   sesión, y un menú al lado invita a esquivarla. */
+.bienvenida {
+  min-height: 100vh; padding: var(--e6) var(--e5);
+  display: flex; justify-content: center; align-items: flex-start;
+}
+.bienvenida-marco {
+  width: 100%; max-width: 720px;
+  display: flex; flex-direction: column; gap: var(--e5);
+}
+.bienvenida-pasos {
+  display: flex; flex-wrap: wrap; gap: var(--e3);
+  margin: 0; padding: 0; list-style: none;
+  font-size: 0.8125rem; color: var(--texto-3);
+}
+.bienvenida-pasos li { display: flex; align-items: center; gap: var(--e2); }
+.bienvenida-pasos li span {
+  display: grid; place-items: center;
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 1px solid var(--borde-fuerte);
+  font-size: 0.6875rem;
+}
+.bienvenida-pasos li.activo { color: var(--texto); }
+.bienvenida-pasos li.activo span {
+  border-color: var(--acento); background: var(--acento-suave); color: var(--acento);
+}
+.bienvenida-pasos li.hecho span {
+  border-color: var(--acento); background: var(--acento); color: var(--fondo);
+}
+.bienvenida-acciones { margin-top: var(--e3); }
+
+/* ---------------- el logo del negocio ---------------- */
+.logo-negocio { display: flex; flex-direction: column; gap: var(--e3); }
+.logo-negocio-fila {
+  display: flex; gap: var(--e5); align-items: flex-start; flex-wrap: wrap;
+}
+.logo-negocio-muestra {
+  display: grid; place-items: center;
+  width: 140px; height: 96px; flex: 0 0 auto;
+  border: 1px dashed var(--borde-fuerte); border-radius: var(--radio-m);
+  background: var(--hundido); padding: var(--e2);
+}
+.logo-negocio-muestra img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.logo-negocio-fila > div:last-child { flex: 1 1 260px; min-width: 0; }
+
+/* El input de archivo va escondido detrás del botón. `width: 1px` importa:
+   `estilos.css` da `width: 100%` a todo input fuera de capas, y sin esto el
+   campo invisible arrastra scroll horizontal. Es el mismo choque que la
+   0005 documenta para el studio. */
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  margin: -1px; padding: 0; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}

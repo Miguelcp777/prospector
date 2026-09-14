@@ -10,6 +10,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { leerPerfil } from "../lib/perfil-negocio";
 import { Campana } from "./Campana";
 
 type Fila = {
@@ -168,6 +169,28 @@ function Formulario({
   const [radio, setRadio] = useState(25);
   const [tope, setTope] = useState(120);
   const [enviando, setEnviando] = useState(false);
+  const [heredado, setHeredado] = useState(false);
+
+  // La campaña nace con los datos del negocio puestos (051). Antes había que
+  // volver a escribir «tu negocio, en una frase» en cada campaña, y la mitad
+  // se quedaban vacías: la inferencia proponía cualquier cosa y el redactor
+  // escribía genérico sin que nadie supiera por qué.
+  //
+  // Se rellenan como valores iniciales, no se atan: una agencia con varias
+  // empresas escribe encima, y para eso está «Empresa que escribe» dentro de
+  // la campaña (043).
+  useEffect(() => {
+    leerPerfil().then((perfil) => {
+      if (!perfil) return;
+      let algo = false;
+      setNombre((v) => { if (v || !perfil.nombre) return v; algo = true; return perfil.nombre; });
+      setCiudad((v) => { if (v || !perfil.ciudad) return v; algo = true; return perfil.ciudad; });
+      setDescripcion((v) => {
+        if (v || !perfil.descripcion) return v; algo = true; return perfil.descripcion;
+      });
+      setHeredado(algo);
+    });
+  }, []);
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
@@ -192,6 +215,13 @@ function Formulario({
   return (
     <form className="tarjeta" onSubmit={enviar}>
       <h2>Nueva campaña</h2>
+      {heredado && (
+        <p className="menudo">
+          Rellenada con los datos de tu cuenta. Cámbialos aquí si esta campaña
+          es de otra empresa o de otra zona: lo que escribas vale solo para
+          ella.
+        </p>
+      )}
       <label className="campo">
         <span>Nombre</span>
         <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Fisios Valencia" />

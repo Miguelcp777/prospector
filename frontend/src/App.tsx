@@ -20,6 +20,7 @@ import { Mensajes } from "./pages/Mensajes";
 import { Historial } from "./pages/Historial";
 import { Supresiones } from "./pages/Supresiones";
 import { Cuenta } from "./pages/Cuenta";
+import { Bienvenida } from "./pages/Bienvenida";
 import { Incidencias } from "./pages/Incidencias";
 import { Panel } from "./pages/Panel";
 
@@ -194,6 +195,9 @@ function Aplicacion() {
     { leads: number; mensajes: number; contacto: string | null } | null
   >(null);
   const [vista, setVista] = useState<Vista>("campanas");
+  // Empieza en null —no «false»— para no enseñar la aplicación medio
+  // segundo y taparla después con la bienvenida.
+  const [sinConfigurar, setSinConfigurar] = useState<boolean | null>(null);
 
   // Si es admin, aparece la sección de panel. Que el menú esté o no no
   // decide nada: las funciones panel_* comprueban es_admin() por su cuenta,
@@ -207,10 +211,21 @@ function Aplicacion() {
     // apaga un módulo son los triggers de la 029 sobre `jobs` y
     // `plantillas`. Esto es solo para no enseñar lo que no se ha vendido.
     supabase.from("tenants")
-      .select("modulo_prospeccion, modulo_email, modo_demo")
+      .select("modulo_prospeccion, modulo_email, modo_demo, configurado_en")
       .maybeSingle()
       .then(({ data }) => {
-        if (!data) return;
+        if (!data) {
+          // Un usuario sin tenant no tiene bienvenida que enseñar: lo que
+          // necesita es el mensaje de Cuenta explicando que el trigger de
+          // alta no llegó a correr. Sin esto se quedaría en «Cargando» para
+          // siempre, que es la peor forma de contar un fallo.
+          setSinConfigurar(false);
+          return;
+        }
+        // Nulo = esta cuenta no ha pasado por la bienvenida. Se resuelve
+        // aquí y no en la propia pantalla para que no haya un parpadeo de
+        // la aplicación entera antes de taparla.
+        setSinConfigurar(data.configurado_en === null);
         setModulos({
           prospeccion: data.modulo_prospeccion !== false,
           email: data.modulo_email !== false,
@@ -262,6 +277,14 @@ function Aplicacion() {
   if (recuperando) return <NuevaContrasena alTerminar={() => setRecuperando(false)} />;
 
   if (!sesion) return <Acceso />;
+
+  // Antes que nada, los datos del negocio. Sin ellos la inferencia propone
+  // cualquier cosa y el redactor escribe genérico, así que dejar entrar sin
+  // preguntarlos es dejar que el producto falle por donde no se ve.
+  if (sinConfigurar === null)
+    return <main className="centro"><p className="sutil">Cargando tu cuenta…</p></main>;
+  if (sinConfigurar)
+    return <Bienvenida alTerminar={() => setSinConfigurar(false)} />;
 
   // Un módulo se puede apagar con la pantalla abierta. Sin esto, el menú
   // deja de ofrecer la sección pero el contenido sigue puesto.

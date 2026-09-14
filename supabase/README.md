@@ -744,6 +744,93 @@ vacía**. Una plantilla del catálogo con bloque de oferta lo pinta en blanco
 y nadie avisa. Es de las que hay que decidir: o se rellena con algo, o se
 quita del catálogo.
 
+## El perfil del negocio y la bienvenida (051)
+
+Una cuenta nueva pasa por una **pantalla de bienvenida** antes de entrar. Tres
+pasos: el negocio, cómo te encuentran y el logo.
+
+### Por qué
+
+Hasta la 051 una cuenta podía trabajar sabiendo de sí misma un nombre y poco
+más. Por Google ni eso: el alta no pregunta nada y el tenant nace con
+`vertical = 'sin_definir'`. Y cada campaña volvía a pedir «tu negocio, en una
+frase» como si no se hubiera dicho nunca — con la mitad vacías, la inferencia
+proponía cualquier cosa y el redactor escribía genérico, sin que nadie
+supiera por qué.
+
+### Qué bloquea
+
+Solo cuatro campos: **nombre, actividad, descripción y ciudad**. Son
+exactamente los que leen la inferencia y el redactor. El contacto, el
+domicilio postal y el logo se pueden dejar para luego; la pantalla dice qué
+falta en vez de retener a nadie.
+
+La comprobación es de pantalla, no de base. Lo peor que puede hacer alguien
+saltándosela es dejar su propia cuenta a medias, que es su decisión y no un
+problema de aislamiento.
+
+### Dónde vive cada dato, y por qué no está todo junto
+
+| Dato | Tabla |
+|---|---|
+| nombre, actividad, ciudad, descripción, teléfono, email, web, horario, redes | `tenants` |
+| **domicilio postal** | `config_correo.direccion_postal` |
+| **logo** | `recursos` con `tipo='logo'` y `campaign_id` nulo |
+
+El domicilio postal **no** se duplica en `tenants`. Ya estaba en
+`config_correo` y es de ahí de donde lo lee el pie legal; tenerlo en dos
+sitios es garantizar que un día digan cosas distintas, y el que se quedaría
+obsoleto sería justo el que identifica al remitente ante la LSSI-CE. La
+pantalla los enseña juntos; la base los guarda donde cada uno se lee.
+
+### El logo ya estaba previsto y nadie lo escribía
+
+`logo_de_campana()` (044) busca «el de la campaña, y si no el del negocio
+(`campaign_id` nulo)». Esa segunda rama **no se había usado nunca**, porque
+la pantalla de Recursos siempre graba con campaña. Comprobado antes de
+tocar nada: ni una fila de logo con `campaign_id is null`, y el único logo
+de la base en el bucket **privado** de antes de la 044, que esa función
+descarta. Conclusión incómoda: **ningún correo llevaba logo**.
+
+Ahora lo escribe la bienvenida, y `logo_del_negocio()` lo lee sin pasar por
+una campaña — que es lo que necesitan Cuenta y el studio. Sigue mandando el
+de la campaña cuando lo haya.
+
+En el correo va como variable `{{brand.logo_url}}`, no como URL pegada en el
+documento: así una plantilla guardada sigue al logo de la cuenta el día que
+se cambie, en vez de quedarse con el de entonces.
+
+### Lo que hereda de aquí en adelante
+
+- **Una campaña nueva** nace con el nombre, la ciudad y la descripción del
+  negocio puestos. Son valores iniciales, no ataduras: una agencia con varias
+  empresas escribe encima, y para eso está «Empresa que escribe» (043).
+- **El asistente de IA del studio** arranca con la empresa, la actividad y la
+  descripción escritas, y con la web como destino del botón.
+- **El redactor de mensajes** recibe teléfono, email, web y horario en el
+  contexto, para poder cerrar un correo con datos que existen en vez de
+  dejar el hueco o inventarlos.
+
+Los tres respetan la regla de la 043: **si la campaña declara empresa propia,
+los datos del tenant no se le atribuyen**. `v_contexto_mensaje` los anula,
+igual que ya hacía con el sector y la ciudad.
+
+### Las cuentas que ya existían no la ven
+
+La migración sella `configurado_en = creado_en` en las filas que ya estaban.
+Es la lección de la 045: allí un `default true` sobre una columna nueva metió
+en modo demo a todos los clientes el mismo día. Quien quiera completar sus
+datos entra por **Cuenta**, que es el mismo formulario de corrido.
+
+### Las columnas nuevas de una vista van al final
+
+`create or replace view` solo sabe añadir columnas por la derecha. Meter una
+en medio le parece renombrar las siguientes y falla con «cannot change name
+of view column "oferta" to "negocio_telefono"». Por eso los cuatro campos
+nuevos de `v_contexto_mensaje` están detrás de `oferta` y no agrupados con
+las otras `negocio_*`: ordenarlos bien costaría un `drop view`, y de esa
+vista cuelga la redacción de mensajes.
+
 ## Modo demo
 
 Un freno de gasto **por cliente**, que **viene puesto** en toda cuenta

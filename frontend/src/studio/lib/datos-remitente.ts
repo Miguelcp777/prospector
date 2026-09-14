@@ -18,6 +18,7 @@
 // ============================================================
 
 import { supabase } from "../../lib/supabase";
+import { urlDelLogo } from "../../lib/perfil-negocio";
 
 export type DatosRemitente = {
   /** Lo que se pasa como `mergeData` al renderizador. */
@@ -46,12 +47,16 @@ export function olvidarDatosDelRemitente() {
 
 async function leer(): Promise<DatosRemitente> {
   try {
-    const [cuenta, correo] = await Promise.all([
+    const [cuenta, correo, logo] = await Promise.all([
       supabase.from("tenants").select("nombre, ciudad").maybeSingle(),
       supabase
         .from("config_correo")
         .select("nombre_remitente, direccion_postal, url_privacidad, buzon, dominio")
         .maybeSingle(),
+      // El logo del negocio (051). Va como variable y no como URL pegada en
+      // el documento: así una plantilla guardada sigue al logo de la cuenta
+      // el día que se cambie, en vez de quedarse con el de entonces.
+      supabase.rpc("logo_del_negocio"),
     ]);
 
     const t = (cuenta.data ?? {}) as { nombre?: string | null; ciudad?: string | null };
@@ -86,6 +91,7 @@ async function leer(): Promise<DatosRemitente> {
         "sender.postal_address": postal || (t.ciudad ?? "").trim(),
         "sender.privacy_url": privacidad,
         "sender.privacy_email": buzon && dominio ? `${buzon}@${dominio}` : "",
+        "brand.logo_url": urlDelLogo((logo.data as string | null) || null),
       },
       falta,
     };
@@ -96,6 +102,7 @@ async function leer(): Promise<DatosRemitente> {
       merge: {
         "sender.name": "", "sender.company": "", "sender.legal_name": "",
         "sender.postal_address": "", "sender.privacy_url": "", "sender.privacy_email": "",
+        "brand.logo_url": "",
       },
       falta: ["la razón social de quien firma", "el domicilio postal"],
     };

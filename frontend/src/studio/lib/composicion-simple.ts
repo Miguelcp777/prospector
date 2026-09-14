@@ -133,6 +133,10 @@ function bloque(tipo: BloquePermitido, ctx: Contexto): EmailBlock | null {
         // El nombre de la empresa del cliente. Aquí iba la categoría del
         // catálogo, y por eso un estudio de tatuajes se presentaba como SALUD.
         label: nombreEmpresa || "{{sender.company}}",
+        // El logo de la cuenta, por variable. Si no hay ninguno se resuelve
+        // a vacío y el renderizador pinta el nombre, que es exactamente lo
+        // que hay que enseñar entonces.
+        logoUrl: "{{brand.logo_url}}",
         textTransform: arte.mayusculas ? "uppercase" : "none",
         letterSpacing: arte.mayusculas ? 3 : 0,
       });

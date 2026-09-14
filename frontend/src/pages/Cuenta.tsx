@@ -1,90 +1,73 @@
 // ============================================================
-// Cuenta: el tenant que el trigger de alta creó.
+// Cuenta: el negocio, editable entero.
 //
-// Era de solo lectura porque el formulario de registro ya pedía los datos
-// del negocio. Con Google eso deja de ser cierto: no hay formulario, y el
-// tenant nace con el nombre que Google conozca y la vertical sin definir.
-// Sin poder editarlo aquí, esa cuenta no puede inferir segmentos nunca.
+// Era de solo lectura porque el formulario de registro ya pedía los datos.
+// Con Google eso dejó de ser cierto —no hay formulario— y desde la 051 aquí
+// vive el perfil completo: los cuatro esenciales que usan la inferencia y el
+// redactor, más el contacto, el domicilio postal y el logo.
 //
-// La base solo deja tocar nombre, vertical y ciudad: la política de RLS
-// acota las filas y el GRANT por columna acota los campos, así que
-// `max_consultas_mes` y `plan` no se pueden mover desde el navegador
-// aunque alguien lo intente por su cuenta. Ver 021.
+// Es el mismo formulario que la pantalla de bienvenida, con los campos
+// puestos de corrido en vez de en tres pasos. Comparten `CamposDelNegocio` a
+// propósito: dos copias del mismo formulario divergen en cuanto se añade un
+// campo, y quien lo note será un cliente.
+//
+// La base sigue acotando qué se puede tocar. La RLS elige la fila y el GRANT
+// por columna elige los campos, así que `plan` y `max_consultas_mes` se ven
+// y no se mueven desde el navegador aunque alguien lo intente por su cuenta.
+// Ver 021 y 051.
 // ============================================================
 
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import {
+  guardarPerfil, leerPerfil, loQueFalta, type PerfilNegocio,
+} from "../lib/perfil-negocio";
+import { GrupoContacto, GrupoLogo, GrupoNegocio } from "./CamposDelNegocio";
 import { ModeloDelCliente } from "./ModeloDelCliente";
 import { CorreoDelCliente } from "./CorreoDelCliente";
 
-type Tenant = {
-  id: string;
-  nombre: string;
-  vertical: string;
-  ciudad: string | null;
-  plan: string;
-};
-
-type Perfil = {
-  email: string;
-  rol: string;
-  tenants: Tenant | null;
-};
-
-/** La vertical que pone el trigger cuando nadie se la ha dicho. */
-export const SIN_DEFINIR = "sin_definir";
+type Cabecera = { email: string; rol: string; plan: string };
 
 export function Cuenta() {
-  const [perfil, setPerfil] = useState<Perfil | null>(null);
+  const [perfil, setPerfil] = useState<PerfilNegocio | null>(null);
+  const [cabecera, setCabecera] = useState<Cabecera | null>(null);
+  const [sinTenant, setSinTenant] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const [nombre, setNombre] = useState("");
-  const [vertical, setVertical] = useState("");
-  const [ciudad, setCiudad] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [guardado, setGuardado] = useState(false);
 
   useEffect(() => {
-    supabase
-      .from("profiles")
-      .select("email, rol, tenants(id, nombre, vertical, ciudad, plan)")
-      .single()
-      .then(({ data, error: fallo }) => {
-        if (fallo) { setError(fallo.message); return; }
-        const p = data as unknown as Perfil;
-        setPerfil(p);
-        setNombre(p.tenants?.nombre ?? "");
-        // 'sin_definir' es una marca interna, no algo que se le enseñe a
-        // nadie: el campo aparece vacío para que se escriba encima.
-        setVertical(p.tenants?.vertical === SIN_DEFINIR ? "" : p.tenants?.vertical ?? "");
-        setCiudad(p.tenants?.ciudad ?? "");
+    supabase.from("profiles").select("email, rol, tenants(plan)").maybeSingle()
+      .then(({ data }) => {
+        const p = data as unknown as
+          { email: string; rol: string; tenants: { plan: string } | null } | null;
+        if (p) setCabecera({ email: p.email, rol: p.rol, plan: p.tenants?.plan ?? "—" });
       });
+
+    leerPerfil().then((p) => {
+      if (p) setPerfil(p);
+      else setSinTenant(true);
+    });
   }, []);
 
-  const incompleto = perfil?.tenants?.vertical === SIN_DEFINIR;
+  const cambiar = (cambio: Partial<PerfilNegocio>) => {
+    setGuardado(false);
+    setPerfil((p) => (p ? { ...p, ...cambio } : p));
+  };
+
+  const falta = perfil ? loQueFalta(perfil) : [];
 
   async function guardar(e: React.FormEvent) {
     e.preventDefault();
-    if (!perfil?.tenants) return;
-
-    if (!nombre.trim())   { setError("El negocio necesita un nombre."); return; }
-    if (!vertical.trim()) { setError("Elige a qué se dedica tu negocio."); return; }
-
+    if (!perfil) return;
     setError(null);
     setGuardando(true);
-    const { error: fallo } = await supabase.from("tenants").update({
-      nombre: nombre.trim(),
-      vertical: vertical.trim(),
-      ciudad: ciudad.trim() || null,
-    }).eq("id", perfil.tenants.id);
+    // `cerrarBienvenida` también aquí: una cuenta que completa sus datos en
+    // esta pantalla no tiene por qué encontrarse la bienvenida después.
+    const r = await guardarPerfil(perfil, { cerrarBienvenida: true });
     setGuardando(false);
-
-    if (fallo) { setError(fallo.message); return; }
+    if (!r.ok) { setError(r.error); return; }
     setGuardado(true);
-    setPerfil({ ...perfil, tenants: {
-      ...perfil.tenants,
-      nombre: nombre.trim(), vertical: vertical.trim(), ciudad: ciudad.trim() || null,
-    } });
   }
 
   return (
@@ -95,51 +78,33 @@ export function Cuenta() {
       </div>
 
       {error && <p className="caja-error">{error}</p>}
-      {!perfil && !error && <p className="sutil">Cargando tu cuenta…</p>}
+      {!perfil && !sinTenant && !error && <p className="sutil">Cargando tu cuenta…</p>}
 
-      {perfil && !perfil.tenants && (
+      {sinTenant && (
         <p className="caja-error">
           Tu usuario no tiene tenant. Eso significa que el trigger de alta no
           llegó a ejecutarse — sin él la RLS te oculta todo.
         </p>
       )}
 
-      {incompleto && (
+      {perfil && falta.length > 0 && (
         <p className="caja-aviso">
-          Falta decir a qué se dedica tu negocio. La inferencia de segmentos
-          se apoya en ese dato para saber a quién dirigirse, así que hasta
-          que lo completes propondrá cualquier cosa.
+          Falta {falta.join(", ")}. La inferencia de segmentos y la redacción
+          de los correos se apoyan en esos datos, así que hasta que estén
+          propondrán y escribirán cualquier cosa.
         </p>
       )}
 
-      {perfil?.tenants && (
+      {perfil && (
         <form className="tarjeta" onSubmit={guardar}>
           <h2>Datos del negocio</h2>
+          <GrupoNegocio perfil={perfil} cambiar={cambiar} />
 
-          <label className="campo">
-            <span>Nombre del negocio</span>
-            <input value={nombre} placeholder="Clínica Ejemplo"
-                   onChange={(e) => { setNombre(e.target.value); setGuardado(false); }} />
-          </label>
+          <h2>Cómo te encuentran</h2>
+          <GrupoContacto perfil={perfil} cambiar={cambiar} />
 
-          <label className="campo">
-            <span>¿A qué se dedica?</span>
-            <input list="verticales" value={vertical} placeholder="fisioterapia"
-                   onChange={(e) => { setVertical(e.target.value); setGuardado(false); }} />
-            <datalist id="verticales">
-              <option value="fisioterapia" />
-            </datalist>
-            <small className="sutil">
-              Hoy solo fisioterapia tiene taxonomía curada. Con otra vertical la
-              inferencia sigue funcionando, pero sin ese apoyo.
-            </small>
-          </label>
-
-          <label className="campo">
-            <span>Ciudad</span>
-            <input value={ciudad} placeholder="Valencia"
-                   onChange={(e) => { setCiudad(e.target.value); setGuardado(false); }} />
-          </label>
+          <h2>Tu logo</h2>
+          <GrupoLogo perfil={perfil} cambiar={cambiar} />
 
           <div className="acciones">
             <button className="primario" type="submit" disabled={guardando}>
@@ -150,16 +115,16 @@ export function Cuenta() {
         </form>
       )}
 
-      {perfil?.tenants && <CorreoDelCliente />}
+      {perfil && <CorreoDelCliente />}
 
-      {perfil?.tenants && (
+      {cabecera && (
         <dl className="datos">
           <dt>Plan</dt>
-          <dd>{perfil.tenants.plan}</dd>
+          <dd>{cabecera.plan}</dd>
           <dt>Tu email</dt>
-          <dd>{perfil.email}</dd>
+          <dd>{cabecera.email}</dd>
           <dt>Tu rol</dt>
-          <dd>{perfil.rol}</dd>
+          <dd>{cabecera.rol}</dd>
         </dl>
       )}
 
@@ -172,7 +137,7 @@ export function Cuenta() {
       {/* Quién paga el modelo. Va aquí y no en una sección propia del menú
           porque es configuración de la cuenta, y porque quien la necesita
           llega buscando «dónde se pone mi clave», no una sección nueva. */}
-      {perfil?.tenants && (
+      {perfil && (
         <>
           <div className="cabecera-texto" style={{ marginTop: "var(--e5)" }}>
             <span className="rotulo">Inteligencia artificial</span>

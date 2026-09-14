@@ -62,6 +62,7 @@ import {
 import { toast } from "sonner";
 import { apiFetch } from "@studio/lib/api";
 import { datosDelRemitente } from "@studio/lib/datos-remitente";
+import { leerPerfil } from "../lib/perfil-negocio";
 import { Button } from "@studio/ui/button";
 import {
   Dialog,
@@ -1668,14 +1669,37 @@ export default function StudioClient({ displayName }: StudioProps) {
   // mientras no se sepa: el aviso sale cuando hay respuesta, no antes.
   const [faltaRemitente, setFaltaRemitente] = useState<string[]>([]);
 
-  // Quién firma. Solo los `sender.*`: las `lead.*` se quedan de ejemplo,
-  // porque el destinatario de una vista previa no existe todavía.
+  // Quién firma. Solo los `sender.*` y el logo: las `lead.*` se quedan de
+  // ejemplo, porque el destinatario de una vista previa no existe todavía.
   useEffect(() => {
     let vivo = true;
     datosDelRemitente().then(({ merge, falta }) => {
       if (!vivo) return;
       setMergeData((actual) => ({ ...actual, ...merge }));
       setFaltaRemitente(falta);
+    });
+    return () => { vivo = false; };
+  }, []);
+
+  // El asistente arranca con el negocio ya escrito (051). Quien diseña un
+  // correo para su propia empresa no tiene por qué volver a teclear cómo se
+  // llama y a qué se dedica cada vez; quien lo hace para otra, escribe
+  // encima. Solo se rellena lo que esté en blanco, para no pisar nada.
+  useEffect(() => {
+    let vivo = true;
+    leerPerfil().then((perfil) => {
+      if (!vivo || !perfil) return;
+      setAiBrief((actual) => ({
+        ...actual,
+        companyName: actual.companyName || perfil.nombre,
+        sector: actual.sector || perfil.vertical,
+        queTransmitir: actual.queTransmitir || perfil.descripcion,
+        companyContext: actual.companyContext || perfil.descripcion,
+        destinationUrl:
+          actual.destinationUrl && actual.destinationUrl !== "https://"
+            ? actual.destinationUrl
+            : perfil.web || actual.destinationUrl,
+      }));
     });
     return () => { vivo = false; };
   }, []);

@@ -32,6 +32,13 @@ export type Contexto = {
   // presentación. Lo que sí describe a esta es `campana_descripcion`.
   negocio_vertical: string | null;
   negocio_ciudad: string | null;
+  // Del perfil del negocio (051). Nulos cuando la campaña declara empresa
+  // propia: son datos del tenant y atribuirselos a otra empresa es
+  // inventarle la ficha. La vista ya aplica esa regla.
+  negocio_telefono: string | null;
+  negocio_email: string | null;
+  negocio_web: string | null;
+  negocio_horario: string | null;
   campana_tipo: string;
   campana_tono: string;
   campana_idioma: string;
@@ -112,6 +119,13 @@ export async function redactarMensaje(
       (c.negocio_vertical ? `, ${c.negocio_vertical}` : "") +
       (c.negocio_ciudad ? ` en ${c.negocio_ciudad}` : ""),
     c.campana_descripcion ? `A qué se dedica: ${c.campana_descripcion}` : "",
+    // Datos de contacto reales. Se le dan para que pueda cerrar el correo
+    // con un teléfono o una web que existen, en vez de dejar el hueco o
+    // inventarlos — que es lo que hace un modelo cuando le falta el dato.
+    c.negocio_telefono ? `Teléfono: ${c.negocio_telefono}` : "",
+    c.negocio_email    ? `Email: ${c.negocio_email}`       : "",
+    c.negocio_web      ? `Web: ${c.negocio_web}`           : "",
+    c.negocio_horario  ? `Horario: ${c.negocio_horario}`   : "",
     "",
     `A QUIÉN ESCRIBE: ${c.lead_nombre}`,
     c.lead_direccion ? `Dirección: ${c.lead_direccion}` : "",

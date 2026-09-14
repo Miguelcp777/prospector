@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { invocar } from "../lib/edge";
-import { SIN_DEFINIR } from "./Cuenta";
+import { SIN_DEFINIR } from "../lib/perfil-negocio";
 
 type Campana = {
   id: string;
