@@ -4126,7 +4126,15 @@ Deja de aparecer en la biblioteca y ` +
               </nav>
             )}
 
-            <aside className="palette-panel" data-tour="blocks">
+            {/* `mobile-open` es lo que abre este panel por debajo de 900 px: sin
+                ella, los botones «Bloques» y «Capas» de la barra de abajo
+                cambiaban de estado y no enseñaban nada. */}
+            <aside
+              className={`palette-panel ${
+                mobilePanel === "blocks" || mobilePanel === "layers" ? "mobile-open" : ""
+              }`}
+              data-tour="blocks"
+            >
               <Tabs
                 value={workflowStep === "library" ? "library" : "blocks"}
                 onValueChange={(value) =>
