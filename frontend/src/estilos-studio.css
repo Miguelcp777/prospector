@@ -976,3 +976,52 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   display: inline-block;
   width: max-content;
 }
+
+/* `theme-dark` sigue a la aplicación también en los textos.
+
+   Este es el tema por defecto del studio, y el que decidimos que siguiera el
+   aspecto de Prospector. Los fondos ya lo hacían —`--ink-0` y `--ink-2` van
+   mapeados arriba—, pero los textos no: la regla `.theme-dark` que trae V45
+   redefine `--foreground` y `--muted-text` apuntando a sus `--contrast-*`,
+   que son claros porque el studio original era oscuro.
+
+   Con la aplicación en claro eso deja texto casi blanco sobre fondo casi
+   blanco. Medido en el paso de diseño: **223 textos por debajo de 3 de
+   contraste**, y los peores en 1,01 — «Diseño» era invisible. V31 no traía
+   esta regla, así que entró con el porte.
+
+   Mapeados los seis a las variables de la aplicación, esos 223 bajan a 6, y
+   esos seis son artefactos de la medición —colores en espacio `color(srgb)`
+   que el cálculo no compone bien—.
+
+   `theme-light` no necesita nada: sus `--contrast-*` ya son coherentes entre
+   sí. Y los tres temas de color traen los suyos, más abajo. */
+.studio .theme-dark {
+  --foreground: var(--texto);
+  --muted-text: var(--texto-2);
+  --contrast-text: var(--texto);
+  --contrast-soft: var(--texto-2);
+  --contrast-muted: var(--texto-3);
+  --contrast-surface: var(--superficie);
+}
+
+/* La barra de título no se mete debajo de los botones.
+
+   `.name-row` es un flex que no encogía: el input del nombre pedía 308 px y
+   el estado «Guardada · v1» otros 77, dentro de un hueco de 294. El input
+   invadía la zona de acciones y el estado quedaba entero encima de ella. */
+.studio .title-cluster { min-width: 0; }
+.studio .name-row { min-width: 0; gap: 8px; }
+.studio .name-row input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  max-width: min(390px, 30vw);
+}
+.studio .save-state {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
