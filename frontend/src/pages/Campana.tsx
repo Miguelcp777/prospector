@@ -363,9 +363,14 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
 
         <Paso n={6} estado="futuro" titulo={PASOS[5].nombre}
               resumen="Todavía no está disponible.">
+          {/* Aquí se le enseñaba al cliente `docs/compliance.md`, que es un
+              archivo de este repositorio. Ni puede abrirlo ni le dice nada.
+              Lo que sí es suyo y sí puede hacer es verificar su dominio, así
+              que el aviso lleva ahí. */}
           <div className="caja-aviso">
-            El envío automatizado no existe aún. Antes hace falta un dominio de
-            correo configurado y una consulta legal — ver <code>docs/compliance.md</code>.
+            El envío automatizado todavía no está disponible. Antes hace falta
+            que tu dominio de correo esté verificado, en Cuenta → Correo
+            saliente.
             <br />
             Lo que sí está listo: la lista de supresión y el enlace de baja que
             lleva cada mensaje.
