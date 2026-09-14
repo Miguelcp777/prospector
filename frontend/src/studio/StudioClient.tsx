@@ -454,6 +454,8 @@ type MediaAsset = {
   width?: number | null;
   height?: number | null;
   createdAt: string;
+  /** Vive en el bucket privado: su enlace caduca y en un correo llega rota. */
+  caduca?: boolean;
 };
 
 const BLOCK_META: Array<{
@@ -5188,7 +5190,11 @@ Deja de aparecer en la biblioteca y ` +
                                         "block",
                                       )
                                     }
-                                    title={asset.altText || asset.filename}
+                                    title={
+                                      asset.caduca
+                                        ? "Subida antes del cambio de almacenamiento: su enlace caduca a las 8 horas y en un correo llegaría rota. Vuelve a subirla."
+                                        : asset.altText || asset.filename
+                                    }
                                   >
                                     <img
                                       src={asset.url}
@@ -5199,6 +5205,7 @@ Deja de aparecer en la biblioteca y ` +
                                         ? "IA"
                                         : "Propia"}
                                       {asset.width ? ` · ${asset.width}px` : ""}
+                                      {asset.caduca ? " · caduca" : ""}
                                     </span>
                                   </button>
                                 ))}

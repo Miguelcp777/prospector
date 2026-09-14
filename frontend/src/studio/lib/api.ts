@@ -301,18 +301,29 @@ async function guardarKit(datos: unknown) {
 
 // ------------------------------------------------------------
 // Imágenes · `recursos` con tipo 'imagen' (ver 025)
+//
+// El archivo va a un bucket **público** desde la 050. Lo que se dibuja
+// dentro de un correo no puede servirse con una URL firmada: el correo se
+// abre horas o semanas después y la firma caduca a las ocho, así que la
+// imagen llega rota. La fila del catálogo sigue en `recursos`, que es quien
+// sabe de quién es cada archivo.
 // ------------------------------------------------------------
+
+const BUCKET_IMAGENES = "imagenes-correo";
 
 async function listarImagenes() {
   const { data, error: fallo } = await supabase
-    .from("recursos").select("id, nombre, ruta, origen, texto_alt, ancho, alto, creado_en")
+    .from("recursos").select("id, nombre, ruta, bucket, origen, texto_alt, ancho, alto, creado_en")
     .eq("tipo", "imagen").order("creado_en", { ascending: false }).limit(200);
   if (fallo) return error(fallo.message, 500);
 
   const assets = await Promise.all((data ?? []).map(async (r) => ({
     id: r.id as string,
-    // El bucket es privado: sin firmar, el navegador no puede pintarla.
-    url: await urlFirmada(r.ruta as string),
+    url: await urlDelRecurso(r.ruta as string, r.bucket as string | null),
+    // Las de antes de la 050 siguen en el bucket privado: se ven aquí con
+    // una firma de ocho horas y llegan rotas a una bandeja de entrada. Se
+    // marcan en la galería para que nadie las elija sin saberlo.
+    caduca: r.bucket !== BUCKET_IMAGENES,
     filename: r.nombre as string,
     source: r.origen as string,
     altText: (r.texto_alt as string) ?? "",
@@ -462,7 +473,7 @@ async function subirImagen(form: FormData) {
   const ruta = `${perfil.tenant_id}/studio/${crypto.randomUUID()}.${ext}`;
 
   const { error: falloSubida } = await supabase.storage
-    .from("recursos").upload(ruta, archivo, { contentType: archivo.type });
+    .from(BUCKET_IMAGENES).upload(ruta, archivo, { contentType: archivo.type });
   if (falloSubida) return error(falloSubida.message, 500);
 
   // Las medidas se leen aquí: el editor las necesita para maquetar y en el
@@ -478,21 +489,22 @@ async function subirImagen(form: FormData) {
     tipo: "imagen",
     nombre: archivo.name.slice(0, 200),
     ruta,
+    bucket: BUCKET_IMAGENES,
     mime: archivo.type,
     tamano: archivo.size,
     ancho, alto,
     origen: "subida",
     texto_alt: String(form.get("altText") ?? "").slice(0, 300),
-  }).select("id, nombre, ruta, origen, texto_alt, ancho, alto, creado_en").single();
+  }).select("id, nombre, ruta, bucket, origen, texto_alt, ancho, alto, creado_en").single();
 
   if (falloFila) {
     // La fila es la que manda: sin ella el archivo queda huérfano y nadie
     // lo va a encontrar nunca. Se retira.
-    await supabase.storage.from("recursos").remove([ruta]);
+    await supabase.storage.from(BUCKET_IMAGENES).remove([ruta]);
     return error(falloFila.message, 500);
   }
 
-  const url = await urlFirmada(ruta);
+  const url = await urlDelRecurso(ruta, BUCKET_IMAGENES);
   return json({ asset: {
     id: fila.id, url, filename: fila.nombre, source: fila.origen,
     altText: fila.texto_alt, width: fila.ancho, height: fila.alto,
@@ -500,9 +512,18 @@ async function subirImagen(form: FormData) {
   }, url });
 }
 
-/** El bucket es privado: cada uso necesita su enlace firmado. */
-async function urlFirmada(ruta: string) {
-  const { data } = await supabase.storage.from("recursos")
+/**
+ * La dirección de un archivo del catálogo, según dónde viva.
+ *
+ * `imagenes-correo` es público desde la 050 y devuelve una URL estable. Las
+ * imágenes anteriores siguen en `recursos`, que es privado, y solo se pueden
+ * ver con una firma que caduca a las ocho horas — que es justo el motivo de
+ * aquella migración.
+ */
+async function urlDelRecurso(ruta: string, bucket?: string | null) {
+  if (bucket === BUCKET_IMAGENES)
+    return supabase.storage.from(BUCKET_IMAGENES).getPublicUrl(ruta).data.publicUrl;
+  const { data } = await supabase.storage.from(bucket || "recursos")
     .createSignedUrl(ruta, 60 * 60 * 8);
   return data?.signedUrl ?? "";
 }

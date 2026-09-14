@@ -685,6 +685,40 @@ la landing y no en los correos. La pantalla de Recursos lo avisa y se
 arregla volviéndolos a subir, que es un clic; moverlos desde una migración
 significaría tocar los archivos de un cliente.
 
+### Las imágenes del studio también tenían que ser públicas (050)
+
+La 044 mandó los **logos** a un bucket público y dejó fuera las imágenes que
+el studio sube y genera. Entonces eran opcionales; desde que «Crear con IA»
+genera una portada siempre, están en el camino por defecto — y se guardaban
+en `recursos`, privado, con la **URL firmada metida dentro del documento**.
+
+Esa firma dura ocho horas. Una plantilla diseñada por la mañana tiene el
+hero roto por la tarde: en la plantilla guardada, en la vista previa y en
+cualquier correo enviado con ella. Es el peor fallo posible porque
+**mientras se prueba se ve bien**, así que quien lo diseña no lo ve nunca.
+
+El reparto queda en tres:
+
+| Bucket | Acceso | Qué guarda |
+|---|---|---|
+| `logos` | **público** | imágenes de marca, hasta 2 MB |
+| `imagenes-correo` | **público** | lo que se dibuja dentro de un correo, hasta 10 MB |
+| `recursos` | privado | documentos y todo lo demás |
+
+La frontera no es «imagen o no»: es **si la va a pedir un cliente de correo
+horas después**. Una oferta comercial en PDF se sirve firmada y caduca; una
+foto de portada no puede.
+
+Escribir sigue siendo privado, con el mismo aislamiento de 017 y 044: la
+ruta empieza por el uuid del tenant y la política lo compara con
+`auth_tenant_id()`. Sin SVG en el bucket público, por lo de siempre.
+
+**Las imágenes subidas o generadas antes de la 050 siguen en el privado.**
+No se mueven: son archivos de clientes y moverlos desde una migración es
+tocar lo suyo sin que lo hayan pedido. La galería del studio las marca con
+**«· caduca»** y lo explica al pasar el ratón; se arregla volviéndolas a
+subir, o generando una nueva. Lo mismo que se hizo con los logos.
+
 ### El pie tenía dos enlaces que no debían estar
 
 Encontrado al montar la plantilla por defecto, y venía de antes: el

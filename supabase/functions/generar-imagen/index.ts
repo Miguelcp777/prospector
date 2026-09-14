@@ -16,6 +16,8 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { json, preflight } from "../_shared/http.ts";
 
+const BUCKET_IMAGENES = "imagenes-correo";
+
 const MODELO_IMAGEN = "gpt-image-1";
 
 /** Lo que pide el studio contra lo que admite OpenAI. */
@@ -126,8 +128,12 @@ Deno.serve(async (req) => {
     // `(storage.foldername(name))[1] = auth_tenant_id()`.
     const ruta = `${perfil.tenant_id}/studio/${crypto.randomUUID()}.png`;
 
+    // Bucket publico desde la 050. Antes iba a `recursos`, que es privado, y
+    // lo que quedaba dentro de la plantilla era una URL firmada de ocho
+    // horas: el hero se veia bien al disenarlo y roto por la tarde, en la
+    // plantilla guardada y en cualquier correo enviado con ella.
     const { error: falloSubida } = await admin.storage
-      .from("recursos").upload(ruta, bytes, { contentType: "image/png" });
+      .from(BUCKET_IMAGENES).upload(ruta, bytes, { contentType: "image/png" });
     if (falloSubida) {
       return json(req, { error: `No se pudo guardar la imagen: ${falloSubida.message}` }, 500);
     }
@@ -139,28 +145,29 @@ Deno.serve(async (req) => {
       tipo: "imagen",
       nombre: (altText || prompt).slice(0, 120) + ".png",
       ruta,
+      bucket: BUCKET_IMAGENES,
       mime: "image/png",
       tamano: bytes.byteLength,
       ancho, alto,
       origen: "ia",
       prompt: prompt.slice(0, 2000),
       texto_alt: String(altText ?? "").slice(0, 300),
-    }).select("id, nombre, ruta, origen, texto_alt, ancho, alto, creado_en").single();
+    }).select("id, nombre, ruta, bucket, origen, texto_alt, ancho, alto, creado_en").single();
 
     if (falloFila) {
       // Sin fila, el archivo queda huérfano y ocuparía sitio para siempre.
-      await admin.storage.from("recursos").remove([ruta]);
+      await admin.storage.from(BUCKET_IMAGENES).remove([ruta]);
       return json(req, { error: falloFila.message }, 500);
     }
 
-    const { data: firmada } = await admin.storage
-      .from("recursos").createSignedUrl(ruta, 60 * 60 * 8);
+    const { data: publica } = admin.storage
+      .from(BUCKET_IMAGENES).getPublicUrl(ruta);
 
     return json(req, {
-      url: firmada?.signedUrl ?? "",
+      url: publica?.publicUrl ?? "",
       asset: {
         id: fila.id,
-        url: firmada?.signedUrl ?? "",
+        url: publica?.publicUrl ?? "",
         filename: fila.nombre,
         source: fila.origen,
         altText: fila.texto_alt,
