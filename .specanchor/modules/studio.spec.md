@@ -68,6 +68,15 @@ llamadas del editor.
   `createBlock` y solo se tocan las props que se nombran.
 - **INV-STU-008** · Un hueco que el redactor deja se queda sin bloque, no con
   relleno determinista.
+- **INV-STU-009** · Aplicar una plantilla del catálogo **trae su imagen**,
+  generada con el prompt que esa receta ya lleva escrito para su sector. Las
+  100 recetas nacen con `thumbnail: ""`, así que sin generarla el catálogo
+  entero se ve vacío (TASK-003).
+- **INV-STU-010** · Un visual generado se reutiliza dentro de la sesión,
+  indexado por receta. Navegar por la biblioteca no puede costar una imagen de
+  pago por clic, y hay una opción explícita para aplicar sin generar.
+- **INV-STU-011** · Un fallo al generar la imagen **no** cancela la
+  aplicación de la plantilla: el texto y el diseño sirven sin imagen.
 
 ## Dependencias
 
@@ -101,9 +110,12 @@ las guardadas son 33,9 KB, lejos de los 102 KB a los que Gmail recorta.
 
 ## Incertidumbres y deuda conocidas
 
-- **OBSERVED** · El camino avanzado sigue usando el catálogo y conserva sus
-  cuatro defectos (mayúsculas, antetítulo heredado, etiqueta de categoría,
-  recuadro sin imagen). Arreglarlo es un trabajo aparte.
+- **OBSERVED** · El camino avanzado del asistente sigue usando el catálogo y
+  conserva sus defectos: mayúsculas, antetítulo heredado y etiqueta de
+  categoría. Arreglarlo es un trabajo aparte.
+  El cuarto —el hueco sin imagen— lo resuelve TASK-003 **solo al aplicar
+  desde la Biblioteca**; el asistente avanzado depende de su propio
+  interruptor «generar visual».
 - **OBSERVED** · Seis textos de la aplicación quedan por debajo de 4.5:1
   dentro del studio, medidos en `docs/decisiones/0005`; son colores de la
   aplicación y afectan a más pantallas.
@@ -113,6 +125,8 @@ las guardadas son 33,9 KB, lejos de los 102 KB a los que Gmail recorta.
 ## Historial de cambios
 
 - 2026-09-14 · Redactada durante la adopción de SDD. Sin cambio de código.
+- 2026-09-14 · TASK-003: aplicar una plantilla del catálogo trae su imagen.
+  Invariantes 009 a 011.
 
 ## Evidencia de las afirmaciones
 
@@ -122,3 +136,4 @@ las guardadas son 33,9 KB, lejos de los 102 KB a los que Gmail recorta.
 | Los 4 fallos son los del porte | OBSERVED | `docs/decisiones/0005` | — |
 | El lienzo desaparecía entre 901 y 1240 px | VERIFIED | medición a 960 px | canvas 0 px, corregido |
 | Ninguna plantilla guardada pasa a composición libre | VERIFIED | 29 plantillas del tenant | 0 con `heroComposition` |
+| Las 100 del catálogo se renderizaban sin imagen | VERIFIED | construidas y renderizadas, `c7f0248` | 100 de 100 sin imagen |

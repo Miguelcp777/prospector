@@ -1,49 +1,53 @@
 {
-  "revision": "ec28a9cd6bfec79f523600fafae49a17b29b0c4c",
-  "task_spec": ".specanchor/tasks/TASK-002.spec.md",
+  "revision": "c7f02482ed091512c5bbc6b0a2ee290472be5b27",
+  "task_spec": ".specanchor/tasks/TASK-003.spec.md",
   "files": [
     {
-      "path": "frontend/src/estilos-studio.css",
-      "kind": "behavior_preserving",
+      "path": "frontend/src/studio/StudioClient.tsx",
+      "kind": "contract",
       "specs": [
         ".specanchor/modules/studio.spec.md"
       ],
-      "rationale": "La fila de la Biblioteca siempre quiso recortar el título: el `text-overflow: ellipsis` ya estaba escrito. Lo que no llegaba a aplicarse era el recorte, porque `1fr` no encoge por debajo del contenido. Se arregla el mecanismo, no la intención: no se añade ni se retira ninguna promesa del módulo.",
+      "rationale": "Cambia comportamiento visible: aplicar una plantilla del catálogo ahora genera su imagen. Se añaden los invariantes 009 a 011 a la spec del módulo en esta misma tarea, antes de cerrarla.",
       "evidence": [
-        ".specanchor/tasks/TASK-002.spec.md#ev-001"
+        ".specanchor/tasks/TASK-003.spec.md#ev-002"
       ]
     },
     {
-      "path": ".specanchor/tasks/TASK-002.spec.md",
+      "path": ".specanchor/modules/studio.spec.md",
+      "kind": "requirement",
+      "specs": [],
+      "rationale": "Se declaran los invariantes 009 (la plantilla trae su imagen), 010 (reutilización por receta y salida sin gastar) y 011 (un fallo de generación no cancela la aplicación).",
+      "evidence": [
+        ".specanchor/tasks/TASK-003.spec.md#ev-001"
+      ]
+    },
+    {
+      "path": ".specanchor/tasks/TASK-003.spec.md",
+      "kind": "requirement",
+      "specs": [],
+      "rationale": "Tarea completa de este cambio, con su decisión de producto registrada.",
+      "evidence": [
+        ".specanchor/tasks/TASK-003.spec.md#ev-001"
+      ]
+    },
+    {
+      "path": ".specanchor/findings/0001-el-catalogo-no-tiene-imagenes.md",
       "kind": "clarification",
       "specs": [],
-      "rationale": "Tarea ligera de esta corrección, con la medición antes y después.",
+      "rationale": "Hallazgo que originó la tarea, con la medición de las 100 plantillas.",
       "evidence": [
-        ".specanchor/tasks/TASK-002.spec.md#ev-001"
+        ".specanchor/tasks/TASK-003.spec.md#ev-001"
       ]
     }
   ],
   "traceability": [
     {
-      "requirement": "TASK-002/REQ-001",
-      "acceptance": "TASK-002/AC-001",
-      "verification": "Medir en el DOM el rectángulo del título contra el de su botón",
-      "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-002.spec.md#ev-001"
-    },
-    {
-      "requirement": "TASK-002/REQ-001",
-      "acceptance": "TASK-002/AC-002",
-      "verification": "Leer gridTemplateColumns de la fila larga",
-      "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-002.spec.md#ev-001"
-    },
-    {
-      "requirement": "TASK-002/REQ-002",
-      "acceptance": "TASK-002/AC-003",
-      "verification": "cd frontend && npm run test:studio",
-      "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-002.spec.md#ev-002"
+      "requirement": "TASK-003/REQ-001",
+      "acceptance": "TASK-003/AC-001",
+      "verification": "Aplicar una plantilla en producción y leer imageUrl del hero",
+      "result": "not_run",
+      "evidence": ".specanchor/tasks/TASK-003.spec.md#ev-002"
     }
   ]
 }

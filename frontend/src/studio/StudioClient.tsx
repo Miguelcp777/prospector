@@ -1640,6 +1640,14 @@ export default function StudioClient({ displayName }: StudioProps) {
     screenContext: "",
     automaticContext: true,
   });
+  // Un visual ya generado se reutiliza dentro de la sesión, indexado por
+  // RECETA y no por plantilla: el prompt pertenece a la receta, y dos
+  // plantillas que la comparten comparten visual.
+  //
+  // Sin esto, mirar tres plantillas y volver a la primera costaría tres
+  // imágenes de pago. Navegar por la biblioteca no puede salir a una imagen
+  // por clic.
+  const visualesDelCatalogo = useRef(new Map<string, { url: string; alt: string }>());
   const [catalogImageResolution, setCatalogImageResolution] = useState<
     "draft" | "2k" | "4k"
   >("draft");
@@ -2958,10 +2966,35 @@ export default function StudioClient({ displayName }: StudioProps) {
     toast.success("Variante independiente creada; el original permanece intacto");
   }
 
+  /** Pone una imagen en el primer bloque visual del documento abierto. */
+  function ponerVisual(url: string, alt: string) {
+    setDocument((current) => {
+      const next = cloneDocument(current);
+      const visual = next.blocks.find(
+        (block) => block.type === "hero" || block.type === "image",
+      );
+      if (visual) {
+        visual.props.imageUrl = url;
+        visual.props.imageAlt = alt;
+      }
+      return next;
+    });
+    setDirty(true);
+  }
+
   async function preparePresetImage(preset: Preset) {
     applyPreset(preset);
     const recipe = catalogItem(IMAGE_RECIPES_100, preset.imageRecipeId);
     setWorkflowStep("content");
+
+    // Ya generado en esta sesión: se reutiliza y no se llama al proveedor.
+    const guardado = visualesDelCatalogo.current.get(preset.imageRecipeId);
+    if (guardado) {
+      ponerVisual(guardado.url, guardado.alt);
+      toast.message("Se reutiliza el visual ya generado para esta plantilla");
+      return;
+    }
+
     setImageLoading(true);
     toast.message(
       `Creando un visual ${catalogImageResolution === "draft" ? "normal" : catalogImageResolution.toUpperCase()} exclusivo para ${preset.name}…`,
@@ -3010,25 +3043,20 @@ export default function StudioClient({ displayName }: StudioProps) {
       };
       if (!response.ok || !data.url)
         throw new Error(data.error || "No se pudo generar el visual");
-      setDocument((current) => {
-        const next = cloneDocument(current);
-        const visual = next.blocks.find(
-          (block) => block.type === "hero" || block.type === "image",
-        );
-        if (visual) {
-          visual.props.imageUrl = data.url!;
-          visual.props.imageAlt = `${preset.name}: ${recipe.scene}`;
-        }
-        return next;
-      });
-      setDirty(true);
+      const alt = `${preset.name}: ${recipe.scene}`;
+      visualesDelCatalogo.current.set(preset.imageRecipeId, { url: data.url, alt });
+      ponerVisual(data.url, alt);
       await loadMediaLibrary();
       toast.success(
         `Visual ${catalogImageResolution === "draft" ? "normal" : catalogImageResolution.toUpperCase()} de ${preset.name} guardado en la biblioteca`,
       );
     } catch (error) {
+      // La plantilla ya está aplicada: el texto y el diseño sirven sin
+      // imagen. Dejar al usuario sin nada porque el proveedor no responde
+      // sería peor que el problema que vino a resolver esto.
       toast.error(
         error instanceof Error ? error.message : "No se pudo generar el visual",
+        { description: "La plantilla se ha aplicado igual, sin imagen." },
       );
     } finally {
       setImageLoading(false);
@@ -4746,10 +4774,16 @@ Deja de aparecer en la biblioteca y ` +
                                       <DropdownMenuTrigger asChild>
                                         <button><Layers3 /> Aplicar plantilla</button>
                                       </DropdownMenuTrigger>
+                                      {/* Aplicar trae la imagen. Antes ninguna de las tres
+                                          opciones la traía, y el catálogo entero se veía
+                                          vacío: las 100 recetas nacen con la miniatura a
+                                          cadena vacía. El generador ya existía, pero detrás
+                                          de un segundo botón que había que saber pulsar. */}
                                       <DropdownMenuContent align="start" className="studio-more-menu">
+                                        <DropdownMenuItem onSelect={() => void preparePresetImage(preset)}><Sparkles /> Aplicar con su imagen</DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={() => applyPreset(preset)}><Blocks /> Aplicar sin generar imagen</DropdownMenuItem>
                                         <DropdownMenuItem onSelect={() => applyPresetStyle(preset)}><Palette /> Aplicar solo estilo</DropdownMenuItem>
-                                        <DropdownMenuItem onSelect={() => applyPresetStructure(preset)}><Blocks /> Aplicar solo estructura</DropdownMenuItem>
-                                        <DropdownMenuItem onSelect={() => applyPreset(preset)}><Sparkles /> Aplicar estilo y estructura</DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={() => applyPresetStructure(preset)}><Layers3 /> Aplicar solo estructura</DropdownMenuItem>
                                       </DropdownMenuContent>
                                     </DropdownMenu>
                                     <button
