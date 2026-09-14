@@ -731,6 +731,43 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   grid-template-columns: var(--carril) minmax(0, 1fr);
 }
 
+/* La franja intermedia: el studio no está solo en la pantalla --------
+ *
+ * Las columnas de arriba son fijas y suman más de lo que hay. El studio no
+ * ocupa la ventana entera: a su izquierda está el menú de Prospector, 240 px
+ * que sus reglas originales no conocían porque venía de una aplicación
+ * suelta. Medido a 960 px de ventana, en «Editar contenido»: el studio se
+ * queda con 705, los tres paneles piden 196+258+340 = 794, y la columna
+ * flexible —el correo— **se queda en cero**. Desaparece el lienzo.
+ *
+ * Su maqueta compacta no entra hasta los 900, así que entre 901 y 1240 no
+ * la salvaba nadie.
+ *
+ * Aquí se recorta lo prescindible antes que el correo. Primero el carril de
+ * pasos: los mismos seis están arriba, en la barra horizontal, así que no se
+ * pierde por dónde vas. Después los paneles laterales, hasta sus mínimos.
+ * El correo se queda estrecho y con scroll propio, que es incómodo pero se
+ * ve — y verlo es de lo que va la pantalla. */
+@media (min-width: 901px) and (max-width: 1240px) {
+  .mode-guided { --carril: 0px; }
+  .mode-guided .guia-pasos { display: none; }
+
+  .mode-guided.paso-library .workspace-grid {
+    grid-template-columns: 280px minmax(0, 1fr);
+  }
+  .mode-guided.paso-content .workspace-grid {
+    grid-template-columns: 212px minmax(0, 1fr) 264px;
+  }
+  .mode-guided.paso-design .workspace-grid,
+  .mode-guided.paso-variables .workspace-grid,
+  .mode-guided.paso-mobile .workspace-grid {
+    grid-template-columns: minmax(0, 1fr) 288px;
+  }
+  .mode-guided.paso-review .workspace-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* Las pestañas de cada panel sobran en guiado: el paso ya decidió cuál
    toca, y dejarlas invita a saltárselo. */
 .mode-guided .panel-tabs > [role="tablist"] { display: none; }
