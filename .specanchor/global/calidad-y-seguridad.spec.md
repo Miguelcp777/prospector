@@ -18,7 +18,8 @@ lo que no se puede romper aunque el cambio funcione.
 | Las pruebas del studio pasan 71 de 75 | VERIFIED | `npm run test:studio` en `98f80dc` |
 | Los 4 fallos son anteriores y están explicados | OBSERVED | `docs/decisiones/0005`, sección «Estado» |
 | `tsc -b` y `npm run build` salen con 0 | VERIFIED | ejecutados en `98f80dc` |
-| **No hay CI**: nada ejecuta las pruebas solo | VERIFIED | no existe `.github/` |
+| Hay CI desde TASK-005: tipos, build, pruebas y guard | VERIFIED | `.github/workflows/ci.yml`; cada pieza ejecutada en local |
+| Ninguno de esos trabajos se ha ejecutado aún en GitHub | UNKNOWN | no hay todavía ninguna ejecución de la que hablar |
 | Fuera del studio no hay ninguna prueba automática | VERIFIED | `frontend/pruebas-porte/` es el único directorio de pruebas |
 | Ningún secreto vive en el repositorio | OBSERVED | `.env.example` solo lleva la URL y la clave publicable |
 | El MCP de Supabase está en modo escritura a propósito | OBSERVED | `.mcp.json` sin `read_only`; razonado en `supabase/README.md` |
@@ -27,8 +28,13 @@ lo que no se puede romper aunque el cambio funcione.
 
 - **INTENT** · Un cambio material no se cierra sin que sus criterios de
   aceptación estén verificados con evidencia real, no declarada.
-- **INTENT** · Los 4 fallos de arriba pueden seguir fallando mientras se
-  demuestre que no tienen relación con el cambio. Un fallo **nuevo** bloquea.
+- Los 4 fallos de arriba pueden seguir fallando mientras se demuestre que no
+  tienen relación con el cambio. Un fallo **nuevo** bloquea. Desde TASK-005
+  esto **ya no es una intención sino una regla que se ejecuta**: los cuatro
+  están listados por nombre en `scripts/fallos-conocidos.json` y
+  `scripts/pruebas-del-studio.mjs` rompe con cualquier otro resultado — y
+  también si uno de los cuatro empieza a pasar, para que la lista no envejezca
+  sola. VERIFIED 2026-09-14 · TASK-005 EV-002.
 
 ## Restricciones
 
@@ -70,7 +76,9 @@ La auditoría legal previa a la Fase 4 sigue pendiente (`docs/compliance.md`).
 ## Incógnitas
 
 - **UNKNOWN** · Nadie ha medido la cobertura real de los caminos críticos
-  (RLS, resolución de claves, troceado). Las pruebas que hay son del studio.
+  (RLS, resolución de claves, troceado). Las pruebas que hay son del studio, y
+  el CI ejecuta esas y ninguna más: montarlo no ha añadido una sola prueba,
+  solo ha quitado la parte de «si alguien se acuerda».
 - ~~No se ha probado que la RLS aísle de verdad~~ → **VERIFIED** el
   2026-09-14 (TASK-004), con la sesión de un cliente real contra los datos de
   los otros cinco tenants. Queda sin probar el sentido recíproco y el rol
@@ -79,3 +87,5 @@ La auditoría legal previa a la Fase 4 sigue pendiente (`docs/compliance.md`).
 ## Historial de cambios
 
 - 2026-09-14 · Redactada durante la adopción de SDD. Sin cambio de código.
+- 2026-09-14 · TASK-005: existe CI. La tolerancia a los cuatro fallos deja de
+  ser un INTENT y pasa a ser una lista que se ejecuta.

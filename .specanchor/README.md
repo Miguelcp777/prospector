@@ -87,9 +87,35 @@ deliberadas del porte del studio, explicadas en `docs/decisiones/0005` y
 listadas en `modules/studio.spec.md`. Pueden seguir fallando; **un fallo
 distinto de esos cuatro bloquea**.
 
+## El CI
+
+Desde TASK-005 esto se ejecuta solo. Tres trabajos en
+`.github/workflows/ci.yml`, y el contrato completo en
+`modules/entrega.spec.md`:
+
+| Trabajo | Cuándo | Qué |
+|---|---|---|
+| `frontend` | pull request y empujón a `main` | `npm ci`, tipos, build, pruebas del studio |
+| `contratos` | solo pull request | el guard con `--base origin/<rama destino>` |
+| `inventario` | solo empujón a `main` | el guard con `--baseline` |
+
+Dos cosas que conviene saber antes de tocarlo:
+
+- **Las pruebas no se llaman a pelo.** `npm run test:studio` sale siempre con
+  código 1 por los cuatro fallos de arriba. `scripts/pruebas-del-studio.mjs`
+  los tolera por nombre y rompe con cualquier otro — y también si uno de los
+  cuatro empieza a pasar, para que la lista no envejezca sola.
+- **El informe de impacto se sella** contra el HEAD de la tubería, porque no
+  puede contener el hash del commit que lo lleva dentro. Eso afloja la
+  atadura de la revisión: lo que sigue protegiendo es la exigencia de una
+  fila por archivo cambiado. Está razonado en la spec del módulo.
+
 ## Lo que falta
 
-- **No hay CI.** Nada ejecuta el guard ni las pruebas solo. Integrarlo es el
-  siguiente paso y está propuesto en `global/puesta-en-marcha.spec.md`.
+- **El CI no se ha ejecutado nunca en GitHub.** Cada pieza está medida en
+  local; `ubuntu-latest`, el commit de fusión sintético de las pull requests
+  y la caché de npm, no.
+- **El CI no toca `supabase/`.** Ni Edge Functions ni migraciones tienen
+  comprobación automática.
 - Las protecciones de rama son un ajuste externo y necesitan autorización
-  aparte.
+  aparte. No se han tocado, y sin ellas un rojo avisa pero no impide fusionar.

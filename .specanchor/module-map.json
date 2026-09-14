@@ -101,6 +101,14 @@
         "frontend/campaign-studio/*"
       ],
       "spec": ".specanchor/modules/campaign-studio-aparcado.spec.md"
+    },
+    {
+      "name": "entrega",
+      "paths": [
+        ".github/*",
+        "scripts/*"
+      ],
+      "spec": ".specanchor/modules/entrega.spec.md"
     }
   ],
   "global_spec_paths": [
