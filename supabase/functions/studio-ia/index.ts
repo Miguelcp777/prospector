@@ -16,7 +16,7 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { MODELO } from "../_shared/inferencia.ts";
 import { anotarConsumo } from "../_shared/consumo.ts";
-import { claveAnthropic } from "../_shared/claves.ts";
+import { claveAnthropic, ErrorSinClave } from "../_shared/claves.ts";
 import { json, preflight } from "../_shared/http.ts";
 
 /** Lo que el editor sabe pedir. Cualquier otra cosa se rechaza. */
@@ -139,6 +139,9 @@ Deno.serve(async (req) => {
       return json(req, { error: "Respuesta con formato inesperado." }, 502);
     }
   } catch (e) {
+    // La falta de clave no es un error inesperado: es algo que el dueño de
+    // la cuenta puede resolver, y el mensaje dice dónde.
+    if (e instanceof ErrorSinClave) return json(req, { error: e.message }, 503);
     console.error(e);
     return json(req, { error: "Error inesperado." }, 500);
   }

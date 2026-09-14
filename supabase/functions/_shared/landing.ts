@@ -9,7 +9,7 @@
 
 import { MODELO } from "./inferencia.ts";
 import { anotarConsumo, type Quien } from "./consumo.ts";
-import { claveAnthropic } from "./claves.ts";
+import { claveAnthropic, ErrorSinClave } from "./claves.ts";
 
 export type ContextoLanding = {
   negocio_nombre: string;
@@ -83,11 +83,22 @@ export async function generarLanding(
     publico,
   ].filter(Boolean).join("\n");
 
+  // La clave, antes de la llamada: si falta, el aviso tiene que decir
+  // qué falta y a quién le toca ponerla. Sin esto, un cliente sin clave
+  // propia recibía «Error inesperado» y no tenía nada que hacer con eso.
+  let clave: string;
+  try {
+    clave = await claveAnthropic(quien?.tenant);
+  } catch (e) {
+    if (e instanceof ErrorSinClave) throw new ErrorLanding(503, e.message);
+    throw e;
+  }
+
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-api-key": await claveAnthropic(quien?.tenant),
+      "x-api-key": clave,
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
