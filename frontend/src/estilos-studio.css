@@ -918,3 +918,44 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   --cian: var(--cyan);
   --acento-suave: color-mix(in srgb, var(--cyan) 16%, transparent);
 }
+
+/* Biblioteca: lo que no cabía en el panel.
+
+   `1fr` en una rejilla no baja del ancho mínimo de su contenido, así que
+   cuatro columnas de `1fr` con las palabras «Recomendadas» y «Clásicas»
+   dentro piden más de lo que el panel tiene. Medido: caja de 302 px,
+   contenido de 384. Las pestañas se salían por la derecha y el texto se
+   cortaba a media palabra.
+
+   `minmax(0, 1fr)` es lo que permite a la columna encoger por debajo de su
+   contenido; `min-width: 0` hace lo propio con el botón, que por ser un
+   elemento de formulario tampoco encoge solo.
+
+   La tarjeta de referencia visual va en el mismo paquete: misma rejilla
+   `27px 1fr`, y además su botón no partía la línea, así que «Usar esta
+   campaña como referencia visual» empujaba el panel entero.
+
+   Las miniaturas del catálogo no entran aquí: su `.template-art` recorta a
+   propósito con `overflow: hidden` y no se sale de nada. */
+.studio .template-tier-tabs {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.studio .template-tier-tabs button {
+  min-width: 0;
+  padding-inline: 4px;
+  overflow-wrap: anywhere;
+  line-height: 1.2;
+}
+.studio .visual-reference-bar > div {
+  grid-template-columns: 27px minmax(0, 1fr);
+}
+.studio .visual-reference-bar strong,
+.studio .visual-reference-bar small {
+  overflow-wrap: anywhere;
+}
+.studio .visual-reference-bar button {
+  min-width: 0;
+  height: auto;
+  padding-block: 8px;
+  white-space: normal;
+}
