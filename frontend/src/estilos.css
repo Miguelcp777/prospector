@@ -462,7 +462,19 @@ textarea { resize: vertical; line-height: 1.6; }
 .paso-detalle { margin-top: var(--e4); display: flex; flex-direction: column; gap: var(--e3); }
 
 /* Un paso que aún no toca se ve, pero se ve que no toca. */
-.paso.futuro .paso-cuerpo { opacity: .45; }
+/* Un paso futuro se apaga con COLOR, no con opacidad.
+
+   La opacidad mezcla el texto con lo que tiene detrás antes de que llegue
+   al ojo, y al 45 % lo dejaba en 1.88:1. Casi nunca se notaba porque el
+   detalle de un paso futuro no se dibuja... salvo en el sexto, que es el
+   único que se enseña siempre. O sea: se enseñaba porque importa y se
+   atenuaba hasta no poder leerse, y ahí dentro está lo único que se puede
+   hacer al respecto —verificar el dominio—.
+
+   El título ya se apaga por su cuenta unas líneas más arriba
+   (`--texto-3`), así que el paso se sigue viendo como lo que es: uno que
+   todavía no toca. */
+.paso.futuro .paso-titulo h3 { color: var(--texto-3); }
 
 /* ---------------- barra de progreso ---------------- */
 
