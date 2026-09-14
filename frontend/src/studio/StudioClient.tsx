@@ -3414,9 +3414,22 @@ Deja de aparecer en la biblioteca y ` +
         generatedImageUrl = imageData.url;
       }
       setAiProgress("Guardando la campaña y sus recursos…");
+      // El nombre con el que se guarda.
+      //
+      // Llevaba `aiBrief.objective`, que en el modo simple nadie escribe: es
+      // el valor de fábrica del asistente. Las tres plantillas generadas
+      // hasta ahora se llaman «Woody Tattoo · conseguir reuniones
+      // cualificadas» — la misma frase, que el cliente no ha dicho nunca, y
+      // las tres indistinguibles en la biblioteca.
+      //
+      // Se usa el asunto que ha escrito el modelo: describe ESTE correo, y
+      // dos generaciones seguidas no se llaman igual.
       const campaignName = (
         aiBrief.campaignName.trim() ||
-        `${aiBrief.companyName || aiBrief.sector} · ${aiBrief.objective}`
+        [
+          aiBrief.companyName || aiBrief.sector,
+          simple ? (data.subject || "").trim() : aiBrief.objective,
+        ].filter(Boolean).join(" · ")
       ).slice(0, 120);
       const saveResponse = await apiFetch("/api/templates", {
         method: "POST",
