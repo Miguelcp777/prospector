@@ -859,12 +859,19 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e1) 0; width: 
 
    Los acentos se rebajan hasta que cumplen. Medido, no estimado:
 
-     cian    #0e7490  4.98:1     éxito  #047857  5.10:1
+     cian    #0e7490  4.98:1     éxito  #046e50  5.48:1
      violeta #6d28d9  6.61:1     aviso  #a16207  4.58:1
      magenta #be185d  5.62:1     error  #be123c  5.85:1
 
    sobre el lienzo (#f7f6fb), y todos suben sobre tarjeta blanca. El texto
    principal va a 16.99:1 y el terciario —el más flojo— a 5.17:1.
+
+   Ojo con esta tabla: mide cada color **sobre el fondo de la pantalla**,
+   y hay un caso que no cubre. Las etiquetas ponen el color sobre su propio
+   tinte al 10 % —`color: var(--exito)` con `background: var(--exito-suave)`—
+   y ese tinte oscurece el fondo, así que restan unas cuatro décimas. El
+   éxito se quedaba en 4.45:1 por eso. Al tocar un acento hay que medir los
+   dos casos.
 
    Los fondos llevan el mismo tinte violeta que el oscuro. Un blanco
    neutro rompería la identidad y haría que los dos temas parecieran de
@@ -900,9 +907,15 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e1) 0; width: 
   --acento:       #0e7490;
   --acento-suave: rgba(14, 116, 144, 0.10);
 
-  --exito:       #047857;
-  --exito-suave: rgba(4, 120, 87, 0.10);
-  --exito-borde: rgba(4, 120, 87, 0.35);
+  /* Un pelo más oscuro que el 5.10:1 de la tabla de arriba, y por un caso
+     que esa tabla no miraba: las etiquetas —«lista», «7 segmentos», el ✓
+     de un paso hecho— no ponen el verde sobre el lienzo, lo ponen sobre
+     su propio tinte al 10 %, que oscurece el fondo y come contraste.
+     Medido en producción: 4.45:1, por debajo del mínimo. Con este valor
+     la etiqueta sube a 5.04:1 y el resto de usos suben con ella. */
+  --exito:       #046e50;
+  --exito-suave: rgba(4, 110, 80, 0.10);
+  --exito-borde: rgba(4, 110, 80, 0.35);
   /* Un escalón más oscuro que el resto de acentos: el ámbar es el color
      que peor contrasta sobre claro, y sobre su propio tinte se quedaba en
      4.32:1. Medido en la etiqueta "inferido", que es donde aparece. */

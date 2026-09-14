@@ -1188,3 +1188,13 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* «Fondo de maqueta», la fila de la capa base, se quedaba en 4.38:1 en tema
+   claro. Su etiqueta usa el texto terciario, que la aplicación mide en
+   5.17:1 **sobre el lienzo**; esta fila no es el lienzo, lleva encima un
+   tinte violeta al 7 % que oscurece el fondo y se come esas décimas.
+   Es el mismo tropiezo que el verde de las etiquetas: un color medido sobre
+   el fondo de la pantalla y usado sobre un tinte.
+   Con el texto secundario sube a 7:1 y sigue leyéndose como lo que es, una
+   fila apagada frente a los bloques de verdad. */
+.studio .canvas-base-layer .block-select strong { color: var(--texto-2); }
