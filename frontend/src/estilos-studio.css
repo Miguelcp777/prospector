@@ -1198,3 +1198,14 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
    Con el texto secundario sube a 7:1 y sigue leyéndose como lo que es, una
    fila apagada frente a los bloques de verdad. */
 .studio .canvas-base-layer .block-select strong { color: var(--texto-2); }
+
+/* En esa misma fila, «BG» y «BASE» ponen el violeta sobre el tinte violeta:
+   3.99:1 con el tema oscuro, y son de 7 y 6 píxeles, donde el contraste
+   importa más, no menos.
+   Se empuja el violeta hacia el texto del tema. Con eso vale un solo valor
+   para los dos: en oscuro aclara, en claro oscurece, y sigue siendo violeta
+   —que es lo que distingue esta fila del resto de bloques—. */
+.studio .canvas-base-layer .drag-index,
+.studio .canvas-base-layer .layer-lock {
+  color: color-mix(in srgb, var(--violeta) 78%, var(--texto));
+}
