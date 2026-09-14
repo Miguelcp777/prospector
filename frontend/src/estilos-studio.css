@@ -907,6 +907,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .studio .theme-ocean,
 .studio .theme-emerald,
 .studio .theme-violet {
+  color-scheme: dark;
   --fondo: var(--contrast-surface);
   --superficie: color-mix(in srgb, var(--contrast-text) 7%, var(--contrast-surface));
   --superficie-2: color-mix(in srgb, var(--contrast-text) 12%, var(--contrast-surface));
@@ -997,6 +998,17 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
    `theme-light` no necesita nada: sus `--contrast-*` ya son coherentes entre
    sí. Y los tres temas de color traen los suyos, más abajo. */
 .studio .theme-dark {
+  /* Y el esquema de color del navegador, que no es cosmética: con
+     `color-scheme: dark` —que es lo que trae la regla de V45— el fondo por
+     defecto de un `<button>` pasa a ser gris oscuro, y los botones que no
+     fijan fondo propio salían en gris marengo sobre paneles claros. Se veía
+     en la barra de comandos del modo profesional: «Buscar acción», su atajo
+     y «Revisión», los tres sobre rgb(107,107,107).
+
+     Heredarlo hace que siga a la aplicación, que declara el suyo en los dos
+     temas. Los de color, más abajo, lo fijan en oscuro: ahí el fondo sí lo
+     es. */
+  color-scheme: inherit;
   --foreground: var(--texto);
   --muted-text: var(--texto-2);
   --contrast-text: var(--texto);
