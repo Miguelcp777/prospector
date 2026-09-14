@@ -155,4 +155,5 @@ mismo—. Lo que sí está medido, ejecutándolo:
   tres trabajos se comportaron como dice esta spec. Y las acciones suben a
   **v7**: con `checkout@v4`, `setup-node@v4` y `setup-python@v5` la ejecución
   avisó de que apuntan a Node 20, ya obsoleto, y GitHub las estaba forzando a
-  Node 24. Un aviso hoy es una rotura dentro de unos meses.
+  Node 24. Un aviso hoy es una rotura dentro de unos meses. Comprobado en la
+  ejecución **#2**: verde en 42 s y sin una sola anotación.

@@ -253,9 +253,9 @@ verificado, está estrenado.
 
 - ~~Que el CI funcione en GitHub~~ → **VERIFIED**: ejecución #1, los tres
   trabajos como se habían diseñado (EV-009). Deja de ser un CI escrito.
-- **Que siga funcionando con las acciones en v7.** El botón verde de arriba es
-  de la ejecución con `@v4`/`@v5`. La subida a `@v7` la comprueba la ejecución
-  siguiente de esta misma rama, y hasta que esté en verde eso no está dicho.
+- ~~Que siga funcionando con las acciones en v7~~ → **VERIFIED**: ejecución
+  **#2** de la misma rama, 42 s, `Success`, y **sin una sola anotación**. El
+  aviso de Node 20 desapareció, que era el motivo de subirlas.
 - **En qué estado están las protecciones de rama.** No se ha consultado: `gh`
   no está instalado en esta máquina. No se han tocado.
 
