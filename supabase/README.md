@@ -908,11 +908,12 @@ que corre dentro de la Edge Function — ni siquiera un administrador la saca.
 |---|---|
 | `anthropic` | inferencia, redacción, landings y `studio-ia` |
 | `openai` | las imágenes del studio (`generar-imagen`) |
-| `gemini` | **nadie todavía**. Se guarda, no se llama |
 
-Lo de Gemini está dicho así en la pantalla a propósito. Una clave guardada
-que nadie lee parece configuración hecha, y es de las cosas que se descubren
-el día que hacen falta.
+Gemini estuvo en esta lista desde la 041 «para tenerlo puesto el día que
+haga falta». Ese día no llegó, y la **048 lo quita**: un campo que solo sirve
+para explicar que no sirve es peor que no tenerlo, y en la pantalla del
+cliente invitaba a pegar una clave que no le iba a dar servicio. Si algún
+día vuelve, vuelve con su motor detrás.
 
 ### El secreto de entorno sigue valiendo
 
@@ -996,12 +997,13 @@ Esto no cambia con la 047 y conviene no confundirlo:
 - **anthropic** — los segmentos, los mensajes, las landings y el studio. Es
   la que un cliente necesita de verdad para funcionar sin modo demo.
 - **openai** — solo las imágenes del studio.
-- **gemini** — se guarda y **no la llama nadie todavía**. Un cliente que
-  pegue solo esa se quedará sin IA igual, y la pantalla se lo dice.
+Que el cliente pueda **elegir** proveedor —`config_modelo`,
+`elegir_proveedor_modelo`— está preparado en la base, pero los motores solo
+saben hablar con Anthropic. Así que hoy un cliente que salga de la versión
+de prueba **necesita una clave de Anthropic**: la de OpenAI le dará las
+imágenes del studio y nada más.
 
-Que el cliente pueda **elegir** proveedor —`config_modelo`, `elegir_proveedor_modelo`—
-está preparado en la base, pero los motores solo saben hablar con Anthropic.
-Mientras siga así, elegir Gemini guarda la preferencia y nada más.
+Gemini estaba aquí y lo quita la **048**. Ver la nota de arriba.
 
 ## Las dos claves de Supabase
 

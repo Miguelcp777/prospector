@@ -39,11 +39,6 @@ const FICHA: Record<string, { para: string; pista: string; donde: string }> = {
     pista: "sk-proj-…",
     donde: "platform.openai.com → API keys",
   },
-  gemini: {
-    para: "Ninguna función la usa todavía. Se guarda para tenerla puesta el día que haga falta.",
-    pista: "AIza…",
-    donde: "aistudio.google.com → API keys",
-  },
 };
 
 export function ClavesDeModelo() {
