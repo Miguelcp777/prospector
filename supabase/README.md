@@ -941,6 +941,68 @@ de vuelta). **El Vault está vacío de claves de modelo**: hoy todo tira del
 secreto de entorno de Anthropic, y la clave de OpenAI no se ha puesto nunca
 —así que generar imágenes en el studio no funciona todavía—.
 
+## Y la clave de cada cliente (047)
+
+Las de arriba son **del servicio**: una por proveedor, y con ellas se paga la
+inferencia de todo el mundo. Eso vale mientras se prueba y deja de valer en
+cuanto alguien produce. Desde la 047 la regla es esta:
+
+| Quién llama | Con qué clave |
+|---|---|
+| La demo pública, que no tiene tenant | la del servicio |
+| Un cliente en **versión de prueba** (`tenants.modo_demo`) | la del servicio |
+| Un cliente **fuera** de la versión de prueba | la suya, o ninguna |
+
+«O ninguna» es literal: las funciones de IA responden con un aviso que dice
+qué falta y dónde se pone. **No hay caída de vuelta a la clave del
+servicio**, y esa ausencia es el punto entero: una caída silenciosa es cómo
+acabas pagando el consumo de otro sin enterarte.
+
+Por eso el respaldo por variable de entorno —`ANTHROPIC_API_KEY`, que la 041
+dejó como red de seguridad— tampoco se aplica a un cliente al que le tocaba
+poner la suya. Es del servicio, y solo sirve para quien tiene derecho a ella.
+
+### Dónde la pega el cliente
+
+**Cuenta → Proveedor de modelo.** Mismo molde que el panel: se escribe, no se
+lee, y solo se ven los cuatro últimos caracteres. Lo tocan solo los usuarios
+con rol `propietario` —es una credencial que cuesta dinero cada vez que se
+usa— y se puede **borrar**, que es lo que hace falta el día que una clave se
+revoca o deja de funcionar.
+
+La pantalla dice antes que nada en qué estado está la cuenta: en versión de
+prueba avisa de que ahora mismo no hace falta poner nada, y fuera de ella
+avisa en rojo de que la IA está parada hasta que haya clave.
+
+### Quién resuelve qué
+
+`resolver_clave_modelo(tenant, proveedor)` es la única que ve claves en
+claro, y está concedida solo a `service_role`. Devuelve también **de dónde
+sale**, porque el motivo importa: el aviso que ve un cliente no puede
+mandarle a un panel de administración que no verá nunca.
+
+| `origen` | Significa |
+|---|---|
+| `cliente` | la suya |
+| `servicio` | la del servicio, porque es demo o está en versión de prueba |
+| `falta` | no hay, y no le corresponde la nuestra |
+
+Comprobado ejecutándolo, los cuatro casos, antes de desplegar nada.
+
+### Qué proveedor mueve qué, hoy
+
+Esto no cambia con la 047 y conviene no confundirlo:
+
+- **anthropic** — los segmentos, los mensajes, las landings y el studio. Es
+  la que un cliente necesita de verdad para funcionar sin modo demo.
+- **openai** — solo las imágenes del studio.
+- **gemini** — se guarda y **no la llama nadie todavía**. Un cliente que
+  pegue solo esa se quedará sin IA igual, y la pantalla se lo dice.
+
+Que el cliente pueda **elegir** proveedor —`config_modelo`, `elegir_proveedor_modelo`—
+está preparado en la base, pero los motores solo saben hablar con Anthropic.
+Mientras siga así, elegir Gemini guarda la preferencia y nada más.
+
 ## Las dos claves de Supabase
 
 | Clave | Dónde | Qué puede |

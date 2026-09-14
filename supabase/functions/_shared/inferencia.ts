@@ -77,7 +77,7 @@ export async function inferirSegmentos(
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-api-key": await claveAnthropic(),
+      "x-api-key": await claveAnthropic(quien?.tenant),
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({

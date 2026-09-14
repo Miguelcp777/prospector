@@ -14,6 +14,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { ModeloDelCliente } from "./ModeloDelCliente";
 import { CorreoDelCliente } from "./CorreoDelCliente";
 
 type Tenant = {
@@ -167,6 +168,19 @@ export function Cuenta() {
         ves aquí es lo tuyo, no lo de la base. El plan y los topes de gasto se
         ven pero no se tocan — los cambia quien lleva el proyecto.
       </p>
+
+      {/* Quién paga el modelo. Va aquí y no en una sección propia del menú
+          porque es configuración de la cuenta, y porque quien la necesita
+          llega buscando «dónde se pone mi clave», no una sección nueva. */}
+      {perfil?.tenants && (
+        <>
+          <div className="cabecera-texto" style={{ marginTop: "var(--e5)" }}>
+            <span className="rotulo">Inteligencia artificial</span>
+            <h2>Proveedor de modelo</h2>
+          </div>
+          <ModeloDelCliente />
+        </>
+      )}
     </section>
   );
 }

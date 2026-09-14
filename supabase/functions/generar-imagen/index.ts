@@ -56,11 +56,23 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const { data: clave } = await admin.rpc("leer_clave_openai");
+    // La clave de OpenAI de este cliente, o la del servicio si está en
+    // versión de prueba. Ver 047: quien ya no está en modo demo pone la
+    // suya, y no hay caída de vuelta a la del servicio.
+    const { data: resuelta } = await admin.rpc("resolver_clave_modelo", {
+      p_tenant: perfil.tenant_id,
+      p_proveedor: "openai",
+    });
+    const fila = Array.isArray(resuelta) ? resuelta[0] : resuelta;
+    const clave = fila?.clave as string | null;
+
     if (!clave) {
       return json(req, {
-        error: "Falta la clave de OpenAI. Se pega en el panel de " +
-          "administración, en «Generación de imágenes».",
+        error: fila?.origen === "falta"
+          ? "Falta la clave de OpenAI de tu cuenta. Se pega en " +
+            "Cuenta → Proveedor de modelo."
+          : "Falta la clave de OpenAI. Se pega en el panel de " +
+            "administración, en «Generación de imágenes».",
       }, 503);
     }
 
