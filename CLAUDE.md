@@ -34,7 +34,35 @@ endpoints: el esquema es la fuente de verdad.
   un proyecto anterior. RRSS se aborda como ads.
 - Pregunta antes de cualquier migración destructiva o de borrar datos.
 
+## Cómo se trabaja aquí: desarrollo dirigido por especificación
+
+Este proyecto está anclado. Para **cualquier cambio material** se aplica el
+protocolo de `.specanchor/README.md`:
+
+1. Antes de tocar código, escribe la tarea en `.specanchor/tasks/`. Ligera si
+   el cambio es localizado y no toca API, datos, permisos, integraciones ni
+   arquitectura; completa si toca algo de eso.
+2. Carga los contratos afectados: la spec del módulo en
+   `.specanchor/modules/`, las globales de `.specanchor/global/` y el ADR
+   correspondiente de `docs/decisiones/` si lo hay.
+3. Si el cambio altera un contrato, **actualiza la spec antes o a la vez**.
+   Nunca después para justificar lo que salió.
+4. Verifica los criterios de aceptación afectados con evidencia real y revisa
+   el diff en las dos direcciones: código → spec y spec → código.
+5. Informa **por separado** la cobertura documental (`PASS/FAIL/NOT_RUN`) y la
+   alineación funcional (`ALIGNED/PARTIAL/DRIFT/NOT_VERIFIED`). El guard no
+   puede dar un veredicto semántico, y decir que sí lo da es lo que
+   convertiría esto en burocracia.
+
+`.specanchor/spec-index.md` dice qué módulo cubre cada ruta. Un archivo
+material que no pertenezca a ninguno hace fallar el guard: eso es a propósito.
+
+Las pruebas del studio dan **71 de 75**. Los cuatro fallos son adaptaciones
+deliberadas del porte (`docs/decisiones/0005`). Un fallo distinto de esos
+cuatro bloquea el cierre.
+
 ## Navegación
+- Contratos y protocolo de cambios: @.specanchor/README.md
 - Arquitectura y modelo de datos: @docs/arquitectura.md
 - Fases y criterios de validación: @docs/roadmap.md
 - Riesgo legal y decisiones de producto derivadas: @docs/compliance.md

@@ -1,0 +1,109 @@
+{
+  "modules": [
+    {
+      "name": "datos",
+      "paths": [
+        "supabase/*.sql",
+        "supabase/README.md",
+        ".mcp.json"
+      ],
+      "spec": ".specanchor/modules/datos.spec.md"
+    },
+    {
+      "name": "edge-nucleo",
+      "paths": [
+        "supabase/functions/_shared/*",
+        "supabase/config.toml"
+      ],
+      "spec": ".specanchor/modules/edge-nucleo.spec.md"
+    },
+    {
+      "name": "descubrimiento",
+      "paths": [
+        "supabase/functions/descubrir/*",
+        "supabase/functions/enriquecer/*"
+      ],
+      "spec": ".specanchor/modules/descubrimiento.spec.md"
+    },
+    {
+      "name": "inteligencia",
+      "paths": [
+        "supabase/functions/infer-segments/*",
+        "supabase/functions/demo-inferir/*",
+        "supabase/functions/redactar/*",
+        "supabase/functions/componer-campana/*",
+        "supabase/functions/studio-ia/*",
+        "supabase/functions/generar-imagen/*",
+        "supabase/functions/leer-documento/*",
+        "data/*"
+      ],
+      "spec": ".specanchor/modules/inteligencia.spec.md"
+    },
+    {
+      "name": "correo",
+      "paths": [
+        "supabase/functions/enviar-prueba/*",
+        "supabase/functions/dominio-correo/*",
+        "supabase/functions/correo-webhook/*",
+        "supabase/functions/baja/*",
+        "supabase/functions/landing/*",
+        "supabase/functions/generar-landing/*",
+        "frontend/public/baja.html",
+        "frontend/public/landing.html",
+        "frontend/src/lib/aplicar-plantilla.ts",
+        "frontend/src/lib/plantilla-por-defecto.ts"
+      ],
+      "spec": ".specanchor/modules/correo.spec.md"
+    },
+    {
+      "name": "app-web",
+      "paths": [
+        "frontend/src/pages/*",
+        "frontend/src/lib/*",
+        "frontend/src/components/*",
+        "frontend/src/App.tsx",
+        "frontend/src/main.tsx",
+        "frontend/src/vite-env.d.ts",
+        "frontend/src/estilos.css",
+        "frontend/src/estilos-acceso.css",
+        "frontend/index.html",
+        "frontend/public/*",
+        "frontend/package.json",
+        "frontend/package-lock.json",
+        "frontend/tsconfig.json",
+        "frontend/vite.config.ts",
+        "frontend/netlify.toml",
+        "frontend/README.md",
+        "frontend/.env.example",
+        ".env.example"
+      ],
+      "spec": ".specanchor/modules/app-web.spec.md"
+    },
+    {
+      "name": "studio",
+      "paths": [
+        "frontend/src/studio/*",
+        "frontend/src/estilos-studio.css",
+        "frontend/pruebas-porte/*"
+      ],
+      "spec": ".specanchor/modules/studio.spec.md"
+    },
+    {
+      "name": "demo-publica",
+      "paths": [
+        "demo/*"
+      ],
+      "spec": ".specanchor/modules/demo-publica.spec.md"
+    },
+    {
+      "name": "campaign-studio-aparcado",
+      "paths": [
+        "frontend/campaign-studio/*"
+      ],
+      "spec": ".specanchor/modules/campaign-studio-aparcado.spec.md"
+    }
+  ],
+  "global_spec_paths": [
+    ".specanchor/global/*.spec.md"
+  ]
+}

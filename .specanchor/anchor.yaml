@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "spec_root": ".specanchor",
+  "module_map": ".specanchor/module-map.json",
+  "material_paths": [
+    "*"
+  ],
+  "exclude_paths": [
+    ".specanchor/*",
+    "docs/*",
+    "README.md",
+    "AGENTS.md",
+    "CLAUDE.md",
+    ".gitignore",
+    ".claude/*",
+    ".codex/*",
+    "scripts/.gitkeep"
+  ]
+}
