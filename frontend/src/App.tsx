@@ -334,9 +334,11 @@ function Aplicacion() {
           ))}
         </div>
 
-        {/* Dentro de la campaña el recorrido ya está al lado del contenido,
-            con sus nombres completos. Repetirlo aquí sería decir lo mismo
-            dos veces en la misma pantalla. */}
+        {/* En la campaña no: ahí los seis pasos SON la pantalla, con su
+            estado y sus botones. Un resumen de lo mismo al lado es un
+            recorrido dentro del recorrido. Esto sirve para las otras
+            secciones —Leads, Mensajes— donde no hay nada que recuerde por
+            dónde ibas. */}
         <RecorridoLateral oculto={vistaValida === "campanas"} />
 
         <Conectado sesion={sesion} esAdmin={esAdmin} />

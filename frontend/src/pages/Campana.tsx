@@ -205,9 +205,6 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
       {error && <p className="caja-error">{error}</p>}
       {aviso && <p className="caja-aviso">{aviso}</p>}
 
-      <div className="campana-marco">
-      <CarrilDePasos hechos={hechos} />
-
       <div className="pasos">
         <Paso n={1} estado={estadoDe(hechos, 0)} titulo={PASOS[0].nombre}
               resumen="Es de donde sale todo lo demás: cuanto más concreto, mejores clientes potenciales.">
@@ -389,61 +386,7 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
           <button className="secundario" onClick={() => setSub("landing")}>Abrir</button>
         </div>
       </div>
-      </div>
     </div>
-  );
-}
-
-/**
- * El recorrido de la campaña, pegado al lado.
- *
- * Los seis pasos están en la pantalla, uno debajo de otro, pero en cuanto se
- * despliega el segundo —los segmentos— el primero queda fuera de vista y no
- * hay forma de saber por dónde va uno sin subir a mirar. Este carril se
- * queda fijo y lo dice siempre.
- *
- * Cada paso lleva al suyo, pero **no se salta ninguno**: desplazar la
- * pantalla no es lo mismo que dar un atajo. El orden lo siguen imponiendo
- * los datos —sin segmentos no hay búsqueda, sin leads no hay correos— y
- * este carril solo mueve la mirada.
- */
-function CarrilDePasos({ hechos }: { hechos: boolean[] }) {
-  const hechosTotal = hechos.filter(Boolean).length;
-  const actual = hechos.findIndex((h) => !h);
-
-  return (
-    <aside className="campana-carril" aria-label="Pasos de la campaña">
-      <div className="campana-carril-cabeza">
-        <span className="rotulo">El recorrido</span>
-        <span className="menudo">{hechosTotal} de {PASOS.length} pasos</span>
-        <div className="barra-progreso">
-          <div style={{ width: `${(hechosTotal * 100) / PASOS.length}%` }} />
-        </div>
-      </div>
-
-      <ol>
-        {PASOS.map((p, i) => {
-          const e = estadoDe(hechos, i);
-          return (
-            <li key={p.corto}>
-              <button
-                className={`campana-carril-paso ${e}`}
-                aria-current={i === actual ? "step" : undefined}
-                onClick={() => {
-                  document.getElementById(`paso-${i + 1}`)
-                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }}
-              >
-                <span className="campana-carril-marca">
-                  {e === "hecho" ? "✓" : i + 1}
-                </span>
-                <span className="campana-carril-nombre">{p.nombre}</span>
-              </button>
-            </li>
-          );
-        })}
-      </ol>
-    </aside>
   );
 }
 
@@ -495,7 +438,7 @@ function Paso({
   children: React.ReactNode;
 }) {
   return (
-    <div className={`paso ${estado}`} id={`paso-${n}`}>
+    <div className={`paso ${estado}`}>
       <div className="paso-carril">
         <div className="paso-numero">{estado === "hecho" ? "✓" : n}</div>
         <div className="paso-linea" />
