@@ -980,6 +980,65 @@ quien llama.
 `authenticated`. Si el cliente pudiera escribirla, se quitaría el límite él
 mismo y el modo demo no limitaría nada.
 
+## La barra de progreso que no se movía (052)
+
+«Estaba a cero y de repente había 50 leads.» La barra no estaba rota:
+estaba esperando, y no lo decía.
+
+Medido sobre el job real, el descubrimiento `3296f746`:
+
+| Hora | Qué pasó |
+|---|---|
+| 11:07:21 | encolado · `pendiente`, progreso 0 |
+| 11:08:07 | terminado · 5 búsquedas hechas, 19 omitidas por modo demo |
+
+Cuarenta y seis segundos, de los cuales **treinta y nueve no pasó nada**:
+`encolar_descubrimiento` crea el job y las tareas y ahí se queda hasta que
+`pg_cron` despierta al worker en el siguiente minuto redondo. El trabajo de
+verdad duró siete segundos, y en siete segundos con el techo del modo demo
+no hay barra que enseñar.
+
+### El arreglo
+
+Un trigger `arrancar_al_encolar` sobre `jobs`: al insertarse un job
+`pendiente`, `despertar_worker()` llama a su Edge Function por `pg_net`, con
+el mismo secreto del Vault que usa el cron.
+
+**El cron sigue haciendo falta** y no se toca. Es quien recoge lo que quede a
+medias, lo que reponga `reponer_tareas_colgadas` y las tandas siguientes de
+un trabajo que no cabe en una invocación. Esto solo le quita la primera
+espera, que es la única que alguien está mirando.
+
+### Por qué un trigger y no una línea en cada `encolar_*`
+
+Son tres funciones —descubrimiento, enriquecimiento y redacción—, cada una
+con sus comprobaciones de techo, de pausa y de modo demo. Repetir la llamada
+al final de las tres es garantizar que la cuarta se olvide.
+
+Y hay un detalle que lo hace seguro: `net.http_post` **no manda nada en el
+momento**, encola la petición en una tabla y la envía un proceso de fondo
+después del commit. Si la transacción se deshace, la llamada se deshace con
+ella y no se despierta a nadie para un trabajo que no existe.
+
+### Dos cosas más de la misma tanda
+
+- **El progreso cuenta también las tareas caídas.** Sumaba «hechas +
+  omitidas» y dejaba fuera las de estado `error`. Una tarea que ha gastado
+  sus tres intentos no va a volver, así que contarla como pendiente dejaba la
+  barra corta hasta el salto final.
+- **En cola, la barra es indeterminada.** Mientras el job está `pendiente` no
+  hay nada que medir, y un «0 %» quieto se lee como una campaña atascada. Una
+  barra que se mueve sola dice «estoy en ello»; un cero dice «no avanza».
+
+### Comprobado antes de darlo por bueno
+
+`select despertar_worker('descubrir')` dejó un `200` en `net._http_response`
+fuera del minuto del cron — o sea, la URL y el secreto son los buenos. Y el
+trigger se probó con un `insert` dentro de un bloque que revienta a
+propósito: encoló la petición en `net.http_request_queue`, y al deshacerse la
+transacción no quedó ni el job ni la llamada. Un trigger roto aquí impediría
+encolar nada a nadie, así que conviene verlo antes que después.
+
 ## Cancelar una búsqueda en curso
 
 Botón **«Cancelar la búsqueda»** dentro del paso 3 de la campaña, mientras

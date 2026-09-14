@@ -334,7 +334,10 @@ function Aplicacion() {
           ))}
         </div>
 
-        <RecorridoLateral />
+        {/* Dentro de la campaña el recorrido ya está al lado del contenido,
+            con sus nombres completos. Repetirlo aquí sería decir lo mismo
+            dos veces en la misma pantalla. */}
+        <RecorridoLateral oculto={vistaValida === "campanas"} />
 
         <Conectado sesion={sesion} esAdmin={esAdmin} />
 
@@ -507,9 +510,9 @@ function GrupoLateral({
   );
 }
 
-function RecorridoLateral() {
+function RecorridoLateral({ oculto }: { oculto: boolean }) {
   const { recorrido } = useRecorrido();
-  if (!recorrido) return null;
+  if (!recorrido || oculto) return null;
 
   const hechos = recorrido.hechos.filter(Boolean).length;
 
