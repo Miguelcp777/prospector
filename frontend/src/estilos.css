@@ -227,7 +227,16 @@ a:hover { text-decoration: underline; }
 .ancho { max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--e5); }
 
 @media (max-width: 860px) {
-  .armazon { flex-direction: column; }
+  /* `align-items: stretch` no es adorno: sin él, el armazón en columna deja
+     que `main` se ajuste a su CONTENIDO en vez de al ancho de la pantalla.
+     El `flex-start` de la regla base coloca el lateral arriba cuando están
+     en fila, y al girar a columna pasa a gobernar el ancho.
+
+     Medido a 375 px en la pantalla de Leads: la tabla mide 1060, así que
+     `main` salía a 992 y toda la página —banner, titulares, botones— se iba
+     con ella. La tabla ya scrollea sola dentro de `.tabla-scroll`; lo que
+     fallaba era el armazón de fuera. */
+  .armazon { flex-direction: column; align-items: stretch; }
   .lateral {
     width: 100%; height: auto; position: static;
     flex-direction: row; align-items: center; gap: var(--e1);
