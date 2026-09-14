@@ -22,6 +22,9 @@ import { supabase } from "../../lib/supabase";
 import { renderEmailHtml, renderEmailText } from "./email-renderer";
 import type { StoredTemplate, TemplateDocument } from "./template-types";
 import { elegirReceta, generarDocumento, guidedCopy, type Brief } from "./generacion";
+import { arteDelSector, validarDireccionArte } from "./direccion-arte";
+import { componerDocumentoSimple, type CopyCampana } from "./composicion-simple";
+import { datosDelRemitente } from "./datos-remitente";
 
 /** Fila de `plantillas` tal y como la devuelve Postgres. */
 type FilaPlantilla = {
@@ -196,11 +199,15 @@ type CuerpoGuardar = {
  * que entretanto ha cambiado. Guardarlo en cada escritura es lo que hace
  * que esa versión inmutable signifique algo.
  */
-function derivados(doc: TemplateDocument, asunto: string, preencabezado: string) {
+async function derivados(doc: TemplateDocument, asunto: string, preencabezado: string) {
+  // Sin esto el HTML guardado firma «Aurevanta Labs · Valencia, España», que
+  // es el remitente de ejemplo del renderizador. Lo guardado es lo que se
+  // congela al cerrar una versión, así que ahí no puede firmar nadie ajeno.
+  const { merge } = await datosDelRemitente();
   try {
     return {
-      html: renderEmailHtml(doc, asunto, preencabezado),
-      texto: renderEmailText(doc),
+      html: renderEmailHtml(doc, asunto, preencabezado, merge),
+      texto: renderEmailText(doc, merge),
     };
   } catch {
     // Un documento a medio construir no debe impedir guardarlo: se guarda
@@ -220,7 +227,7 @@ async function crearPlantilla(c: CuerpoGuardar) {
     categoria: c.category ?? "personalizada",
     asunto, preencabezado: pre,
     documento: c.document,
-    ...derivados(c.document, asunto, pre),
+    ...(await derivados(c.document, asunto, pre)),
     miniatura: c.thumbnailUrl ?? null,
     origen: c.sourceType ?? "studio",
   }).select(COLUMNAS).single();
@@ -239,7 +246,7 @@ async function actualizarPlantilla(id: string, c: CuerpoGuardar) {
     categoria: c.category ?? "personalizada",
     asunto, preencabezado: pre,
     documento: c.document,
-    ...derivados(c.document, asunto, pre),
+    ...(await derivados(c.document, asunto, pre)),
     miniatura: c.thumbnailUrl ?? null,
     origen: c.sourceType ?? "studio",
     actualizado_en: new Date().toISOString(),
@@ -258,7 +265,25 @@ async function leerKit() {
   const { data, error: fallo } = await supabase
     .from("kits_marca").select("datos").maybeSingle();
   if (fallo) return error(fallo.message, 500);
-  return json({ brandKit: data?.datos ?? {} });
+
+  // El kit que no se ha rellenado nunca hereda de Cuenta lo que ya se sabe.
+  // Sin esto el editor arranca con «Aurevanta Labs», que es el nombre del
+  // producto del que salió, y lo estampa en la marca y en el pie del correo.
+  const { merge } = await datosDelRemitente();
+  const kit = { ...(data?.datos ?? {}) } as Record<string, unknown>;
+  const heredar = (clave: string, valor: string) => {
+    // Solo se hereda el hueco. Un kit con valor propio manda, aunque sea
+    // distinto del de Cuenta: el cliente lo escribió ahí a propósito.
+    if (!String(kit[clave] ?? "").trim() && valor) kit[clave] = valor;
+  };
+  heredar("name", merge["sender.company"]);
+  heredar("legalName", merge["sender.legal_name"]);
+  heredar("senderName", merge["sender.name"]);
+  heredar("postalAddress", merge["sender.postal_address"]);
+  heredar("privacyUrl", merge["sender.privacy_url"]);
+  heredar("privacyEmail", merge["sender.privacy_email"]);
+
+  return json({ brandKit: kit });
 }
 
 async function guardarKit(datos: unknown) {
@@ -305,59 +330,96 @@ async function listarImagenes() {
 // fue local. Por eso esto funciona hoy, al instante y gratis.
 // ------------------------------------------------------------
 
-async function componer(brief: Brief) {
-  // El texto lo escribe el modelo. Antes lo escribía `guidedCopy`, una
-  // plantilla determinista: asunto fijo, titular fijo y la primera receta
-  // del catálogo —de tecnología— dijera lo que dijera el brief. El botón
-  // decía «Crear con IA» y no llamaba a ninguna.
-  //
-  // Si el modelo falla, se compone igual con la plantilla y se avisa: que
-  // el proveedor esté caído o falte la clave no debe dejar al usuario con
-  // el editor en blanco. Pero se dice, porque un correo de plantilla que
-  // pasa por generado con IA es peor que uno que se presenta como lo que es.
-  let copy = guidedCopy(brief);
-  let modo = "guided-preview";
-  let aviso: string | null = null;
+async function componer(brief: Brief & { modoAsistente?: string }) {
+  // El texto y la dirección de arte los escriben dos especialistas del
+  // modelo, en paralelo. Antes esto lo resolvía `guidedCopy`, una plantilla
+  // determinista, y el aspecto salía de una receta del catálogo: con un
+  // estudio de tatuajes salía un correo de clínica de fisioterapia.
+  const simple = brief.modoAsistente !== "avanzado";
 
   const { data, error: fallo } = await supabase.functions.invoke("componer-campana", {
     body: brief,
   });
 
+  let mensajeDeError: string | null = null;
   if (fallo) {
     const ctx = (fallo as { context?: Response }).context;
-    aviso = fallo.message;
-    try { aviso = JSON.parse(await ctx!.text()).error ?? aviso; } catch { /* sin cuerpo */ }
-  } else if ((data as { copy?: Record<string, string> })?.copy) {
-    const escrito = (data as { copy: Record<string, string> }).copy;
-    copy = {
-      subject: escrito.subject || copy.subject,
-      preheader: escrito.preheader || copy.preheader,
-      eyebrow: escrito.eyebrow || copy.eyebrow,
-      title: escrito.title || copy.title,
-      body: escrito.body || copy.body,
-      sectionTitle: escrito.sectionTitle || copy.sectionTitle,
-      sectionBody: escrito.sectionBody || copy.sectionBody,
-      ctaLabel: escrito.ctaLabel || copy.ctaLabel,
-    };
-    modo = "ia";
-    // La descripción de la imagen viaja aparte: la usa el paso siguiente,
-    // que es el que llama a `generar-imagen`.
-    if (escrito.imagePrompt) brief = { ...brief, imagePrompt: escrito.imagePrompt };
+    mensajeDeError = fallo.message;
+    try { mensajeDeError = JSON.parse(await ctx!.text()).error ?? mensajeDeError; } catch { /* sin cuerpo */ }
   }
 
-  // El sector del catálogo sale de lo que se ha escrito, no del primero de
-  // la lista. Ver `elegirReceta`.
-  const documento = generarDocumento(
-    { ...brief, templatePresetId: elegirReceta(brief) },
+  const respuesta = (data ?? {}) as {
+    copy?: Record<string, unknown>;
+    arte?: unknown;
+    avisoArte?: string | null;
+  };
+  const escrito = respuesta.copy;
+
+  // En el modo simple la promesa es que lo hace la IA. Si no ha podido, se
+  // dice: un correo de plantilla disfrazado de generado es peor que un error
+  // honesto, porque se guarda igual y nadie vuelve a mirarlo.
+  if (simple && !escrito) {
+    return error(mensajeDeError ?? "El modelo no pudo escribir el correo.", 502);
+  }
+
+  const base = guidedCopy(brief);
+  const copy: CopyCampana = escrito
+    ? {
+      subject: String(escrito.subject || base.subject),
+      preheader: String(escrito.preheader || base.preheader),
+      eyebrow: String(escrito.eyebrow || base.eyebrow),
+      title: String(escrito.title || base.title),
+      body: String(escrito.body || base.body),
+      sectionTitle: String(escrito.sectionTitle || base.sectionTitle),
+      sectionBody: String(escrito.sectionBody || base.sectionBody),
+      ctaLabel: String(escrito.ctaLabel || base.ctaLabel),
+      ventajas: Array.isArray(escrito.ventajas)
+        ? (escrito.ventajas as Array<{ titulo?: string; texto?: string }>)
+        : [],
+      cierre: String(escrito.cierre ?? ""),
+    }
+    : base;
+
+  if (!simple) {
+    // Camino de siempre, intacto: catálogo y todo.
+    const documento = generarDocumento(
+      { ...brief, templatePresetId: elegirReceta(brief) },
+      copy,
+    );
+    return json({
+      document: documento,
+      subject: copy.subject,
+      preheader: copy.preheader,
+      imagePrompt: null,
+      mode: escrito ? "ia" : "guided-preview",
+      aviso: escrito ? null : mensajeDeError,
+    });
+  }
+
+  // Si el director de arte no contestó, se sigue con una dirección derivada
+  // del sector: el correo sale igual, con otro aspecto, y se avisa.
+  const { arte, correcciones } = validarDireccionArte(respuesta.arte, arteDelSector(brief));
+
+  const documento = componerDocumentoSimple({
     copy,
-  );
+    arte,
+    nombreEmpresa: String(brief.companyName ?? "").trim(),
+    urlImagen: null,
+    urlDestino: brief.destinationUrl,
+  });
+
   return json({
     document: documento,
     subject: copy.subject,
     preheader: copy.preheader,
-    imagePrompt: (brief as { imagePrompt?: string }).imagePrompt ?? null,
-    mode: modo,
-    aviso,
+    // El prompt de la imagen lo escribe el director de arte, que es quien
+    // conoce la paleta. Y tiene que ir dentro del texto: `generar-imagen`
+    // solo recibe prompt, texto alternativo, orientación y calidad.
+    imagePrompt: arte.imagePrompt || null,
+    mode: "ia",
+    aviso: respuesta.avisoArte ?? null,
+    correcciones,
+    porQue: arte.porQue || null,
   });
 }
 

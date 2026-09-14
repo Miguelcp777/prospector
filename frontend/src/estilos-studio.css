@@ -1096,3 +1096,50 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* ------------------------------------------------------------------
+   El asistente reducido a tres campos.
+
+   Sin acotar a `.studio` a propósito: el diálogo lo pinta Radix en un
+   portal colgado de <body>, así que un selector con `.studio` delante no
+   casaría con nada. Es lo que ya hacen `.wizard-*` unas líneas más arriba.
+   ------------------------------------------------------------------ */
+.asistente-simple > p { max-width: 62ch; }
+.asistente-aviso {
+  margin-top: 14px;
+  padding: 11px 13px;
+  border: 1px solid color-mix(in srgb, #f59e0b 38%, transparent);
+  border-radius: 9px;
+  background: color-mix(in srgb, #f59e0b 9%, transparent);
+  color: var(--texto-2);
+  font-size: 11px;
+  line-height: 1.55;
+}
+.asistente-avanzado {
+  margin-top: 16px;
+  padding-top: 13px;
+  border-top: 1px solid var(--line);
+}
+.asistente-avanzado > summary {
+  color: var(--texto-2);
+  font-size: 11px;
+  cursor: pointer;
+  list-style: revert;
+}
+.asistente-avanzado > .dialog-form { margin-top: 12px; }
+.asistente-avanzado > p {
+  margin-top: 10px;
+  color: var(--texto-3);
+  font-size: 10px;
+  line-height: 1.6;
+}
+.enlace-modo {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--cian);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}

@@ -61,6 +61,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@studio/lib/api";
+import { datosDelRemitente } from "@studio/lib/datos-remitente";
 import { Button } from "@studio/ui/button";
 import {
   Dialog,
@@ -1520,8 +1521,13 @@ export default function StudioClient({ displayName }: StudioProps) {
   const [fontSearch, setFontSearch] = useState("");
   const [aiOpen, setAiOpen] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
+  // Por defecto, los tres campos. El asistente de seis pasos sigue ahí
+  // entero: el que quiera elegir plantilla y receta de imagen lo abre.
+  const [modoAsistente, setModoAsistente] =
+    useState<"simple" | "avanzado">("simple");
   const [aiBrief, setAiBrief] = useState({
     campaignName: "",
+    queTransmitir: "",
     sector: "Servicios B2B",
     objective: "conseguir reuniones cualificadas",
     offer: "una auditoría de oportunidades",
@@ -1656,6 +1662,21 @@ export default function StudioClient({ displayName }: StudioProps) {
   });
   const [mergeData, setMergeData] =
     useState<Record<string, string>>(initialMergeData);
+  // Qué le falta a la cuenta para poder enviar de verdad (LSSI-CE). Vacío
+  // mientras no se sepa: el aviso sale cuando hay respuesta, no antes.
+  const [faltaRemitente, setFaltaRemitente] = useState<string[]>([]);
+
+  // Quién firma. Solo los `sender.*`: las `lead.*` se quedan de ejemplo,
+  // porque el destinatario de una vista previa no existe todavía.
+  useEffect(() => {
+    let vivo = true;
+    datosDelRemitente().then(({ merge, falta }) => {
+      if (!vivo) return;
+      setMergeData((actual) => ({ ...actual, ...merge }));
+      setFaltaRemitente(falta);
+    });
+    return () => { vivo = false; };
+  }, []);
   const [workflowStep, setWorkflowStep] = useState<WorkflowStep>("content");
   const uploadRef = useRef<HTMLInputElement>(null);
   const backgroundUploadRef = useRef<HTMLInputElement>(null);
@@ -3208,13 +3229,24 @@ Deja de aparecer en la biblioteca y ` +
   }
 
   async function generateTemplate() {
+    const simple = modoAsistente === "simple";
     setAiLoading(true);
-    setAiProgress("Creando estrategia, textos y estructura…");
+    setAiProgress(
+      simple
+        ? "Escribiendo el correo y eligiendo la dirección de arte…"
+        : "Creando estrategia, textos y estructura…",
+    );
     try {
       const response = await apiFetch("/api/generate", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(aiBrief),
+        // La imagen va siempre en el modo simple: el trato es que la IA lo
+        // hace todo, y un correo sin portada no lo cumple.
+        body: JSON.stringify(
+          simple
+            ? { ...aiBrief, modoAsistente, generateImage: true }
+            : { ...aiBrief, modoAsistente },
+        ),
       });
       const data = (await response.json()) as {
         document?: TemplateDocument;
@@ -3223,6 +3255,8 @@ Deja de aparecer en la biblioteca y ` +
         imagePrompt?: string | null;
         mode?: string;
         aviso?: string | null;
+        correcciones?: string[];
+        porQue?: string | null;
         error?: string;
       };
       if (!response.ok || !data.document)
@@ -3232,12 +3266,20 @@ Deja de aparecer en la biblioteca y ` +
       // siempre — pero se dice. Hacer pasar un texto de plantilla por uno
       // escrito para este negocio es peor que no tenerlo.
       if (data.aviso)
-        toast.warning("El texto no lo ha escrito el modelo", {
-          description: data.aviso,
+        toast.warning(
+          simple ? "La dirección de arte es la de respaldo" : "El texto no lo ha escrito el modelo",
+          { description: data.aviso },
+        );
+      // Corregir el contraste traiciona a la IA a propósito: una marca pastel
+      // pide gris claro y recibe algo casi negro. Por eso se dice.
+      if (data.correcciones?.length)
+        toast.info("Se ha ajustado el diseño para que se lea", {
+          description: data.correcciones.join(" · "),
         });
+      else if (simple && data.porQue) toast.success(data.porQue);
       const generatedDocument = cloneDocument(data.document);
       let generatedImageUrl: string | null = null;
-      if (aiBrief.generateImage) {
+      if (simple || aiBrief.generateImage) {
         setAiProgress(
           `Generando la imagen principal en ${aiBrief.imageResolution === "draft" ? "calidad normal" : aiBrief.imageResolution.toUpperCase()}…`,
         );
@@ -3245,6 +3287,7 @@ Deja de aparecer en la biblioteca y ` +
         // conoce el negocio y el texto que acaba de redactar. Lo que el
         // usuario haya puesto a mano va primero, que para eso lo puso.
         const prompt =
+          (simple ? data.imagePrompt?.trim() : "") ||
           aiBrief.imagePrompt.trim() ||
           data.imagePrompt?.trim() ||
           `${aiBrief.companyName || "Empresa"}, ${aiBrief.sector}. Campaña para ${aiBrief.objective}. Representar ${aiBrief.offer}. Audiencia: ${aiBrief.audience}. Composición con espacio negativo para texto de email.`;
@@ -7811,22 +7854,24 @@ Deja de aparecer en la biblioteca y ` +
                 DIRECTOR DE CAMPAÑA IA
               </div>
               <DialogTitle>
-                {
-                  [
+                {modoAsistente === "simple"
+                  ? "Crear un correo con IA"
+                  : [
                     "Identifica la empresa",
                     "Define la campaña",
                     "Selecciona la audiencia",
                     "Dirige el diseño y la imagen",
                     "Configura la acción",
                     "Revisa y genera",
-                  ][aiStep - 1]
-                }
+                  ][aiStep - 1]}
               </DialogTitle>
               <DialogDescription>
-                La IA construirá textos, imagen contextual, diseño, enlace y
-                plantilla editable, y guardará el resultado automáticamente.
+                {modoAsistente === "simple"
+                  ? "Tres campos. La IA escribe el correo, decide el diseño y la estructura, y genera la imagen."
+                  : "La IA construirá textos, imagen contextual, diseño, enlace y plantilla editable, y guardará el resultado automáticamente."}
               </DialogDescription>
             </DialogHeader>
+            {modoAsistente === "avanzado" && (
             <div className="wizard-progress">
               <div>
                 {[1, 2, 3, 4, 5, 6].map((step) => (
@@ -7840,10 +7885,137 @@ Deja de aparecer en la biblioteca y ` +
                   </span>
                 ))}
               </div>
-              <small>Paso {aiStep} de 6</small>
+              <small>
+                Paso {aiStep} de 6 ·{" "}
+                <button
+                  type="button"
+                  className="enlace-modo"
+                  onClick={() => setModoAsistente("simple")}
+                >
+                  volver a lo simple
+                </button>
+              </small>
             </div>
+            )}
             <div className="wizard-stage">
-              {aiStep === 1 && (
+              {modoAsistente === "simple" && (
+                <section className="asistente-simple">
+                  <h3>Cuéntale a la IA de qué va</h3>
+                  <p>
+                    Con esto escribe el correo, elige los colores y la
+                    tipografía, decide qué bloques lleva y genera la imagen de
+                    portada. Después se puede retocar todo en el editor.
+                  </p>
+                  <div className="dialog-form grid-two">
+                    <label>
+                      <span>Nombre de la empresa *</span>
+                      <Input
+                        placeholder="Ej. Woody Tattoo"
+                        value={aiBrief.companyName}
+                        onChange={(e) =>
+                          setAiBrief({ ...aiBrief, companyName: e.target.value })
+                        }
+                      />
+                    </label>
+                    <label>
+                      <span>A qué se dedica *</span>
+                      <Input
+                        placeholder="Ej. Estudio de tatuajes y piercings en Alfafar"
+                        value={aiBrief.sector}
+                        onChange={(e) =>
+                          setAiBrief({ ...aiBrief, sector: e.target.value })
+                        }
+                      />
+                    </label>
+                    <label className="wide">
+                      <span>Qué quieres transmitir a tus clientes *</span>
+                      <Textarea
+                        rows={4}
+                        placeholder="Ej. Que somos artistas, no una cadena: cada diseño se dibuja para quien lo lleva. Este mes hay un 20% en tatuajes y piercings."
+                        value={aiBrief.queTransmitir}
+                        onChange={(e) =>
+                          setAiBrief({ ...aiBrief, queTransmitir: e.target.value })
+                        }
+                      />
+                    </label>
+                  </div>
+
+                  {faltaRemitente.length > 0 && (
+                    <p className="asistente-aviso">
+                      El correo se generará igual, pero todavía no se puede
+                      enviar: falta {faltaRemitente.join(" y ")}. Se rellena en
+                      Cuenta → Correo saliente, y es lo que identifica al
+                      remitente tal y como exige la LSSI-CE.
+                    </p>
+                  )}
+
+                  <details className="asistente-avanzado">
+                    <summary>Ajustes avanzados</summary>
+                    <div className="dialog-form grid-two">
+                      <label>
+                        <span>Nombre de la campaña</span>
+                        <Input
+                          placeholder="Para encontrarla en la lista"
+                          value={aiBrief.campaignName}
+                          onChange={(e) =>
+                            setAiBrief({ ...aiBrief, campaignName: e.target.value })
+                          }
+                        />
+                      </label>
+                      <label>
+                        <span>Enlace del botón</span>
+                        <Input
+                          placeholder="https://"
+                          value={aiBrief.destinationUrl}
+                          onChange={(e) =>
+                            setAiBrief({ ...aiBrief, destinationUrl: e.target.value })
+                          }
+                        />
+                      </label>
+                      <label className="wide">
+                        <span>A quién se escribe</span>
+                        <Input
+                          placeholder="Ej. clientes que ya han pasado por el estudio"
+                          value={aiBrief.audience}
+                          onChange={(e) =>
+                            setAiBrief({ ...aiBrief, audience: e.target.value })
+                          }
+                        />
+                      </label>
+                    </div>
+                    <p>
+                      Sin enlace, el botón apunta a la landing de la campaña
+                      cuando se envíe. Para elegir plantilla, paleta y receta
+                      de imagen a mano, está el{" "}
+                      <button
+                        type="button"
+                        className="enlace-modo"
+                        onClick={() => {
+                          setModoAsistente("avanzado");
+                          setAiStep(1);
+                        }}
+                      >
+                        asistente de seis pasos
+                      </button>
+                      .
+                    </p>
+                  </details>
+
+                  {aiLoading && (
+                    <div className="wizard-generating">
+                      <LoaderCircle className="animate-spin" />
+                      <div>
+                        <strong>{aiProgress}</strong>
+                        <small>
+                          No cierres esta ventana. Escribir el correo y generar
+                          la imagen tarda cerca de un minuto.
+                        </small>
+                      </div>
+                    </div>
+                  )}
+                </section>
+              )}
+              {modoAsistente === "avanzado" && aiStep === 1 && (
                 <section>
                   <h3>Empresa y contexto</h3>
                   <p>
@@ -7946,7 +8118,7 @@ Deja de aparecer en la biblioteca y ` +
                   </div>
                 </section>
               )}
-              {aiStep === 2 && (
+              {modoAsistente === "avanzado" && aiStep === 2 && (
                 <section>
                   <h3>Objetivo y oferta</h3>
                   <p>
@@ -7991,7 +8163,7 @@ Deja de aparecer en la biblioteca y ` +
                   </div>
                 </section>
               )}
-              {aiStep === 3 && (
+              {modoAsistente === "avanzado" && aiStep === 3 && (
                 <section>
                   <h3>Destinatario y voz</h3>
                   <p>
@@ -8047,7 +8219,7 @@ Deja de aparecer en la biblioteca y ` +
                   </div>
                 </section>
               )}
-              {aiStep === 4 && (
+              {modoAsistente === "avanzado" && aiStep === 4 && (
                 <section>
                   <div className="wizard-title-row">
                     <div>
@@ -8367,7 +8539,7 @@ Deja de aparecer en la biblioteca y ` +
                   </label>
                 </section>
               )}
-              {aiStep === 5 && (
+              {modoAsistente === "avanzado" && aiStep === 5 && (
                 <section>
                   <h3>Acción, enlace y destino</h3>
                   <p>
@@ -8424,7 +8596,7 @@ Deja de aparecer en la biblioteca y ` +
                   </div>
                 </section>
               )}
-              {aiStep === 6 && (
+              {modoAsistente === "avanzado" && aiStep === 6 && (
                 <section>
                   <h3>Todo preparado para generar</h3>
                   <p>
@@ -8500,13 +8672,13 @@ Deja de aparecer en la biblioteca y ` +
               <Button
                 variant="ghost"
                 onClick={() =>
-                  aiStep === 1
+                  modoAsistente === "simple" || aiStep === 1
                     ? setAiOpen(false)
                     : setAiStep((step) => step - 1)
                 }
                 disabled={aiLoading}
               >
-                {aiStep === 1 ? (
+                {modoAsistente === "simple" || aiStep === 1 ? (
                   "Cancelar"
                 ) : (
                   <>
@@ -8519,6 +8691,17 @@ Deja de aparecer en la biblioteca y ` +
                 className="save-button"
                 disabled={aiLoading}
                 onClick={() => {
+                  if (modoAsistente === "simple") {
+                    if (
+                      !aiBrief.companyName.trim() ||
+                      !aiBrief.sector.trim() ||
+                      !aiBrief.queTransmitir.trim()
+                    )
+                      return toast.error(
+                        "Rellena la empresa, la actividad y qué quieres transmitir",
+                      );
+                    return void generateTemplate();
+                  }
                   if (
                     aiStep === 1 &&
                     (!aiBrief.companyName.trim() ||
@@ -8549,7 +8732,7 @@ Deja de aparecer en la biblioteca y ` +
                     <LoaderCircle className="animate-spin" />
                     Generando campaña
                   </>
-                ) : aiStep < 6 ? (
+                ) : modoAsistente === "avanzado" && aiStep < 6 ? (
                   <>
                     Continuar
                     <ChevronRight />
