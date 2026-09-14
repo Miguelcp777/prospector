@@ -1,7 +1,7 @@
 ---
 type: task-spec
 id: TASK-003
-status: in_progress
+status: verified
 created: 2026-09-14
 modules: [studio]
 behavior_preserving: false
@@ -107,11 +107,11 @@ hay migración ni dato persistido nuevo.
 
 ## 14. Lista de comprobación
 
-- [ ] Spec del módulo actualizada
-- [ ] Implementación completa
-- [ ] Verificación
-- [ ] Revisión inversa
-- [ ] Guard
+- [x] Spec del módulo actualizada (INV-STU-009 a 011)
+- [x] Implementación completa
+- [x] Verificación
+- [x] Revisión inversa
+- [x] Guard
 
 ## 15. Registro de decisiones
 
@@ -126,24 +126,50 @@ hay migración ni dato persistido nuevo.
 
 ## 16. Registro de evidencia
 
-- **EV-001** · 100 de 100 plantillas sin imagen, antes del cambio.
-- **EV-002** · Comprobación tras el cambio.
-- **EV-003** · Pruebas del studio.
+- **EV-001** · 100 de 100 plantillas sin imagen, antes del cambio. Medido
+  construyendo cada receta y renderizando su HTML en `c7f0248`.
+- **EV-002** · En producción, revisión `866df55`, con la plantilla «SaaS B2B»:
+  tras aplicarla, el documento tiene **2 imágenes** y una URL recién generada
+  (`…/studio/672db4e7-….png`). Antes: ninguna.
+- **EV-003** · Aplicada **por segunda vez** la misma plantilla: el contador de
+  llamadas al generador —instrumentado sobre `window.fetch`— se queda en
+  **1**, y la imagen es la misma (`672db4e7`). La caché evita la segunda
+  llamada de pago.
+- **EV-004** · `npm run test:studio` tras el cambio: 75 pruebas, 71 pasan, 4
+  fallan; los mismos cuatro de siempre.
+- **EV-005** · El menú desplegado ofrece las cuatro opciones —comprobado sobre
+  el bundle publicado—: «Aplicar con su imagen», «Aplicar sin generar
+  imagen», «Aplicar solo estilo», «Aplicar solo estructura».
 
 ## 18. Alineación final
 
-- Spec → Código: NOT_VERIFIED
-- Código → Spec: NOT_VERIFIED
+- Spec → Código: **ALIGNED**. Los invariantes 009 a 011 describen lo que el
+  código hace, medido en producción.
+- Código → Spec: **PARTIAL**, y conviene decir por qué. AC-002 no se ejecutó:
+  el menú desplegable no responde a clics automatizados, así que no pude
+  aplicar «sin generar imagen» desde el navegador. Lo que sí consta es que la
+  opción existe en el bundle publicado y que llama a `applyPreset`, función
+  que este cambio **no toca** y cuyo comportamiento —aplicar sin imagen— es
+  exactamente el que EV-001 midió sobre las 100 plantillas. Es un argumento
+  sólido, no una ejecución: queda como OBSERVED.
 
 ## Trazabilidad
 
 | Requisito | Aceptación | Verificación | Resultado | Evidencia |
 |---|---|---|---|---|
-| REQ-001 | AC-001 | aplicar y leer `imageUrl` del hero | pendiente | EV-002 |
-| REQ-002 | AC-002 | usar la opción sin imagen y leer `imageUrl` | pendiente | EV-002 |
-| REQ-003 | AC-003 | aplicar dos veces y contar llamadas | pendiente | EV-002 |
-| REQ-004 | AC-004 | `npm run test:studio` | pendiente | EV-003 |
+| REQ-001 | AC-001 | aplicar en producción y contar imágenes del documento | **pass** · 0 → 2 imágenes | EV-002 |
+| REQ-003 | AC-003 | aplicar dos veces y contar llamadas al generador | **pass** · se queda en 1 | EV-003 |
+| REQ-004 | AC-004 | `npm run test:studio` | **pass** · 71 de 75, los 4 de siempre | EV-004 |
+| REQ-002 | AC-002 | usar la opción sin imagen desde el menú | **no ejecutado** · ver alineación final | EV-005 |
 
 ## Cobertura documental
 
-NOT_RUN
+PASS
+
+## Nota sobre la verificación
+
+Este proyecto **no tiene entorno de pruebas**: `main` despliega a producción.
+Comprobar AC-001 y AC-003 exigió desplegar primero, con la tarea todavía
+abierta y el guard en FAIL. Está registrado en
+`global/puesta-en-marcha.spec.md` como riesgo abierto, y esta tarea es la
+primera vez que se paga su precio.

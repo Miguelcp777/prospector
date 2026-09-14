@@ -1,5 +1,5 @@
 {
-  "revision": "c7f02482ed091512c5bbc6b0a2ee290472be5b27",
+  "revision": "866df55779f6a82afc7e6749a10582c8468f8eba",
   "task_spec": ".specanchor/tasks/TASK-003.spec.md",
   "files": [
     {
@@ -45,9 +45,23 @@
     {
       "requirement": "TASK-003/REQ-001",
       "acceptance": "TASK-003/AC-001",
-      "verification": "Aplicar una plantilla en producción y leer imageUrl del hero",
-      "result": "not_run",
+      "verification": "Aplicar «SaaS B2B» en producción y contar imágenes del documento",
+      "result": "pass",
       "evidence": ".specanchor/tasks/TASK-003.spec.md#ev-002"
+    },
+    {
+      "requirement": "TASK-003/REQ-003",
+      "acceptance": "TASK-003/AC-003",
+      "verification": "Aplicarla dos veces y contar llamadas a generar-imagen",
+      "result": "pass",
+      "evidence": ".specanchor/tasks/TASK-003.spec.md#ev-003"
+    },
+    {
+      "requirement": "TASK-003/REQ-004",
+      "acceptance": "TASK-003/AC-004",
+      "verification": "cd frontend && npm run test:studio",
+      "result": "pass",
+      "evidence": ".specanchor/tasks/TASK-003.spec.md#ev-004"
     }
   ]
 }
