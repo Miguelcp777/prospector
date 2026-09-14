@@ -1,176 +1,49 @@
 {
-  "revision": "98f80dcf6bb3fd245c065fe7904e5593abf07110",
-  "task_spec": ".specanchor/tasks/TASK-001.spec.md",
+  "revision": "ec28a9cd6bfec79f523600fafae49a17b29b0c4c",
+  "task_spec": ".specanchor/tasks/TASK-002.spec.md",
   "files": [
     {
-      "path": ".specanchor/global/arquitectura.spec.md",
-      "kind": "clarification",
-      "specs": [],
-      "rationale": "Línea base de las decisiones estructurales ya vigentes (0001, 0002). No introduce requisito nuevo. Documenta comportamiento ya existente; no autoriza comportamiento nuevo.",
+      "path": "frontend/src/estilos-studio.css",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/studio.spec.md"
+      ],
+      "rationale": "La fila de la Biblioteca siempre quiso recortar el título: el `text-overflow: ellipsis` ya estaba escrito. Lo que no llegaba a aplicarse era el recorte, porque `1fr` no encoge por debajo del contenido. Se arregla el mecanismo, no la intención: no se añade ni se retira ninguna promesa del módulo.",
       "evidence": [
-        ".specanchor/tasks/TASK-001.spec.md#ev-002",
-        ".specanchor/evidence/baseline.json"
+        ".specanchor/tasks/TASK-002.spec.md#ev-001"
       ]
     },
     {
-      "path": ".specanchor/global/producto.spec.md",
+      "path": ".specanchor/tasks/TASK-002.spec.md",
       "kind": "clarification",
       "specs": [],
-      "rationale": "Línea base de lo que el producto promete hoy, incluida la regla de no hablar de costes ya aplicada en la 053. Documenta comportamiento ya existente; no autoriza comportamiento nuevo.",
+      "rationale": "Tarea ligera de esta corrección, con la medición antes y después.",
       "evidence": [
-        ".specanchor/tasks/TASK-001.spec.md#ev-002",
-        ".specanchor/evidence/baseline.json"
-      ]
-    },
-    {
-      "path": ".specanchor/global/calidad-y-seguridad.spec.md",
-      "kind": "clarification",
-      "specs": [],
-      "rationale": "Línea base de las reglas de seguridad ya vigentes y del estado real de las pruebas, con sus 4 fallos conocidos. Documenta comportamiento ya existente; no autoriza comportamiento nuevo.",
-      "evidence": [
-        ".specanchor/tasks/TASK-001.spec.md#ev-002",
-        ".specanchor/evidence/baseline.json"
-      ]
-    },
-    {
-      "path": ".specanchor/global/convenciones.spec.md",
-      "kind": "clarification",
-      "specs": [],
-      "rationale": "Línea base de las convenciones que el repositorio ya sigue. Documenta comportamiento ya existente; no autoriza comportamiento nuevo.",
-      "evidence": [
-        ".specanchor/tasks/TASK-001.spec.md#ev-002",
-        ".specanchor/evidence/baseline.json"
-      ]
-    },
-    {
-      "path": ".specanchor/global/puesta-en-marcha.spec.md",
-      "kind": "clarification",
-      "specs": [],
-      "rationale": "Línea base de los comandos reales y su resultado medido en esta revisión. Documenta comportamiento ya existente; no autoriza comportamiento nuevo.",
-      "evidence": [
-        ".specanchor/tasks/TASK-001.spec.md#ev-002",
-        ".specanchor/evidence/baseline.json"
-      ]
-    },
-    {
-      "path": ".specanchor/modules/datos.spec.md",
-      "kind": "clarification",
-      "specs": [],
-      "rationale": "Contrato observado del esquema y la RLS. Sin cambio de esquema. Documenta comportamiento ya existente; no autoriza comportamiento nuevo.",
-      "evidence": [
-        ".specanchor/tasks/TASK-001.spec.md#ev-002",
-        ".specanchor/evidence/baseline.json"
-      ]
-    },
-    {
-      "path": ".specanchor/modules/edge-nucleo.spec.md",
-      "kind": "clarification",
-      "specs": [],
-      "rationale": "Contrato observado de la resolución de claves por tenant (047, 049). Sin cambio de código. Documenta comportamiento ya existente; no autoriza comportamiento nuevo.",
-      "evidence": [
-        ".specanchor/tasks/TASK-001.spec.md#ev-002",
-        ".specanchor/evidence/baseline.json"
-      ]
-    },
-    {
-      "path": ".specanchor/modules/descubrimiento.spec.md",
-      "kind": "clarification",
-      "specs": [],
-      "rationale": "Contrato observado del troceado y los techos. Sin cambio de código. Documenta comportamiento ya existente; no autoriza comportamiento nuevo.",
-      "evidence": [
-        ".specanchor/tasks/TASK-001.spec.md#ev-002",
-        ".specanchor/evidence/baseline.json"
-      ]
-    },
-    {
-      "path": ".specanchor/modules/inteligencia.spec.md",
-      "kind": "clarification",
-      "specs": [],
-      "rationale": "Contrato observado de los prompts y sus prohibiciones. Sin cambio de código. Documenta comportamiento ya existente; no autoriza comportamiento nuevo.",
-      "evidence": [
-        ".specanchor/tasks/TASK-001.spec.md#ev-002",
-        ".specanchor/evidence/baseline.json"
-      ]
-    },
-    {
-      "path": ".specanchor/modules/correo.spec.md",
-      "kind": "clarification",
-      "specs": [],
-      "rationale": "Contrato observado del pie legal, la baja y el vestido de mensajes. Sin cambio de código. Documenta comportamiento ya existente; no autoriza comportamiento nuevo.",
-      "evidence": [
-        ".specanchor/tasks/TASK-001.spec.md#ev-002",
-        ".specanchor/evidence/baseline.json"
-      ]
-    },
-    {
-      "path": ".specanchor/modules/app-web.spec.md",
-      "kind": "clarification",
-      "specs": [],
-      "rationale": "Contrato observado de las pantallas, con la deuda de pruebas declarada. Sin cambio de código. Documenta comportamiento ya existente; no autoriza comportamiento nuevo.",
-      "evidence": [
-        ".specanchor/tasks/TASK-001.spec.md#ev-002",
-        ".specanchor/evidence/baseline.json"
-      ]
-    },
-    {
-      "path": ".specanchor/modules/studio.spec.md",
-      "kind": "clarification",
-      "specs": [],
-      "rationale": "Contrato observado del documento v1 y del porte, con sus 4 fallos explicados. Sin cambio de código. Documenta comportamiento ya existente; no autoriza comportamiento nuevo.",
-      "evidence": [
-        ".specanchor/tasks/TASK-001.spec.md#ev-002",
-        ".specanchor/evidence/baseline.json"
-      ]
-    },
-    {
-      "path": ".specanchor/modules/demo-publica.spec.md",
-      "kind": "clarification",
-      "specs": [],
-      "rationale": "Contrato observado de la demo y su honestidad declarada. Sin cambio de código. Documenta comportamiento ya existente; no autoriza comportamiento nuevo.",
-      "evidence": [
-        ".specanchor/tasks/TASK-001.spec.md#ev-002",
-        ".specanchor/evidence/baseline.json"
-      ]
-    },
-    {
-      "path": ".specanchor/modules/campaign-studio-aparcado.spec.md",
-      "kind": "clarification",
-      "specs": [],
-      "rationale": "Se declara aparcado y por qué. No se especifican contratos internos de código que no se ejecuta. Documenta comportamiento ya existente; no autoriza comportamiento nuevo.",
-      "evidence": [
-        ".specanchor/tasks/TASK-001.spec.md#ev-002",
-        ".specanchor/evidence/baseline.json"
+        ".specanchor/tasks/TASK-002.spec.md#ev-001"
       ]
     }
   ],
   "traceability": [
     {
-      "requirement": "TASK-001/REQ-001",
-      "acceptance": "TASK-001/AC-001",
-      "verification": "cd frontend && npm run build; comparar los cuatro artefactos con hash",
+      "requirement": "TASK-002/REQ-001",
+      "acceptance": "TASK-002/AC-001",
+      "verification": "Medir en el DOM el rectángulo del título contra el de su botón",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-001.spec.md#ev-002"
+      "evidence": ".specanchor/tasks/TASK-002.spec.md#ev-001"
     },
     {
-      "requirement": "TASK-001/REQ-002",
-      "acceptance": "TASK-001/AC-002",
+      "requirement": "TASK-002/REQ-001",
+      "acceptance": "TASK-002/AC-002",
+      "verification": "Leer gridTemplateColumns de la fila larga",
+      "result": "pass",
+      "evidence": ".specanchor/tasks/TASK-002.spec.md#ev-001"
+    },
+    {
+      "requirement": "TASK-002/REQ-002",
+      "acceptance": "TASK-002/AC-003",
       "verification": "cd frontend && npm run test:studio",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-001.spec.md#ev-003"
-    },
-    {
-      "requirement": "TASK-001/REQ-003",
-      "acceptance": "TASK-001/AC-003",
-      "verification": "python .specanchor/scripts/check-spec-sync.py --config .specanchor/anchor.yaml --baseline",
-      "result": "pass",
-      "evidence": ".specanchor/evidence/baseline.json"
-    },
-    {
-      "requirement": "TASK-001/REQ-001",
-      "acceptance": "TASK-001/AC-004",
-      "verification": "git status --porcelain, filtrando .specanchor/",
-      "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-001.spec.md#ev-005"
+      "evidence": ".specanchor/tasks/TASK-002.spec.md#ev-002"
     }
   ]
 }
