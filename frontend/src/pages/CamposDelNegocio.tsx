@@ -176,13 +176,20 @@ export function GrupoLogo({ perfil, cambiar }: Props) {
         </div>
 
         <div>
+          {/* Las clases importan: un `<button>` sin ninguna se queda con la
+              cara gris que le pone el navegador, que no es de ninguno de los
+              dos temas. Y `.sutil` es una clase de TEXTO —solo cambia el
+              color—, así que sobre esa cara gris dejaba «Quitarlo» en 2.05:1
+              con el tema oscuro. Medido en producción. */}
           <div className="acciones">
-            <button type="button" onClick={() => entrada.current?.click()}
+            <button type="button" className="secundario"
+                    onClick={() => entrada.current?.click()}
                     disabled={subiendo}>
               {subiendo ? "Subiendo…" : url ? "Cambiar el logo" : "Subir un logo"}
             </button>
             {url && (
-              <button type="button" className="sutil" onClick={quitar} disabled={subiendo}>
+              <button type="button" className="fantasma" onClick={quitar}
+                      disabled={subiendo}>
                 Quitarlo
               </button>
             )}

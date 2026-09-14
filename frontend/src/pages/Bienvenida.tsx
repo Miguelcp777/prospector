@@ -105,12 +105,15 @@ export function Bienvenida({ alTerminar }: { alTerminar: () => void }) {
 
             <div className="acciones bienvenida-acciones">
               {paso > 0 && (
-                <button type="button" onClick={() => { setError(null); setPaso(paso - 1); }}>
+                <button type="button" className="secundario"
+                        onClick={() => { setError(null); setPaso(paso - 1); }}>
                   Atrás
                 </button>
               )}
+              {/* `.sutil` es una clase de texto: en un botón deja la cara gris
+                  del navegador con letra apagada encima, y eso no se lee. */}
               {paso > 0 && (
-                <button type="button" className="sutil" onClick={terminar}
+                <button type="button" className="fantasma" onClick={terminar}
                         disabled={guardando}>
                   Terminar ahora
                 </button>
