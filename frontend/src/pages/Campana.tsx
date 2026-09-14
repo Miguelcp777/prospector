@@ -368,9 +368,8 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
               Lo que sí es suyo y sí puede hacer es verificar su dominio, así
               que el aviso lleva ahí. */}
           <div className="caja-aviso">
-            El envío automatizado todavía no está disponible. Antes hace falta
-            que tu dominio de correo esté verificado, en Cuenta → Correo
-            saliente.
+            Antes hace falta que tu dominio de correo esté verificado, en
+            Cuenta → Correo saliente.
             <br />
             Lo que sí está listo: la lista de supresión y el enlace de baja que
             lleva cada mensaje.
