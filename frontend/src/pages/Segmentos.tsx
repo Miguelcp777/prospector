@@ -207,12 +207,12 @@ export function Segmentos({
           <div className="cifras">
             <Cifra valor={segmentos.length} etiqueta="propuestos" />
             <Cifra valor={aceptados} etiqueta="aceptados" />
-            <Cifra valor={consultas} etiqueta="consultas que costarán" />
+            <Cifra valor={consultas} etiqueta="búsquedas que hará" />
           </div>
           <p className="sutil">
-            Cada query de un segmento aceptado es al menos una consulta de pago
-            a Google Places, y más si hay varias páginas de resultados.
-            Descartar lo que no encaje es lo que abarata la campaña.
+            Cada query de un segmento aceptado es al menos una búsqueda en
+            Google Places, y más si hay varias páginas de resultados.
+            Descartar lo que no encaje es lo que afina la campaña.
           </p>
 
           <div className="lista">

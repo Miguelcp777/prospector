@@ -28,16 +28,13 @@ export function Campanas() {
   const [campanas, setCampanas] = useState<Fila[]>([]);
   const [resumen, setResumen] = useState<Record<string, Resumen>>({});
   const [segmentos, setSegmentos] = useState<Record<string, number>>({});
-  const [gasto, setGasto] = useState<
-    { tenant: number; techoT: number; proyecto: number; techoP: number } | null
-  >(null);
   const [abierta, setAbierta] = useState<string | null>(null);
   const [creando, setCreando] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
-    const [c, r, s, cp, tn, aj] = await Promise.all([
+    const [c, r, s] = await Promise.all([
       supabase.from("campaigns")
         .select("id, nombre, ciudad, radio_km, estado, max_consultas")
         .order("creado_en", { ascending: false }),
@@ -45,9 +42,6 @@ export function Campanas() {
       // Los segmentos NO salen de v_resumen_campana: esa vista cuenta los
       // que ya tienen leads, y una campaña recién inferida daría 0.
       supabase.from("segments").select("campaign_id").eq("aceptado", true),
-      supabase.from("consumo_places").select("consultas").limit(1),
-      supabase.from("tenants").select("max_consultas_mes").limit(1),
-      supabase.from("ajustes").select("max_consultas_mes_proyecto").limit(1),
     ]);
 
     if (c.error) { setError(c.error.message); setCargando(false); return; }
@@ -62,18 +56,6 @@ export function Campanas() {
       segs[f.campaign_id] = (segs[f.campaign_id] ?? 0) + 1;
     }
     setSegmentos(segs);
-
-    const { data: totalP } = await supabase.rpc("consultas_del_proyecto");
-    const techoT = (tn.data?.[0] as { max_consultas_mes: number } | undefined)?.max_consultas_mes;
-    const techoP = (aj.data?.[0] as { max_consultas_mes_proyecto: number } | undefined)?.max_consultas_mes_proyecto;
-    if (techoT !== undefined && techoP !== undefined) {
-      setGasto({
-        tenant: (cp.data?.[0] as { consultas: number } | undefined)?.consultas ?? 0,
-        techoT,
-        proyecto: Number(totalP ?? 0),
-        techoP,
-      });
-    }
 
     setCargando(false);
   }, []);
@@ -100,25 +82,6 @@ export function Campanas() {
       </div>
 
       {error && <p className="caja-error">{error}</p>}
-
-      {gasto && (
-        <div className="cifras">
-          <div className="cifra">
-            <strong>
-              {gasto.tenant}
-              <span style={{ fontSize: "1rem", color: "var(--texto-3)" }}> / {gasto.techoT}</span>
-            </strong>
-            <span>búsquedas tuyas este mes</span>
-          </div>
-          <div className="cifra">
-            <strong>
-              {gasto.proyecto}
-              <span style={{ fontSize: "1rem", color: "var(--texto-3)" }}> / {gasto.techoP}</span>
-            </strong>
-            <span>del servicio · cupo gratuito de Google</span>
-          </div>
-        </div>
-      )}
 
       {creando && (
         <Formulario alCrear={async () => { setCreando(false); await cargar(); }} alFallar={setError} />
@@ -246,8 +209,7 @@ function Formulario({
         </label>
       </div>
       <p className="menudo">
-        Cada búsqueda en Google Places se paga a partir del cupo gratuito. El
-        techo es el gasto máximo de esta campaña.
+        El techo es el número máximo de búsquedas que hará esta campaña.
       </p>
       <div className="acciones">
         <button className="primario" type="submit" disabled={enviando}>

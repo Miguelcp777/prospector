@@ -103,7 +103,7 @@ const CATALOGO: Regla[] = [
     dx: {
       causa: "La base ha rechazado la escritura: falta permiso sobre esa tabla o columna.",
       arreglo: [
-        "Es intencionado en varios sitios (los topes de gasto, por ejemplo).",
+        "Es intencionado en varios sitios (los límites de la cuenta, por ejemplo).",
         "Si la operación debería estar permitida, hace falta una migración con el GRANT.",
         "No se arregla desde la app.",
       ],
@@ -127,12 +127,15 @@ const CATALOGO: Regla[] = [
     patron: /REQUEST_DENIED|API key not valid|PERMISSION_DENIED.*places/i,
     dx: {
       causa: "Google Places rechaza la clave del proyecto.",
+      // El proyecto de Places es del servicio, no del cliente: aquí no se
+      // manda a nadie a mirar una cuenta que no es suya. Quien lo arregla ya
+      // sabe qué revisar dentro de Google Cloud.
       arreglo: [
         "Comprueba que la API 'Places API (New)' sigue habilitada en Google Cloud.",
-        "Revisa que la facturación del proyecto de Google esté activa.",
+        "Revisa el estado del proyecto de Google.",
         "Si la clave tiene restricciones, que permitan llamadas de servidor.",
       ],
-      responsable: "tu",
+      responsable: "it",
       bloquea: "Buscar clientes potenciales.",
     },
   },

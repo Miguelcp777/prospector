@@ -298,7 +298,7 @@ export function CorreoDelCliente() {
             <p className="sutil">
               Damos de alta {cfg.dominio || "tu dominio"} en nuestro proveedor
               de envío y te decimos qué pegar donde lo tengas comprado. Ni
-              cuenta, ni factura, ni clave: solo unos registros.
+              cuenta ni clave: solo unos registros.
             </p>
           </div>
 
@@ -387,8 +387,8 @@ export function CorreoDelCliente() {
           <h2>Usar tu propio proveedor</h2>
           <p className="sutil">
             Si ya tienes Resend, Amazon SES o un SMTP montado, puedes enviar
-            por ahí en vez de por nuestra infraestructura. Tu dominio, tu
-            factura y tu reputación, sin compartir IP con nadie.
+            por ahí en vez de por nuestra infraestructura. Tu dominio y tu
+            reputación, sin compartir IP con nadie.
           </p>
         </div>
 

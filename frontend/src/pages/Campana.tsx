@@ -258,7 +258,7 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
         </Paso>
 
         <Paso n={3} estado={estadoDe(hechos, 2)} titulo={PASOS[2].nombre}
-              resumen="Google Places, por segmento y zona. Es el único paso que cuesta dinero."
+              resumen="Google Places, por segmento y zona."
               insignia={leads > 0 ? `${leads} leads` : undefined}>
           {buscando && jobs.descubrir ? (
             <>
@@ -276,8 +276,8 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
               </div>
               <p className="menudo">
                 Se para donde esté y te quedas con los leads encontrados hasta
-                ese momento. La búsqueda que esté en vuelo termina —ya está
-                pagada— y las que queden en cola no se hacen.
+                ese momento. La búsqueda que esté en vuelo termina y las que
+                queden en cola no se hacen.
               </p>
             </>
           ) : (
@@ -302,7 +302,7 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
         </Paso>
 
         <Paso n={4} estado={estadoDe(hechos, 3)} titulo={PASOS[3].nombre}
-              resumen="Entramos en la web de cada lead a buscar su buzón de contacto. Esto no cuesta nada."
+              resumen="Entramos en la web de cada lead a buscar su buzón de contacto."
               insignia={conEmail > 0 ? `${conEmail} con email` : undefined}>
           {enriqueciendo && jobs.enriquecer ? (
             <Progreso job={jobs.enriquecer} espera="Arrancando…" enCurso="buscando correos…" />
@@ -333,17 +333,15 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
           ) : (
             <>
               <p className="sutil">
-                Cuesta una llamada al modelo por lead. Se saltan los que están
-                en la lista de supresión.
+                Se saltan los leads que están en la lista de supresión.
               </p>
               {/* El techo del modo demo manda sobre el de tanda, así que si
                   está puesto se enseña ese: decir "vuelve a pulsar" cuando
                   no va a escribir más es peor que no decir nada. */}
               {topeDemo !== null ? (
                 <p className="caja-aviso">
-                  Modo demo: {topeDemo} mensajes por campaña, en total. Llevas{" "}
-                  {mensajes}. Cada correo es una llamada al modelo, y ahí es
-                  donde se va el dinero de esta parte.
+                  Versión de prueba: {topeDemo} mensajes por campaña, en
+                  total. Llevas {mensajes}.
                 </p>
               ) : (
                 topeMensajes !== null && conEmail > topeMensajes && (

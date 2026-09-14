@@ -130,8 +130,8 @@ export function Cuenta() {
 
       <p className="sutil">
         Estos datos llegan con la clave publicable y los filtra la RLS: lo que
-        ves aquí es lo tuyo, no lo de la base. El plan y los topes de gasto se
-        ven pero no se tocan — los cambia quien lleva el proyecto.
+        ves aquí es lo tuyo, no lo de la base. El plan y los límites de la
+        cuenta se ven pero no se tocan — los cambia quien lleva el proyecto.
       </p>
 
       {/* Quién paga el modelo. Va aquí y no en una sección propia del menú
