@@ -58,8 +58,10 @@ Desde TASK-005 existe `.github/workflows/ci.yml`. Su contrato vive en
 - El informe de impacto se sella contra el HEAD de la tubería
   (`scripts/sellar-revision.mjs`). Lo que eso afloja está escrito en la spec
   del módulo, y no es menor.
-- VERIFIED 2026-09-14 · cada pieza, ejecutada en local. **UNKNOWN** · ninguna
-  se ha ejecutado todavía en GitHub.
+- VERIFIED 2026-09-14 · cada pieza en local **y la tubería entera en GitHub**:
+  PR #3, ejecución #1, 51 s, `Success`. `frontend` leyó 71/4 en Linux,
+  `contratos` selló el commit de fusión sintético y dio PASS, e `inventario`
+  se saltó la pull request como se diseñó.
 
 ## Lo que sigue sin existir
 

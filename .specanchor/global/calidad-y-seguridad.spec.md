@@ -19,7 +19,7 @@ lo que no se puede romper aunque el cambio funcione.
 | Los 4 fallos son anteriores y están explicados | OBSERVED | `docs/decisiones/0005`, sección «Estado» |
 | `tsc -b` y `npm run build` salen con 0 | VERIFIED | ejecutados en `98f80dc` |
 | Hay CI desde TASK-005: tipos, build, pruebas y guard | VERIFIED | `.github/workflows/ci.yml`; cada pieza ejecutada en local |
-| Ninguno de esos trabajos se ha ejecutado aún en GitHub | UNKNOWN | no hay todavía ninguna ejecución de la que hablar |
+| El CI ha corrido en GitHub y los tres trabajos hicieron lo suyo | VERIFIED | PR #3, ejecución #1, 51 s, `Success` |
 | Fuera del studio no hay ninguna prueba automática | VERIFIED | `frontend/pruebas-porte/` es el único directorio de pruebas |
 | Ningún secreto vive en el repositorio | OBSERVED | `.env.example` solo lleva la URL y la clave publicable |
 | El MCP de Supabase está en modo escritura a propósito | OBSERVED | `.mcp.json` sin `read_only`; razonado en `supabase/README.md` |

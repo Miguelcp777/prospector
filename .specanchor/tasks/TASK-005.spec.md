@@ -223,6 +223,21 @@ verificado, está estrenado.
   **0**, 614,62 kB de bundle.
 - **EV-008** · Inventario con los cinco archivos nuevos: **366 materiales, 0
   sin mapear**, y los cinco dentro de `entrega`.
+- **EV-009** · **Ejecutado en GitHub**, PR #3, ejecución **#1**
+  (https://github.com/Miguelcp777/prospector/actions/runs/34871837762), 51 s, estado `Success`:
+  - `frontend` ✅ 47 s. El registro dice `# tests 75 / # pass 71 / # fail 4` y
+    después `Pasan 71 · fallan 4 · conocidos 4` con las cuatro nombradas y
+    `Sin fallos nuevos.` Mismo resultado que en Windows: la lista por nombre
+    funciona en Linux.
+  - `contratos` ✅ 9 s. `revision escrita: e4f0a966…` →
+    `revision sellada: b8ae5d8c…`, que **no es el commit de la rama**
+    (`3f31a75`) sino el commit de fusión sintético de la pull request. Es la
+    demostración de que el sellado hacía falta: sin él este trabajo habría
+    fallado siempre. Después, `Documentary coverage: PASS`.
+  - `inventario` ⏭ saltado, que es su condición en una pull request.
+  - **Un aviso**: las acciones apuntaban a Node 20, obsoleto, y GitHub las
+    forzaba a Node 24. Se suben a `checkout@v7`, `setup-node@v7` y
+    `setup-python@v7`.
 
 ## 17. Trazabilidad
 
@@ -236,12 +251,11 @@ verificado, está estrenado.
 
 ## 18. Lo que esta tarea NO deja verificado
 
-- **Que el CI funcione en GitHub.** Todo lo de arriba se midió en esta máquina,
-  en Windows, con los mismos comandos. El `ubuntu-latest`, el commit de fusión
-  sintético de las pull requests y la caché de npm **no se han visto nunca**.
-  Hasta que corra una vez allí, esto es un CI escrito, no un CI que funcione —
-  que es la misma distinción que este proyecto lleva haciendo desde el primer
-  README.
+- ~~Que el CI funcione en GitHub~~ → **VERIFIED**: ejecución #1, los tres
+  trabajos como se habían diseñado (EV-009). Deja de ser un CI escrito.
+- **Que siga funcionando con las acciones en v7.** El botón verde de arriba es
+  de la ejecución con `@v4`/`@v5`. La subida a `@v7` la comprueba la ejecución
+  siguiente de esta misma rama, y hasta que esté en verde eso no está dicho.
 - **En qué estado están las protecciones de rama.** No se ha consultado: `gh`
   no está instalado en esta máquina. No se han tocado.
 

@@ -128,13 +128,16 @@ mismo—. Lo que sí está medido, ejecutándolo:
 | El guard con `--base` acepta el cambio ya commiteado | VERIFIED | TASK-005 EV-004 |
 | `npm ci` concuerda con el `package-lock.json` | VERIFIED | TASK-005 EV-005 |
 | El YAML del workflow es válido y declara tres trabajos | VERIFIED | TASK-005 EV-006 |
+| En GitHub, `frontend` pasa y lee 71/4 **en Linux** | VERIFIED | TASK-005 EV-009 |
+| En GitHub, `contratos` sella el commit de fusión y da PASS | VERIFIED | TASK-005 EV-009 |
+| En GitHub, `inventario` se salta la pull request, como se diseñó | VERIFIED | TASK-005 EV-009 |
 
 ## Incertidumbres y deuda conocidas
 
-- **UNKNOWN** · Los tres trabajos no se han ejecutado nunca **en GitHub**. Lo
-  verificado es cada pieza en local, con los mismos comandos. Queda por ver
-  el `ubuntu-latest` (aquí es Windows), el commit de fusión sintético y la
-  caché de `npm`.
+- ~~Los tres trabajos no se han ejecutado nunca en GitHub~~ → **VERIFIED**
+  2026-09-14, ejecución **#1** (PR #3), 51 s, `Success`. Ver la tabla de
+  abajo. Las tres incógnitas que quedaban —`ubuntu-latest`, el commit de
+  fusión sintético y la caché de npm— están resueltas.
 - **UNKNOWN** · No se ha mirado si `main` tiene protecciones de rama, y no
   se han tocado. Si no las tiene, un rojo del CI no impide fusionar nada:
   avisa. Activarlas es una decisión de Miguel en los ajustes del repositorio.
@@ -148,3 +151,8 @@ mismo—. Lo que sí está medido, ejecutándolo:
 ## Historial de cambios
 
 - 2026-09-14 · Creado con TASK-005. Primer CI del proyecto.
+- 2026-09-14 · Ejecutado por primera vez en GitHub (PR #3, ejecución #1): los
+  tres trabajos se comportaron como dice esta spec. Y las acciones suben a
+  **v7**: con `checkout@v4`, `setup-node@v4` y `setup-python@v5` la ejecución
+  avisó de que apuntan a Node 20, ya obsoleto, y GitHub las estaba forzando a
+  Node 24. Un aviso hoy es una rotura dentro de unos meses.

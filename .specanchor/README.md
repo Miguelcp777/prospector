@@ -112,9 +112,8 @@ Dos cosas que conviene saber antes de tocarlo:
 
 ## Lo que falta
 
-- **El CI no se ha ejecutado nunca en GitHub.** Cada pieza está medida en
-  local; `ubuntu-latest`, el commit de fusión sintético de las pull requests
-  y la caché de npm, no.
+- ~~El CI no se ha ejecutado nunca en GitHub~~ → corrió el 2026-09-14 en la
+  PR #3, los tres trabajos en verde en 51 s.
 - **El CI no toca `supabase/`.** Ni Edge Functions ni migraciones tienen
   comprobación automática.
 - Las protecciones de rama son un ajuste externo y necesitan autorización
