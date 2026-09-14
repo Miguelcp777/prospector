@@ -159,3 +159,13 @@ test("un hueco que el redactor deja no lo rellena nadie", () => {
   assert.ok(!/auditor/i.test(html), "volvió la plantilla determinista");
   assert.ok(!/Lumen/.test(html), "volvió el destinatario de ejemplo");
 });
+
+test("el pie no promete un centro de preferencias que no existe", () => {
+  // Visto en un correo generado de verdad: «Gestionar preferencias» sale en
+  // el pie, y al vestir un mensaje esa URL se rellena con la de BAJA. Un
+  // enlace que dice «elige qué recibir» y te da de baja de todo.
+  const html = renderEmailHtml(documentoDe(), copy.subject, copy.preheader);
+  assert.ok(!/Gestionar preferencias/.test(html));
+  // Y el de baja, que sí es obligatorio, sigue estando.
+  assert.ok(/Cancelar suscripci/.test(html));
+});

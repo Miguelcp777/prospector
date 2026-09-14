@@ -220,9 +220,28 @@ function bloque(tipo: BloquePermitido, ctx: Contexto): EmailBlock | null {
       return b;
 
     case "footer":
-      // Sin tocar: las variables {{sender.*}} y {{system.unsubscribe_url}} son
-      // las que el envío rellena con los datos reales, y el enlace de baja es
-      // obligatorio. Ver docs/compliance.md.
+      // Las variables {{sender.*}} y {{system.unsubscribe_url}} se dejan como
+      // están: son las que el envío rellena con los datos reales, y el enlace
+      // de baja es obligatorio. Ver docs/compliance.md.
+      //
+      // Lo que sí se quita es «Gestionar preferencias». No existe tal centro
+      // de preferencias, y al vestir un mensaje de verdad
+      // `system.preferences_url` se rellena con la URL de BAJA: un enlace que
+      // promete elegir qué recibir y lo que hace es darte de baja de todo.
+      //
+      // La 044 dejó puesto el mecanismo —un enlace del pie se dibuja solo si
+      // tiene texto Y destino— pero solo actúa si alguien los vacía a mano, y
+      // nadie lo hacía. Aquí se vacía la etiqueta.
+      //
+      // Solo la etiqueta. La URL se deja escrita porque el contrato del
+      // studio comprueba que `system.preferences_url` esté en las props del
+      // pie —`REQUIRED_COMPLIANCE_VARIABLES`, y la barra de calidad del
+      // editor la mira—. Sin etiqueta el enlace no se dibuja, que es lo que
+      // se quería, y el documento sigue cumpliendo lo que dice cumplir.
+      Object.assign(b.props, {
+        preferencesLabel: "",
+        preferencesUrl: "{{system.preferences_url}}",
+      });
       return b;
 
     case "divider":
