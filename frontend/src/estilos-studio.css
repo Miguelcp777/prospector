@@ -747,8 +747,16 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
  * pasos: los mismos seis están arriba, en la barra horizontal, así que no se
  * pierde por dónde vas. Después los paneles laterales, hasta sus mínimos.
  * El correo se queda estrecho y con scroll propio, que es incómodo pero se
- * ve — y verlo es de lo que va la pantalla. */
-@media (min-width: 901px) and (max-width: 1240px) {
+ * ve — y verlo es de lo que va la pantalla.
+ *
+ * El corte está en 1440 y no antes porque el carril **siempre** cuesta lo
+ * mismo: 196 suyos más los 62 que los paneles anchos suman por encima de sus
+ * mínimos, 318 px que salen del correo. No hay punto en el que reaparecer le
+ * compense: solo deja de doler cuando sobra sitio. Medido con el carril
+ * puesto, a 1280 el correo caía a 238 px —menos que a 1100 sin él, 376—, y
+ * eso es una pantalla que empeora al agrandar la ventana. A partir de 1441 el
+ * correo se queda en 407, que ya da para verlo entero reducido. */
+@media (min-width: 901px) and (max-width: 1440px) {
   .mode-guided { --carril: 0px; }
   .mode-guided .guia-pasos { display: none; }
 
