@@ -79,7 +79,10 @@ export async function claveDelModelo(
   if (guardada && guardada.hasta > Date.now()) return guardada.clave;
 
   let clave = "";
-  let origen: "cliente" | "servicio" | "falta" = "falta";
+  // Desde la 049 el «falta» viene con apellido: no es lo mismo que le toque
+  // poner la suya a que falte la del servicio.
+  let origen: "cliente" | "servicio" | "falta_cliente" | "falta_servicio" =
+    "falta_servicio";
 
   try {
     // service_role: `resolver_clave_modelo` está revocada para todo lo
@@ -106,13 +109,16 @@ export async function claveDelModelo(
   // corresponde la clave del servicio. Si a un cliente le tocaba poner la
   // suya, caer aquí sería colarle el consumo a otro por la puerta de atrás
   // —justo lo que la 047 viene a impedir—.
-  if (!clave && origen !== "falta") {
+  if (!clave && origen !== "falta_cliente") {
     clave = Deno.env.get(RESPALDO[proveedor] ?? "") ?? "";
     if (clave) origen = "servicio";
   }
 
   if (!clave) {
-    throw new ErrorSinClave(proveedor, origen === "falta" && tenant ? "cliente" : "servicio");
+    throw new ErrorSinClave(
+      proveedor,
+      origen === "falta_cliente" ? "cliente" : "servicio",
+    );
   }
 
   memoria.set(llave, { clave, hasta: Date.now() + CADUCIDAD_MS });

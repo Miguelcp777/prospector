@@ -63,12 +63,12 @@ Deno.serve(async (req) => {
       p_tenant: perfil.tenant_id,
       p_proveedor: "openai",
     });
-    const fila = Array.isArray(resuelta) ? resuelta[0] : resuelta;
-    const clave = fila?.clave as string | null;
+    const claveResuelta = Array.isArray(resuelta) ? resuelta[0] : resuelta;
+    const clave = claveResuelta?.clave as string | null;
 
     if (!clave) {
       return json(req, {
-        error: fila?.origen === "falta"
+        error: claveResuelta?.origen === "falta_cliente"
           ? "Falta la clave de OpenAI de tu cuenta. Se pega en " +
             "Cuenta → Proveedor de modelo."
           : "Falta la clave de OpenAI. Se pega en el panel de " +
