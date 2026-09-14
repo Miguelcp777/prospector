@@ -33,6 +33,37 @@ export default function Studio() {
     });
   }, []);
 
+  // ------------------------------------------------------------
+  // El hueco de la insignia del hosting.
+  //
+  // Netlify inyecta «Powered by Netlify» como un iframe fijo abajo a la
+  // derecha, con z-index 2147483645. Por debajo de 900 px el editor pone ahí
+  // su barra de herramientas —Bloques, Capas, Editar, Vista—, así que la
+  // insignia se comía los clics de los dos últimos: se veían, se pulsaban y
+  // no pasaba nada.
+  //
+  // Se ha desactivado en el panel del sitio, pero el editor no puede
+  // depender de eso: basta con cambiar de plan, o con que el proveedor la
+  // reactive, para que vuelva sin avisar. Si aparece, se mide y se aparta la
+  // barra lo justo; si no está, no se reserva ni un píxel.
+  // ------------------------------------------------------------
+  useEffect(() => {
+    const medir = () => {
+      const insignia = document.getElementById("nl-badge-frame");
+      const ancho = insignia ? Math.ceil(insignia.getBoundingClientRect().width) : 0;
+      document.documentElement.style.setProperty("--hueco-insignia", `${ancho}px`);
+    };
+    medir();
+    const observador = new MutationObserver(medir);
+    observador.observe(document.body, { childList: true, subtree: false });
+    window.addEventListener("resize", medir);
+    return () => {
+      observador.disconnect();
+      window.removeEventListener("resize", medir);
+      document.documentElement.style.removeProperty("--hueco-insignia");
+    };
+  }, []);
+
   if (!nombre) return <p className="sutil">Cargando el studio…</p>;
 
   return (

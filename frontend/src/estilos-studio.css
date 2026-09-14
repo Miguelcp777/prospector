@@ -959,3 +959,11 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   padding-block: 8px;
   white-space: normal;
 }
+
+/* La barra del editor móvil se aparta de la insignia del hosting.
+
+   `--hueco-insignia` la mide Studio.tsx: vale 0 px cuando no hay ninguna, y
+   entonces esta regla no reserva nada. Ver el comentario de allí. */
+.studio .mobile-editor-bar {
+  padding-right: calc(6px + var(--hueco-insignia, 0px));
+}
