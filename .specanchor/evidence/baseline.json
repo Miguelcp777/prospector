@@ -1,7 +1,8 @@
 {
-  "revision": "98f80dcf6bb3fd245c065fe7904e5593abf07110",
+  "revision": "e4f0a9661b352baec2f6332f2870baf6f8e1f741",
   "material_files": [
     ".env.example",
+    ".github/workflows/ci.yml",
     ".mcp.json",
     "data/taxonomias/fisioterapia.json",
     "demo/README.md",
@@ -286,6 +287,10 @@
     "frontend/src/vite-env.d.ts",
     "frontend/tsconfig.json",
     "frontend/vite.config.ts",
+    "scripts/.gitkeep",
+    "scripts/fallos-conocidos.json",
+    "scripts/pruebas-del-studio.mjs",
+    "scripts/sellar-revision.mjs",
     "supabase/002_descubrimiento_y_demo.sql",
     "supabase/003_cron.sql",
     "supabase/004_devolver_uso_demo.sql",

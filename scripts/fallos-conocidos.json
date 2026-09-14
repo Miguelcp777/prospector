@@ -1,0 +1,22 @@
+{
+  "comentario": "Las pruebas del studio que ya fallaban antes de que existiera el CI. Son las cuatro adaptaciones del porte de la V45, explicadas una por una en docs/decisiones/0005-v45-al-studio-de-la-app.md, seccion Estado. Quitar una de esta lista en cuanto se arregle: el comprobador falla tambien si una de estas empieza a pasar, para que la lista no envejezca sola.",
+  "revision": "98f80dcf6bb3fd245c065fe7904e5593abf07110",
+  "fallos": [
+    {
+      "prueba": "accepts isolated anonymous browser sessions",
+      "motivo": "La sesion de invitado del proyecto Next no existe aqui: la identidad es la de Supabase."
+    },
+    {
+      "prueba": "keeps upload chunks safely below the request limit",
+      "motivo": "El troceado de subida no se porto: Storage no lo necesita."
+    },
+    {
+      "prueba": "reference HTTP adapter keeps authorization server-side and uses v1 paths",
+      "motivo": "El adaptador HTTP es el del proyecto Next, con otras rutas."
+    },
+    {
+      "prueba": "all application themes reach portalled dialogs and use the contrast contract",
+      "motivo": "La clase del tema la pone el shell del studio, no <html>. Decision de la 0005."
+    }
+  ]
+}

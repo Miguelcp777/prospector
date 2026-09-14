@@ -1,74 +1,126 @@
 {
-  "revision": "cfa8f4760a15b64cef8d7888d45bc1a1793d94ed",
-  "task_spec": ".specanchor/tasks/TASK-004.spec.md",
+  "revision": "e4f0a9661b352baec2f6332f2870baf6f8e1f741",
+  "task_spec": ".specanchor/tasks/TASK-005.spec.md",
   "files": [
     {
-      "path": ".specanchor/tasks/TASK-004.spec.md",
-      "kind": "clarification",
-      "specs": [],
-      "rationale": "El aislamiento entre clientes pasa de OBSERVED a VERIFIED con la medición de TASK-004. No se altera ningún contrato: se sustituye el estado de evidencia de un invariante que ya existía.",
+      "path": ".github/workflows/ci.yml",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/entrega.spec.md"
+      ],
+      "rationale": "Archivo nuevo: el primer CI del proyecto. Es contrato porque establece qué se ejecuta, cuándo y con qué rama de destino, y su módulo (entrega) nace en este mismo cambio. No toca una línea de producto: el frontend, las Edge Functions y el esquema quedan idénticos.",
       "evidence": [
-        ".specanchor/tasks/TASK-004.spec.md#ev-001"
+        ".specanchor/tasks/TASK-005.spec.md#ev-006",
+        ".specanchor/tasks/TASK-005.spec.md#ev-007"
       ]
     },
     {
-      "path": ".specanchor/modules/datos.spec.md",
-      "kind": "clarification",
-      "specs": [],
-      "rationale": "El aislamiento entre clientes pasa de OBSERVED a VERIFIED con la medición de TASK-004. No se altera ningún contrato: se sustituye el estado de evidencia de un invariante que ya existía.",
+      "path": "scripts/pruebas-del-studio.mjs",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/entrega.spec.md"
+      ],
+      "rationale": "Archivo nuevo. Decide si el resultado de npm run test:studio es aceptable: tolera los cuatro fallos anteriores al porte de la V45 por nombre y rompe con cualquier otro, y también si uno de ellos empieza a pasar o desaparece. Sin esto el CI estaría en rojo permanente, porque el comando sale siempre con código 1.",
       "evidence": [
-        ".specanchor/tasks/TASK-004.spec.md#ev-001"
+        ".specanchor/tasks/TASK-005.spec.md#ev-001",
+        ".specanchor/tasks/TASK-005.spec.md#ev-002"
       ]
     },
     {
-      "path": ".specanchor/global/arquitectura.spec.md",
-      "kind": "clarification",
-      "specs": [],
-      "rationale": "El aislamiento entre clientes pasa de OBSERVED a VERIFIED con la medición de TASK-004. No se altera ningún contrato: se sustituye el estado de evidencia de un invariante que ya existía.",
+      "path": "scripts/fallos-conocidos.json",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/entrega.spec.md"
+      ],
+      "rationale": "Archivo nuevo. La lista de fallos tolerados, con el motivo de cada uno y la revisión en que se midieron. Es dato del comprobador, no código, pero entra como contrato porque cambiar esta lista cambia lo que el CI deja pasar.",
       "evidence": [
-        ".specanchor/tasks/TASK-004.spec.md#ev-001"
+        ".specanchor/tasks/TASK-005.spec.md#ev-001",
+        ".specanchor/tasks/TASK-005.spec.md#ev-002"
       ]
     },
     {
-      "path": ".specanchor/global/calidad-y-seguridad.spec.md",
-      "kind": "clarification",
-      "specs": [],
-      "rationale": "El aislamiento entre clientes pasa de OBSERVED a VERIFIED con la medición de TASK-004. No se altera ningún contrato: se sustituye el estado de evidencia de un invariante que ya existía.",
+      "path": "scripts/sellar-revision.mjs",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/entrega.spec.md"
+      ],
+      "rationale": "Archivo nuevo. Sella la revisión del informe de impacto contra el HEAD de la tubería, sobre una copia. Toca solo el campo revision: los resultados, la evidencia y las clasificaciones se copian tal cual, comprobado con un diff de una sola línea. Lo que este sellado afloja está escrito en la spec del módulo y en la sección 9 de la tarea.",
       "evidence": [
-        ".specanchor/tasks/TASK-004.spec.md#ev-001"
+        ".specanchor/tasks/TASK-005.spec.md#ev-003",
+        ".specanchor/tasks/TASK-005.spec.md#ev-004"
+      ]
+    },
+    {
+      "path": ".specanchor/modules/entrega.spec.md",
+      "kind": "requirement",
+      "specs": [],
+      "rationale": "Spec nueva del módulo entrega, que no existía. Fija qué corre y cuándo, los cinco invariantes del CI —entre ellos que informa y no frena, y que ningún paso marca resultados por su cuenta— y deja escrito, sin adornos, lo que el sellado de revisión debilita.",
+      "evidence": [
+        ".specanchor/tasks/TASK-005.spec.md#ev-001",
+        ".specanchor/tasks/TASK-005.spec.md#ev-002",
+        ".specanchor/tasks/TASK-005.spec.md#ev-003",
+        ".specanchor/tasks/TASK-005.spec.md#ev-004",
+        ".specanchor/tasks/TASK-005.spec.md#ev-006",
+        ".specanchor/tasks/TASK-005.spec.md#ev-008"
       ]
     },
     {
       "path": ".specanchor/global/puesta-en-marcha.spec.md",
-      "kind": "clarification",
+      "kind": "correction",
       "specs": [],
-      "rationale": "El aislamiento entre clientes pasa de OBSERVED a VERIFIED con la medición de TASK-004. No se altera ningún contrato: se sustituye el estado de evidencia de un invariante que ya existía.",
+      "rationale": "Afirmaba con estado VERIFIED que no hay CI y que ninguna comprobación se ejecuta sola. Deja de ser cierto con este cambio, así que se corrige en vez de envejecer: la sección pasa a describir los tres trabajos, y lo que sigue sin existir —entorno de pruebas, comprobación de supabase/— se queda escrito aparte, incluido que nada se ha ejecutado aún en GitHub.",
       "evidence": [
-        ".specanchor/tasks/TASK-004.spec.md#ev-001"
+        ".specanchor/tasks/TASK-005.spec.md#ev-006",
+        ".specanchor/tasks/TASK-005.spec.md#ev-007",
+        ".specanchor/tasks/TASK-005.spec.md#ev-008"
+      ]
+    },
+    {
+      "path": ".specanchor/global/calidad-y-seguridad.spec.md",
+      "kind": "correction",
+      "specs": [],
+      "rationale": "Misma corrección: la fila «No hay CI» era VERIFIED y ya no lo es. Además la tolerancia a los cuatro fallos conocidos deja de ser un INTENT y pasa a ser una lista ejecutable, con su evidencia de que rechaza de verdad.",
+      "evidence": [
+        ".specanchor/tasks/TASK-005.spec.md#ev-001",
+        ".specanchor/tasks/TASK-005.spec.md#ev-002"
       ]
     }
   ],
   "traceability": [
     {
-      "requirement": "TASK-004/REQ-001",
-      "acceptance": "TASK-004/AC-001",
-      "verification": "Recuento por tabla con el token del cliente (count=exact)",
+      "requirement": "TASK-005/REQ-001",
+      "acceptance": "TASK-005/AC-006 y AC-007",
+      "verification": "yaml.safe_load del workflow; npm ci --dry-run, npx tsc -b --force y npm run build en frontend/",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-004.spec.md#ev-001"
+      "evidence": ".specanchor/tasks/TASK-005.spec.md#ev-006"
     },
     {
-      "requirement": "TASK-004/REQ-002",
-      "acceptance": "TASK-004/AC-002",
-      "verification": "Lectura por id de seis filas de otros tenants",
+      "requirement": "TASK-005/REQ-002",
+      "acceptance": "TASK-005/AC-001 y AC-002",
+      "verification": "node scripts/pruebas-del-studio.mjs con el árbol limpio, y con tres averías inyectadas a la vez",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-004.spec.md#ev-002"
+      "evidence": ".specanchor/tasks/TASK-005.spec.md#ev-002"
     },
     {
-      "requirement": "TASK-004/REQ-003",
-      "acceptance": "TASK-004/AC-003",
-      "verification": "PATCH sobre filas ajenas e INSERT con tenant_id de otro",
+      "requirement": "TASK-005/REQ-003",
+      "acceptance": "TASK-005/AC-004",
+      "verification": "check-spec-sync.py --base main --review <informe sellado> sobre el cambio commiteado en la rama",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-004.spec.md#ev-003"
+      "evidence": ".specanchor/tasks/TASK-005.spec.md#ev-004"
+    },
+    {
+      "requirement": "TASK-005/REQ-004",
+      "acceptance": "TASK-005/AC-005",
+      "verification": "check-spec-sync.py --baseline con los cinco archivos nuevos presentes",
+      "result": "pass",
+      "evidence": ".specanchor/tasks/TASK-005.spec.md#ev-008"
+    },
+    {
+      "requirement": "TASK-005/REQ-005",
+      "acceptance": "TASK-005/AC-003",
+      "verification": "diff entre el informe original y la copia sellada",
+      "result": "pass",
+      "evidence": ".specanchor/tasks/TASK-005.spec.md#ev-003"
     }
   ]
 }

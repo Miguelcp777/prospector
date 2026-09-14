@@ -1,0 +1,123 @@
+# Lo que ejecuta esto, y por que.
+#
+# Hasta ahora no habia CI, y `main` despliega a produccion en Netlify sin que
+# nadie haya ejecutado nada. Estas tres comprobaciones son las que ya se hacen
+# a mano antes de empujar; aqui solo dejan de depender de que alguien se
+# acuerde.
+#
+# En una pull request se comprueba ademas la cobertura documental del cambio
+# (el guard de .specanchor). En un empujon a `main` eso no tiene sentido —no
+# hay rama de destino contra la que comparar— y en su lugar se revisa el
+# inventario: que ningun archivo del repositorio se haya quedado sin modulo.
+#
+# Lo que esto NO hace: no protege la rama. Exigir que estas comprobaciones
+# pasen antes de fusionar es un ajuste del repositorio en GitHub, no un
+# archivo, y necesita autorizacion aparte. Mientras no se active, esto informa
+# y no frena.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    name: Tipos, build y pruebas del studio
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependencias
+        working-directory: frontend
+        run: npm ci
+
+      - name: Tipos
+        working-directory: frontend
+        run: npx tsc -b --force
+
+      - name: Build de produccion
+        working-directory: frontend
+        run: npm run build
+
+      # No se llama a `npm run test:studio` directamente: sale con codigo 1
+      # siempre, por cuatro fallos anteriores al porte de la V45 que estan
+      # explicados en docs/decisiones/0005. El comprobador los tolera uno a
+      # uno y falla con cualquier otro. Ver scripts/fallos-conocidos.json.
+      - name: Pruebas del studio
+        run: node scripts/pruebas-del-studio.mjs
+
+  contratos:
+    name: Cobertura documental del cambio
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      # fetch-depth: 0 porque el guard necesita el merge-base con la rama de
+      # destino, y con el historico recortado no hay antepasado comun que
+      # encontrar.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      # El informe se escribe antes del commit que lo lleva dentro, asi que su
+      # `revision` nunca puede coincidir con el HEAD que ve la tuberia. Se
+      # sella aqui sobre una copia; el archivo del repositorio no se toca y
+      # los resultados de las pruebas no se tocan nunca. El detalle de lo que
+      # se pierde al sellar esta escrito en el propio script.
+      # La copia va DENTRO del arbol a proposito: el guard rechaza cualquier
+      # ruta fuera del repositorio, asi que el temporal del ejecutor no vale.
+      # Esta ignorada por git para que no ensucie a quien lo corra en local.
+      - name: Sellar la revision del informe de impacto
+        run: node scripts/sellar-revision.mjs .specanchor/evidence/impact-review.json .specanchor/evidence/impact-review.sellado.json
+
+      # La rama de destino sale de la variable de la tuberia, no de "main" por
+      # costumbre: una pull request contra una rama de trabajo se compararia
+      # contra el sitio equivocado y el guard diria que no hay cambios.
+      - name: Guard de cobertura documental
+        run: |
+          python .specanchor/scripts/check-spec-sync.py \
+            --config .specanchor/anchor.yaml \
+            --base "origin/${{ github.base_ref }}" \
+            --review .specanchor/evidence/impact-review.sellado.json
+
+  inventario:
+    name: Inventario de modulos
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      # Falla si algun archivo material no pertenece a ningun modulo. Es la
+      # comprobacion que sostiene a la otra: un archivo sin modulo no tiene
+      # spec que lo ancle, y el guard de la pull request lo habria dejado
+      # pasar solo si nadie lo tocaba.
+      - name: Inventario
+        run: |
+          python .specanchor/scripts/check-spec-sync.py \
+            --config .specanchor/anchor.yaml \
+            --baseline

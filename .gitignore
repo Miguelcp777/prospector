@@ -36,3 +36,6 @@ supabase/.temp/
 
 # Vite / TypeScript — artefactos de build
 *.tsbuildinfo
+
+# SDD — copia sellada del informe de impacto, la genera el CI
+.specanchor/evidence/impact-review.sellado.json
