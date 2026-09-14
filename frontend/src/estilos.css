@@ -985,6 +985,23 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e1) 0; width: 
 .bienvenida-acciones { margin-top: var(--e3); }
 
 /* ---------------- el logo del negocio ---------------- */
+/* Las redes van en un `fieldset` porque son cuatro campos con una etiqueta
+   común, y eso es lo que un fieldset significa para quien navega con lector
+   de pantalla. Lo que no puede es traerse el marco y la leyenda que el
+   navegador le pone de serie: al lado de HORARIO o DOMICILIO POSTAL parecía
+   otro formulario metido dentro. Se le quita el adorno y se le pone la misma
+   etiqueta que a los demás. */
+.campo-grupo {
+  border: 0; margin: 0; padding: 0; min-width: 0;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.campo-grupo > legend {
+  padding: 0;
+  font-size: 0.6875rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--texto-3);
+}
+
 .logo-negocio { display: flex; flex-direction: column; gap: var(--e3); }
 .logo-negocio-fila {
   display: flex; gap: var(--e5); align-items: flex-start; flex-wrap: wrap;
@@ -994,8 +1011,21 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e1) 0; width: 
   width: 140px; height: 96px; flex: 0 0 auto;
   border: 1px dashed var(--borde-fuerte); border-radius: var(--radio-m);
   background: var(--hundido); padding: var(--e2);
+  /* Cinturón: aunque el alto de abajo fallara, nada sale de la caja. Un
+     logo que se derrama sobre los botones los deja sin pulsar. */
+  overflow: hidden;
 }
-.logo-negocio-muestra img { max-width: 100%; max-height: 100%; object-fit: contain; }
+/* El alto va en píxeles y no en `max-height: 100%`.
+   El porcentaje no llegaba a aplicarse —el navegador da 121 px de alto a una
+   imagen dentro de una caja de 96— y el logo caía encima de «Cambiar el
+   logo» y «Quitarlo». Medido en producción con el logo de un cliente: caja
+   140×96, imagen 122×121.
+   96 de caja menos los 8+8 del padding son 80. */
+.logo-negocio-muestra img {
+  max-width: 100%; max-height: 80px;
+  width: auto; height: auto;
+  object-fit: contain;
+}
 .logo-negocio-fila > div:last-child { flex: 1 1 260px; min-width: 0; }
 
 /* El input de archivo va escondido detrás del botón. `width: 1px` importa:

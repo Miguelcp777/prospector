@@ -113,7 +113,7 @@ export function GrupoContacto({ perfil, cambiar }: Props) {
                onChange={(e) => cambiar({ horario: e.target.value })} />
       </label>
 
-      <fieldset className="campo">
+      <fieldset className="campo-grupo">
         <legend>Redes</legend>
         <div className="rejilla">
           <input value={redes.instagram ?? ""} placeholder="Instagram"
