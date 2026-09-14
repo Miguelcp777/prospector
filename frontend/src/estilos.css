@@ -1012,6 +1012,16 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e1) 0; width: 
 /* Los seis pasos están en la pantalla uno debajo de otro, pero en cuanto se
    despliegan los segmentos el primero queda fuera de vista. Este carril se
    queda fijo al lado y dice siempre por dónde va la campaña. */
+/* El carril se paga con ancho, y el contenido no tiene por qué pagarlo.
+   `.ancho` limita a 960 px, que es lo correcto para leer una columna; con
+   196 px de carril dentro, las tarjetas del paso se quedaban en 730. Se le
+   devuelven al contenedor solo en esta pantalla.
+
+   `:has()` no lo entienden los navegadores viejos, y ahí no pasa nada: la
+   pantalla sigue funcionando, más estrecha. Por eso va como mejora y no como
+   una clase que el JSX tendría que poner tres niveles más arriba. */
+.ancho:has(.campana-marco) { max-width: 1188px; }
+
 .campana-marco {
   display: grid;
   grid-template-columns: 196px minmax(0, 1fr);
