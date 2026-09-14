@@ -62,8 +62,11 @@ aquí para que no haga falta descubrirlas.
 
 ## Incógnitas
 
-- **UNKNOWN** · No consta que el procedimiento de comprobación de RLS de
-  `supabase/README.md` se haya ejecutado nunca.
+- ~~No consta que el procedimiento de comprobación de RLS se haya ejecutado~~
+  → ejecutado el 2026-09-14 (TASK-004), en una variante que no crea datos de
+  prueba: se usa la sesión de un cliente real contra los datos de los demás.
+  Sigue **sin automatizar**, que es lo que lo dejaría verificado siempre y no
+  solo ese día.
 
 ## Historial de cambios
 

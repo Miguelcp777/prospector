@@ -24,7 +24,7 @@ Un ADR nuevo se numera continuando esa serie (`0006-…`).
 | Afirmación | Estado | Fuente |
 |---|---|---|
 | No hay servidor propio: todo corre en Supabase y Netlify | OBSERVED | `docs/decisiones/0001`, `0002`; no existe `backend/` |
-| El aislamiento entre clientes vive en la base (RLS), no en la aplicación | OBSERVED | `supabase/schema.sql`, políticas `*_del_tenant` |
+| El aislamiento entre clientes vive en la base (RLS), no en la aplicación | **VERIFIED** | TASK-004, 2026-09-14 · 7 tablas, 6 lecturas ajenas, 4 escrituras |
 | La pertenencia se resuelve por tabla (`auth_tenant_id()` lee `profiles`), no por claim JWT | OBSERVED | `schema.sql`; contrastado en `docs/decisiones/0003` |
 | El trabajo pesado se trocea en `job_tareas` y lo consume una Edge Function por tandas | OBSERVED | `supabase/002_descubrimiento_y_demo.sql` |
 | `reclamar_tareas` usa `SKIP LOCKED`, así que solapar invocaciones es inofensivo | OBSERVED | `002`, función `reclamar_tareas` |

@@ -47,7 +47,8 @@ Lo que consume el resto del sistema:
 
 - **INV-DAT-001** · Toda tabla de negocio lleva `tenant_id` con `references
   tenants(id) on delete cascade` y una política que compara con
-  `auth_tenant_id()`. OBSERVED · `schema.sql`.
+  `auth_tenant_id()`. **VERIFIED** 2026-09-14 (TASK-004) · `schema.sql` más
+  medición con la sesión de un cliente real.
 - **INV-DAT-002** · Toda función `SECURITY DEFINER` tiene `revoke execute` de
   `public`/`anon`/`authenticated` y `grant` explícito. Postgres las abre a
   `public` por defecto y esas funciones se saltan la RLS. OBSERVED · bloque
@@ -96,14 +97,18 @@ límite y el motivo, no el coste.
 ## Pruebas y verificación
 
 **No hay ninguna prueba automática de este módulo.** VERIFIED · no existe
-ningún archivo de test que ejecute SQL. La verificación es manual: consultas
-contra la base y el procedimiento de RLS de `supabase/README.md`, que no
-consta ejecutado.
+ningún archivo de test que ejecute SQL.
+
+El aislamiento sí está verificado a mano y con fecha: TASK-004, 2026-09-14.
+Sigue sin automatizar, así que vale para esa revisión y no para siempre —
+automatizarlo necesita dos sesiones de prueba y dónde guardar credenciales,
+o sea CI.
 
 ## Incertidumbres y deuda conocidas
 
-- **UNKNOWN** · El aislamiento nunca se ha probado con dos tenants y dos
-  tokens.
+- ~~El aislamiento nunca se ha probado~~ → **VERIFIED** el 2026-09-14
+  (TASK-004). Queda pendiente el sentido recíproco —con la sesión de otro
+  cliente— y un rol `miembro`, que no se han probado.
 - **OBSERVED** · `ajustes.modo_demo` es obsoleta desde la 045 y nadie la lee;
   no se borró porque borrar es destructivo.
 - **OBSERVED** · `{{campaign.offer}}` existe como variable y siempre se
@@ -122,3 +127,4 @@ consta ejecutado.
 | El aislamiento de escritura en Storage aguanta | VERIFIED | subida a carpeta ajena | 403 RLS |
 | El trigger `arrancar_al_encolar` encola la llamada y se deshace con la transacción | VERIFIED | `DO` con excepción, `052` | job no persistido |
 | No hay pruebas automáticas de SQL | VERIFIED | inventario del repositorio | 0 archivos |
+| Un cliente no alcanza filas de otro tenant | VERIFIED | TASK-004, `cfa8f47` | 7 tablas exactas · 6 lecturas ajenas a 0 · 4 escrituras rechazadas |

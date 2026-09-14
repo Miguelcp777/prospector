@@ -1,67 +1,74 @@
 {
-  "revision": "866df55779f6a82afc7e6749a10582c8468f8eba",
-  "task_spec": ".specanchor/tasks/TASK-003.spec.md",
+  "revision": "cfa8f4760a15b64cef8d7888d45bc1a1793d94ed",
+  "task_spec": ".specanchor/tasks/TASK-004.spec.md",
   "files": [
     {
-      "path": "frontend/src/studio/StudioClient.tsx",
-      "kind": "contract",
-      "specs": [
-        ".specanchor/modules/studio.spec.md"
-      ],
-      "rationale": "Cambia comportamiento visible: aplicar una plantilla del catálogo ahora genera su imagen. Se añaden los invariantes 009 a 011 a la spec del módulo en esta misma tarea, antes de cerrarla.",
-      "evidence": [
-        ".specanchor/tasks/TASK-003.spec.md#ev-002"
-      ]
-    },
-    {
-      "path": ".specanchor/modules/studio.spec.md",
-      "kind": "requirement",
-      "specs": [],
-      "rationale": "Se declaran los invariantes 009 (la plantilla trae su imagen), 010 (reutilización por receta y salida sin gastar) y 011 (un fallo de generación no cancela la aplicación).",
-      "evidence": [
-        ".specanchor/tasks/TASK-003.spec.md#ev-001"
-      ]
-    },
-    {
-      "path": ".specanchor/tasks/TASK-003.spec.md",
-      "kind": "requirement",
-      "specs": [],
-      "rationale": "Tarea completa de este cambio, con su decisión de producto registrada.",
-      "evidence": [
-        ".specanchor/tasks/TASK-003.spec.md#ev-001"
-      ]
-    },
-    {
-      "path": ".specanchor/findings/0001-el-catalogo-no-tiene-imagenes.md",
+      "path": ".specanchor/tasks/TASK-004.spec.md",
       "kind": "clarification",
       "specs": [],
-      "rationale": "Hallazgo que originó la tarea, con la medición de las 100 plantillas.",
+      "rationale": "El aislamiento entre clientes pasa de OBSERVED a VERIFIED con la medición de TASK-004. No se altera ningún contrato: se sustituye el estado de evidencia de un invariante que ya existía.",
       "evidence": [
-        ".specanchor/tasks/TASK-003.spec.md#ev-001"
+        ".specanchor/tasks/TASK-004.spec.md#ev-001"
+      ]
+    },
+    {
+      "path": ".specanchor/modules/datos.spec.md",
+      "kind": "clarification",
+      "specs": [],
+      "rationale": "El aislamiento entre clientes pasa de OBSERVED a VERIFIED con la medición de TASK-004. No se altera ningún contrato: se sustituye el estado de evidencia de un invariante que ya existía.",
+      "evidence": [
+        ".specanchor/tasks/TASK-004.spec.md#ev-001"
+      ]
+    },
+    {
+      "path": ".specanchor/global/arquitectura.spec.md",
+      "kind": "clarification",
+      "specs": [],
+      "rationale": "El aislamiento entre clientes pasa de OBSERVED a VERIFIED con la medición de TASK-004. No se altera ningún contrato: se sustituye el estado de evidencia de un invariante que ya existía.",
+      "evidence": [
+        ".specanchor/tasks/TASK-004.spec.md#ev-001"
+      ]
+    },
+    {
+      "path": ".specanchor/global/calidad-y-seguridad.spec.md",
+      "kind": "clarification",
+      "specs": [],
+      "rationale": "El aislamiento entre clientes pasa de OBSERVED a VERIFIED con la medición de TASK-004. No se altera ningún contrato: se sustituye el estado de evidencia de un invariante que ya existía.",
+      "evidence": [
+        ".specanchor/tasks/TASK-004.spec.md#ev-001"
+      ]
+    },
+    {
+      "path": ".specanchor/global/puesta-en-marcha.spec.md",
+      "kind": "clarification",
+      "specs": [],
+      "rationale": "El aislamiento entre clientes pasa de OBSERVED a VERIFIED con la medición de TASK-004. No se altera ningún contrato: se sustituye el estado de evidencia de un invariante que ya existía.",
+      "evidence": [
+        ".specanchor/tasks/TASK-004.spec.md#ev-001"
       ]
     }
   ],
   "traceability": [
     {
-      "requirement": "TASK-003/REQ-001",
-      "acceptance": "TASK-003/AC-001",
-      "verification": "Aplicar «SaaS B2B» en producción y contar imágenes del documento",
+      "requirement": "TASK-004/REQ-001",
+      "acceptance": "TASK-004/AC-001",
+      "verification": "Recuento por tabla con el token del cliente (count=exact)",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-003.spec.md#ev-002"
+      "evidence": ".specanchor/tasks/TASK-004.spec.md#ev-001"
     },
     {
-      "requirement": "TASK-003/REQ-003",
-      "acceptance": "TASK-003/AC-003",
-      "verification": "Aplicarla dos veces y contar llamadas a generar-imagen",
+      "requirement": "TASK-004/REQ-002",
+      "acceptance": "TASK-004/AC-002",
+      "verification": "Lectura por id de seis filas de otros tenants",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-003.spec.md#ev-003"
+      "evidence": ".specanchor/tasks/TASK-004.spec.md#ev-002"
     },
     {
-      "requirement": "TASK-003/REQ-004",
-      "acceptance": "TASK-003/AC-004",
-      "verification": "cd frontend && npm run test:studio",
+      "requirement": "TASK-004/REQ-003",
+      "acceptance": "TASK-004/AC-003",
+      "verification": "PATCH sobre filas ajenas e INSERT con tenant_id de otro",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-003.spec.md#ev-004"
+      "evidence": ".specanchor/tasks/TASK-004.spec.md#ev-003"
     }
   ]
 }

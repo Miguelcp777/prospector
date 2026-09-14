@@ -71,9 +71,10 @@ La auditoría legal previa a la Fase 4 sigue pendiente (`docs/compliance.md`).
 
 - **UNKNOWN** · Nadie ha medido la cobertura real de los caminos críticos
   (RLS, resolución de claves, troceado). Las pruebas que hay son del studio.
-- **UNKNOWN** · No se ha probado que la RLS aísle de verdad con dos tenants y
-  dos tokens; el procedimiento está escrito en `supabase/README.md` y no
-  consta su ejecución.
+- ~~No se ha probado que la RLS aísle de verdad~~ → **VERIFIED** el
+  2026-09-14 (TASK-004), con la sesión de un cliente real contra los datos de
+  los otros cinco tenants. Queda sin probar el sentido recíproco y el rol
+  `miembro`, y sin automatizar.
 
 ## Historial de cambios
 
