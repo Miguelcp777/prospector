@@ -21,7 +21,9 @@
 import { supabase } from "../../lib/supabase";
 import { renderEmailHtml, renderEmailText } from "./email-renderer";
 import type { StoredTemplate, TemplateDocument } from "./template-types";
-import { elegirReceta, generarDocumento, guidedCopy, type Brief } from "./generacion";
+import {
+  elegirReceta, generarDocumento, guidedCopy, type Brief, type GeneratedCopy,
+} from "./generacion";
 import { arteDelSector, validarDireccionArte } from "./direccion-arte";
 import { componerDocumentoSimple, type CopyCampana } from "./composicion-simple";
 import { datosDelRemitente } from "./datos-remitente";
@@ -362,23 +364,34 @@ async function componer(brief: Brief & { modoAsistente?: string }) {
     return error(mensajeDeError ?? "El modelo no pudo escribir el correo.", 502);
   }
 
-  const base = guidedCopy(brief);
+  // En simple no hay relleno: el hueco que el modelo deje se queda vacío.
+  //
+  // Rellenarlo con `guidedCopy` es lo que metió «Auditoría de oportunidades
+  // para Lumen Arquitectura» en medio del correo de un estudio de tatuajes:
+  // esa frase la compone la plantilla determinista con el objetivo y la
+  // oferta que el asistente trae puestos de fábrica, y con el destinatario
+  // de ejemplo de la vista previa. Dos voces en el mismo correo, y la
+  // segunda hablando de otro negocio.
+  const base = simple ? null : guidedCopy(brief);
+  const texto = (clave: keyof GeneratedCopy) =>
+    String(escrito?.[clave] || base?.[clave] || "");
+
   const copy: CopyCampana = escrito
     ? {
-      subject: String(escrito.subject || base.subject),
-      preheader: String(escrito.preheader || base.preheader),
-      eyebrow: String(escrito.eyebrow || base.eyebrow),
-      title: String(escrito.title || base.title),
-      body: String(escrito.body || base.body),
-      sectionTitle: String(escrito.sectionTitle || base.sectionTitle),
-      sectionBody: String(escrito.sectionBody || base.sectionBody),
-      ctaLabel: String(escrito.ctaLabel || base.ctaLabel),
+      subject: texto("subject"),
+      preheader: texto("preheader"),
+      eyebrow: texto("eyebrow"),
+      title: texto("title"),
+      body: texto("body"),
+      sectionTitle: texto("sectionTitle"),
+      sectionBody: texto("sectionBody"),
+      ctaLabel: texto("ctaLabel"),
       ventajas: Array.isArray(escrito.ventajas)
         ? (escrito.ventajas as Array<{ titulo?: string; texto?: string }>)
         : [],
       cierre: String(escrito.cierre ?? ""),
     }
-    : base;
+    : base!;
 
   if (!simple) {
     // Camino de siempre, intacto: catálogo y todo.

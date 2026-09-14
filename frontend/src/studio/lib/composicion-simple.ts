@@ -165,19 +165,29 @@ function bloque(tipo: BloquePermitido, ctx: Contexto): EmailBlock | null {
       return b;
 
     case "heading":
+      if (!copy.sectionTitle?.trim()) return null;
       Object.assign(b.props, {
-        text: copy.sectionTitle ?? "",
+        text: copy.sectionTitle,
         fontSize: Math.round(medidas.titular * 0.6),
       });
       return b;
 
-    case "text":
+    case "text": {
+      // Un hueco que el redactor deja se queda sin bloque, no con relleno.
+      // Aquí es donde se colaba la plantilla determinista: componía
+      // «Auditoría de oportunidades para Lumen Arquitectura» con la oferta
+      // de fábrica del asistente y el destinatario de ejemplo, y la metía
+      // en medio del correo de un estudio de tatuajes.
+      const contenido = [copy.sectionTitle, copy.sectionBody]
+        .map((t) => (t ?? "").trim()).filter(Boolean).join("\n\n");
+      if (!contenido) return null;
       Object.assign(b.props, {
-        content: [copy.sectionTitle, copy.sectionBody].filter(Boolean).join("\n\n"),
+        content: contenido,
         fontSize: medidas.cuerpo,
         lineHeight: medidas.interlineado,
       });
       return b;
+    }
 
     case "columns": {
       // Las ventajas las escribe siempre el redactor, se usen o no: es lo que

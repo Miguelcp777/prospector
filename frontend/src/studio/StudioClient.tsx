@@ -1528,7 +1528,7 @@ export default function StudioClient({ displayName }: StudioProps) {
   const [aiBrief, setAiBrief] = useState({
     campaignName: "",
     queTransmitir: "",
-    sector: "Servicios B2B",
+    sector: "",
     objective: "conseguir reuniones cualificadas",
     offer: "una auditoría de oportunidades",
     tone: "estratégico y humano",
@@ -3240,11 +3240,29 @@ Deja de aparecer en la biblioteca y ` +
       const response = await apiFetch("/api/generate", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        // La imagen va siempre en el modo simple: el trato es que la IA lo
-        // hace todo, y un correo sin portada no lo cumple.
+        // En simple solo viaja lo que ha escrito el cliente.
+        //
+        // El asistente trae `objective`, `offer`, `audience` y `tone` puestos
+        // de fábrica —«conseguir reuniones cualificadas», «una auditoría de
+        // oportunidades»—, y mandarlos como encargo es decirle al modelo que
+        // el negocio ofrece eso. Con un estudio de tatuajes salió un correo
+        // que proponía una auditoría de oportunidades.
+        //
+        // La imagen va siempre: el trato es que la IA lo hace todo, y un
+        // correo sin portada no lo cumple.
         body: JSON.stringify(
           simple
-            ? { ...aiBrief, modoAsistente, generateImage: true }
+            ? {
+              ...aiBrief,
+              modoAsistente,
+              generateImage: true,
+              objective: "",
+              offer: "",
+              tone: "",
+              companyContext: "",
+              actionType: "",
+              proofPoints: [],
+            }
             : { ...aiBrief, modoAsistente },
         ),
       });

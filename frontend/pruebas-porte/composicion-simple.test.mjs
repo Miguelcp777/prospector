@@ -141,3 +141,21 @@ test("el documento sigue cumpliendo el contrato v1", () => {
   const resultado = validateTemplateDocument(documentoDe());
   assert.equal(resultado.success, true, JSON.stringify(resultado.error?.issues?.slice(0, 3)));
 });
+
+test("un hueco que el redactor deja no lo rellena nadie", () => {
+  // Este es el correo de Woody Tattoo que proponía «una auditoría de
+  // oportunidades para Lumen Arquitectura». Esa frase no la escribió el
+  // modelo: la componía `guidedCopy` con la oferta de fábrica del asistente
+  // y el destinatario de ejemplo de la vista previa, y se colaba en medio.
+  // Sin contenido, el bloque no se pinta.
+  const doc = componerDocumentoSimple({
+    copy: { ...copy, sectionTitle: "", sectionBody: "  " },
+    arte: arteDe(),
+    nombreEmpresa: "Woody Tattoo",
+  });
+  assert.ok(!doc.blocks.some((b) => b.type === "text"));
+
+  const html = renderEmailHtml(doc, copy.subject, copy.preheader);
+  assert.ok(!/auditor/i.test(html), "volvió la plantilla determinista");
+  assert.ok(!/Lumen/.test(html), "volvió el destinatario de ejemplo");
+});
