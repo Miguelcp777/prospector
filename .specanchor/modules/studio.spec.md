@@ -36,6 +36,14 @@ llamadas del editor.
 - **RESTR-STU-002** · El CSS **no se porta línea a línea**: se aplica como
   parche. Reconstruirlo saca reglas de su `@media` y ninguna prueba lo detecta
   (`docs/decisiones/0005`).
+- **RESTR-STU-006** · Arreglar un control que no hacía nada **pone en
+  circulación un estado que antes no existía**, y el resto de la pantalla no se
+  diseñó contando con él. Así que la comprobación no es «¿el botón hace algo?»
+  sino «¿dónde más se nota que ahora lo haga?». El studio tiene **seis pasos
+  guiados con seis disposiciones distintas**, y la rejilla de cada paso gana en
+  especificidad a las clases de plegado: en TASK-006 no se miró ninguno, y
+  plegar la paleta dejó un hueco vacío donde se eligen las plantillas
+  (TASK-009).
 - **RESTR-STU-005** · Antes de concluir que algo **no** ocurre en el navegador,
   se comprueba que el instrumento pueda observarlo. Una pestaña en segundo
   plano (`document.visibilityState === "hidden"`) **no ejecuta
@@ -153,6 +161,11 @@ las guardadas son 33,9 KB, lejos de los 102 KB a los que Gmail recorta.
 - 2026-09-14 · Redactada durante la adopción de SDD. Sin cambio de código.
 - 2026-09-14 · TASK-003: aplicar una plantilla del catálogo trae su imagen.
   Invariantes 009 a 011.
+- 2026-09-15 · TASK-009: en modo guiado, plegar la paleta dejaba un hueco de
+  340 px donde va el selector de plantillas — la rejilla del paso reserva la
+  columna y el plegado solo apagaba la visibilidad. El plegado pasa a ser cosa
+  del modo profesional, y sus dos botones no se dibujan en guiado. Regresión de
+  TASK-006. Nace RESTR-STU-006.
 - 2026-09-15 · TASK-007: «controles avanzados» funcionaba y no se notaba — lo
   que apaga vive a mil píxeles de scroll por debajo del pliegue. Ahora avisa de
   lo que hace y, al encender, lleva la vista hasta el primer grupo. Nace
