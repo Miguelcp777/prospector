@@ -93,6 +93,14 @@ ya existía.
   aspecto que nadie ha pedido es un fallo, por mucho que el código nuevo sea
   el correcto. El botón funciona en los dos sentidos y la pantalla se ve igual
   que ayer.
+- **DEC-003** · La clase de avanzados **no mira `experienceMode`**, y la V45 sí
+  lo miraba. Se cae el `|| experienceMode === "professional"`: con él, en modo
+  profesional el botón no puede hacer nada nunca. El modo decide cómo
+  **empieza** el editor; el clic decide cómo se **queda**. Un botón que no
+  puede hacer nada es peor que un valor por defecto que se puede cambiar, y
+  esta vez el original no sirve de guía porque el original es el que está mal.
+  Consecuencia asumida: cambiar de modo guiado a profesional ya no vuelve a
+  enseñar los avanzados si el usuario los había ocultado. Su decisión manda.
 - **DEC-002** · El `workspace-hidden` de la V45 **no se porta**. Depende de
   `mainSpace`, que aquí está declarado como `const [, setMainSpace]` —se
   escribe y no se lee— porque el espacio de inicio lo resuelve `start-hub`.
@@ -117,17 +125,54 @@ ya existía.
 - **EV-004** · `npx tsc -b --force` salida 0, `npm run build` salida 0,
   `node scripts/pruebas-del-studio.mjs` salida 0 · `Pasan 71 · fallan 4 ·
   conocidos 4 · Sin fallos nuevos`.
-- **EV-005** · *(pendiente)* Medición en la aplicación desplegada **después**
-  del cambio, con el mismo guion de EV-002.
+- **EV-005** · Medición en la aplicación desplegada después del primer arreglo,
+  mismo guion que EV-002. **Dos de tres botones, arreglados**:
+
+  | Acción | `className` | columnas | paleta | inspector |
+  |---|---|---|---|---|
+  | al abrir | `workspace-grid show-advanced` | `290px 1022px 360px` | visible 290px | visible 360px |
+  | «Bloques y capas» | `… left-collapsed …` | `0px 1312px 360px` | **hidden 0px** | visible 360px |
+  | «Propiedades» | `… left-collapsed right-collapsed …` | `0px 1672px 0px` | hidden 0px | **hidden 0px** |
+  | volver a pulsar los dos | `workspace-grid show-advanced` | `290px 1022px 360px` | visible 290px | visible 360px |
+
+  Y los controles avanzados a la vista al abrir, como antes del cambio: AC-003
+  **pass**.
+
+- **EV-006** · **El de avanzados seguía sin hacer nada, y solo se vio midiendo
+  en vivo.** Al pulsarlo, la etiqueta cambiaba a «Mostrar controles avanzados»
+  pero la clase se quedaba en `show-advanced` y `.global-layer-controls`
+  seguía en `display: grid`.
+
+  La causa: el shell decía `mode-professional`, y la expresión de la V45 es
+  `advancedControlsOpen || experienceMode === "professional"`. En modo
+  profesional esa condición es **siempre verdadera**, así que el botón es
+  inerte por diseño — mientras sigue dibujándose y cambiando su propia
+  etiqueta. Es exactamente el fallo del que venía la petición, escrito en el
+  original.
+
+- **EV-007** · *(pendiente)* Medición del botón de avanzados tras el segundo
+  despliegue.
 
 ## Trazabilidad
 
 | Requisito | Aceptación | Verificación | Resultado | Evidencia |
 |---|---|---|---|---|
 | REQ-001 | AC-001 | clases inyectadas en el DOM de producción | **pass** | EV-003 |
-| REQ-001 | AC-002 | pulsar los tres botones tras desplegar | **not_run** | EV-005 |
-| REQ-002 | AC-003 | estado inicial de los controles avanzados | **not_run** | EV-005 |
+| REQ-001 | AC-002 | pulsar los tres botones tras desplegar | **not_run** · dos de tres medidos | EV-005, EV-006, EV-007 |
+| REQ-002 | AC-003 | estado inicial de los controles avanzados | **pass** | EV-005 |
 | REQ-001 | AC-004 | tipos, build y pruebas | **pass** | EV-004 |
+
+## Lo que enseñó el primer despliegue
+
+Que el guard tuviera razón. Se cerró la tarea con dos criterios en `not_run`,
+el CI lo puso en rojo, y al medir en vivo apareció que **uno de los tres
+botones seguía roto por un motivo distinto** — uno que no se ve leyendo el
+diff, porque depende de en qué modo tenga el editor quien lo usa.
+
+Si esto se hubiera dado por bueno con el código compilando y las pruebas en
+verde, Miguel habría vuelto a decir que el botón no hace nada. Es el mismo
+argumento de RESTR-STU-003, cobrándose su primera pieza el mismo día que se
+escribió.
 
 ## Por qué esta tarea se queda abierta
 
