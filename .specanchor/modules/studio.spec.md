@@ -36,6 +36,14 @@ llamadas del editor.
 - **RESTR-STU-002** · El CSS **no se porta línea a línea**: se aplica como
   parche. Reconstruirlo saca reglas de su `@media` y ninguna prueba lo detecta
   (`docs/decisiones/0005`).
+- **RESTR-STU-003** · Un control portado **no está portado hasta que se
+  comprueba que hace algo**. Compilar, montar y aparecer en la barra no es
+  funcionar. El porte ya perdió así las paletas de los temas (0005) y la clase
+  `mobile-open` de la paleta móvil, y lo volvió a hacer con las clases de
+  estado de `.workspace-grid` (TASK-006): tres botones que durante meses
+  cambiaban su propio icono y nada más. El patrón es siempre el mismo —el CSS
+  se porta entero y quien le pone la clase se queda por el camino—, así que la
+  comprobación es medir en el DOM, no leer el diff.
 
 ## Interfaces públicas
 
@@ -121,12 +129,19 @@ las guardadas son 33,9 KB, lejos de los 102 KB a los que Gmail recorta.
   aplicación y afectan a más pantallas.
 - **UNKNOWN** · Nadie ha diseñado un correo entero de principio a fin y lo ha
   enviado a una bandeja real.
+- **UNKNOWN** · TASK-006 arregló los tres botones que no hacían nada, pero
+  **nadie ha repasado los demás controles de la barra y del inspector** con la
+  misma pregunta: ¿hace algo? Tres de tres estaban rotos en el único sitio
+  donde se miró, lo que no invita a suponer que el resto esté bien.
 
 ## Historial de cambios
 
 - 2026-09-14 · Redactada durante la adopción de SDD. Sin cambio de código.
 - 2026-09-14 · TASK-003: aplicar una plantilla del catálogo trae su imagen.
   Invariantes 009 a 011.
+- 2026-09-15 · TASK-006: «Bloques y capas», «Propiedades» y «Mostrar controles
+  avanzados» vuelven a hacer algo. Se repone la expresión de clases de
+  `.workspace-grid` que el porte de la V45 perdió. Nace RESTR-STU-003.
 
 ## Evidencia de las afirmaciones
 
