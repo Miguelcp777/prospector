@@ -2307,6 +2307,26 @@ export default function StudioClient({ displayName }: StudioProps) {
   // a 2869 px, un tercio menos, y desde donde esta el boton no se ve nada.
   // Asi que el efecto se cuenta, y al encender se lleva la vista hasta lo que
   // se acaba de descubrir. Ver TASK-007.
+  // Esperar 80 ms al reloj no valia, y costo un despliegue averiguarlo: a esa
+  // altura React todavia no habia pintado, el grupo seguia en `display: none`,
+  // y un elemento oculto NO se deja desplazar — scrollIntoView se lo traga sin
+  // decir nada. Medido: ese mismo scrollIntoView sobre el elemento ya visible
+  // lleva el grupo de y=1191 a y=134. Asi que se espera al fotograma, no al
+  // reloj, y se comprueba que el elemento este pintado antes de mover nada.
+  function llevarLaVistaAlPrimerGrupoAvanzado(intentos = 12) {
+    globalThis.requestAnimationFrame(() => {
+      // globalThis.document, no document: dentro del componente `document` es
+      // el TemplateDocument que se esta editando.
+      const grupo = globalThis.document.querySelector(GRUPOS_AVANZADOS);
+      // offsetParent nulo = todavia oculto. No se desplaza y se reintenta.
+      if (grupo instanceof HTMLElement && grupo.offsetParent !== null) {
+        grupo.scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+      }
+      if (intentos > 0) llevarLaVistaAlPrimerGrupoAvanzado(intentos - 1);
+    });
+  }
+
   function alternarControlesAvanzados() {
     const siguiente = !advancedControlsOpen;
     setAdvancedControlsOpen(siguiente);
@@ -2315,14 +2335,7 @@ export default function StudioClient({ displayName }: StudioProps) {
       toast.message("Controles avanzados visibles", {
         description: "Capas, composicion libre del hero y profundidad, al final del panel de propiedades.",
       });
-      // Un respiro para que React pinte antes de buscar el grupo.
-      globalThis.setTimeout(() => {
-        // globalThis.document, no document: dentro del componente `document` es
-        // el TemplateDocument que se esta editando.
-        globalThis.document
-          .querySelector(GRUPOS_AVANZADOS)
-          ?.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 80);
+      llevarLaVistaAlPrimerGrupoAvanzado();
       return;
     }
 

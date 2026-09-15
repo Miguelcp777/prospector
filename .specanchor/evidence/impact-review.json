@@ -1,5 +1,5 @@
 {
-  "revision": "3273b339119d07ee54dd43e799beb87b1ffa4e37",
+  "revision": "5bf5efe6f5d811605cb23be0ee2d28e884f97c5b",
   "task_spec": ".specanchor/tasks/TASK-007.spec.md",
   "files": [
     {
@@ -8,21 +8,19 @@
       "specs": [
         ".specanchor/modules/studio.spec.md"
       ],
-      "rationale": "El interruptor de controles avanzados funcionaba y no se notaba: lo que apaga vive en y=1191 e y=2014 dentro del scroll del inspector, con la ventana en 911 px de alto. Ahora avisa de lo que ha pasado en los dos sentidos y, al encender, desplaza la vista hasta el primer grupo. Es contrato porque cambia el comportamiento visible de un control; no toca el documento de plantilla ni el renderizador.",
+      "rationale": "Segunda mitad de TASK-007. El desplazamiento no funcionaba: a los 80 ms React aún no había pintado y el grupo seguía en display:none, donde scrollIntoView no hace nada y tampoco avisa. Se pasa a requestAnimationFrame con reintentos, comprobando offsetParent antes de mover. Medido: el mismo scrollIntoView sobre el elemento ya visible lleva el grupo de y=1191 a y=134.",
       "evidence": [
-        ".specanchor/tasks/TASK-007.spec.md#ev-001",
-        ".specanchor/tasks/TASK-007.spec.md#ev-002",
-        ".specanchor/tasks/TASK-007.spec.md#ev-003",
-        ".specanchor/tasks/TASK-007.spec.md#ev-004"
+        ".specanchor/tasks/TASK-007.spec.md#ev-005",
+        ".specanchor/tasks/TASK-007.spec.md#ev-006"
       ]
     },
     {
-      "path": ".specanchor/modules/studio.spec.md",
-      "kind": "requirement",
+      "path": ".specanchor/tasks/TASK-007.spec.md",
+      "kind": "correction",
       "specs": [],
-      "rationale": "Nace RESTR-STU-004: «hace algo» significa algo que se ve desde donde está el control. Medir el DOM no es medir lo que ve una persona, y en el inspector —4194 px de contenido contra 911 de ventana— eso es la norma. Es el complemento de RESTR-STU-003, que por sí sola dejó pasar este caso.",
+      "rationale": "Se registra que AC-001 falló en el primer despliegue y por qué, y nace DEC-004: esperar al fotograma y no al reloj. Un setTimeout con un número a ojo es una carrera que, cuando se pierde, no da ningún error.",
       "evidence": [
-        ".specanchor/tasks/TASK-007.spec.md#ev-003"
+        ".specanchor/tasks/TASK-007.spec.md#ev-006"
       ]
     }
   ],
@@ -30,21 +28,21 @@
     {
       "requirement": "TASK-007/REQ-001",
       "acceptance": "TASK-007/AC-001",
-      "verification": "Posición del primer grupo avanzado respecto a la ventana tras encender, en producción",
+      "verification": "Posición del primer grupo respecto a la ventana tras encender, en producción",
       "result": "not_run",
-      "evidence": ".specanchor/tasks/TASK-007.spec.md#ev-005"
+      "evidence": ".specanchor/tasks/TASK-007.spec.md#ev-007"
     },
     {
       "requirement": "TASK-007/REQ-001",
       "acceptance": "TASK-007/AC-002",
-      "verification": "Presencia del aviso en los dos sentidos",
-      "result": "not_run",
+      "verification": "Presencia del aviso en los dos sentidos, en producción",
+      "result": "pass",
       "evidence": ".specanchor/tasks/TASK-007.spec.md#ev-005"
     },
     {
       "requirement": "TASK-007/REQ-001",
       "acceptance": "TASK-007/AC-003",
-      "verification": "Clase de .workspace-grid y alto del contenido del inspector, con los paneles abiertos",
+      "verification": "Clase de .workspace-grid y alto del contenido del inspector",
       "result": "pass",
       "evidence": ".specanchor/tasks/TASK-007.spec.md#ev-002"
     },
