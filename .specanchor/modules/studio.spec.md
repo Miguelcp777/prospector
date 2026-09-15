@@ -36,6 +36,14 @@ llamadas del editor.
 - **RESTR-STU-002** · El CSS **no se porta línea a línea**: se aplica como
   parche. Reconstruirlo saca reglas de su `@media` y ninguna prueba lo detecta
   (`docs/decisiones/0005`).
+- **RESTR-STU-004** · Y «hace algo» significa **algo que se ve desde donde está
+  el control**. Medir el DOM no es medir lo que ve una persona: un elemento
+  puede pasar de `grid` a `none` sin que estuviera en pantalla ninguna de las
+  dos veces. En el inspector eso es la norma y no la excepción — su contenido
+  mide 4194 px y la ventana 911—, así que la comprobación de un control de
+  interfaz incluye **dónde cae en la ventana**, no solo qué dice
+  `getComputedStyle`. Lo aprendió TASK-007 después de que TASK-006 diera por
+  bueno un interruptor que funcionaba sin notarse.
 - **RESTR-STU-003** · Un control portado **no está portado hasta que se
   comprueba que hace algo**. Compilar, montar y aparecer en la barra no es
   funcionar. El porte ya perdió así las paletas de los temas (0005) y la clase
@@ -139,6 +147,10 @@ las guardadas son 33,9 KB, lejos de los 102 KB a los que Gmail recorta.
 - 2026-09-14 · Redactada durante la adopción de SDD. Sin cambio de código.
 - 2026-09-14 · TASK-003: aplicar una plantilla del catálogo trae su imagen.
   Invariantes 009 a 011.
+- 2026-09-15 · TASK-007: «controles avanzados» funcionaba y no se notaba — lo
+  que apaga vive a mil píxeles de scroll por debajo del pliegue. Ahora avisa de
+  lo que hace y, al encender, lleva la vista hasta el primer grupo. Nace
+  RESTR-STU-004.
 - 2026-09-15 · TASK-006: «Bloques y capas», «Propiedades» y «Mostrar controles
   avanzados» vuelven a hacer algo. Se repone la expresión de clases de
   `.workspace-grid` que el porte de la V45 perdió. Nace RESTR-STU-003.
