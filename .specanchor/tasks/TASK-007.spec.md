@@ -72,6 +72,9 @@ plantilla ni el renderizador.
   `document` es el `TemplateDocument` que se está editando. Lo cazó `tsc`
   —«Property 'querySelector' does not exist on type 'TemplateDocument'»— y
   queda escrito porque es una trampa que volverá a aparecer.
+- **DEC-005** · `behavior: "auto"` y no `"smooth"`. Un desplazamiento
+  instantáneo es peor estéticamente y es el único que ocurre. Entre una
+  animación bonita que no se ejecuta y un salto que sí, gana el salto.
 - **DEC-004** · Se espera al **fotograma**, no al reloj:
   `requestAnimationFrame` con reintentos y comprobando `offsetParent !== null`
   antes de desplazar. Un `setTimeout` con un número elegido a ojo es una
@@ -107,13 +110,26 @@ plantilla ni el renderizador.
   llamada es correcta y el problema era **cuándo**: a los 80 ms React todavía
   no había pintado, el grupo seguía en `display: none`, y un elemento oculto no
   se deja desplazar — `scrollIntoView` se lo traga sin decir nada.
-- **EV-007** · *(pendiente)* Medición con la espera al fotograma.
+- **EV-007** · Con la espera al fotograma, **seguía sin desplazarse**:
+  `grupoY = 1191`, fuera de la ventana. Los avisos, bien.
+- **EV-008** · La causa, aislada en producción sobre ese mismo contenedor:
+
+  | Llamada | `scrollTop` | `y` del grupo |
+  |---|---|---|
+  | `scrollIntoView({ behavior: "smooth" })` | **0** | 1191 |
+  | `scrollIntoView({ behavior: "auto" })` | **930** | **134** |
+
+  `smooth` se ignora en silencio en ese contenedor anidado. **No es
+  `prefers-reduced-motion`**: consultado, está desactivado
+  (`no-preference: true`). El porqué exacto se queda **UNKNOWN**; lo que hace
+  cada uno está medido.
+- **EV-009** · *(pendiente)* Medición con `behavior: "auto"`.
 
 ## Trazabilidad
 
 | Requisito | Aceptación | Verificación | Resultado | Evidencia |
 |---|---|---|---|---|
-| REQ-001 | AC-001 | posición del primer grupo respecto a la ventana tras encender | **not_run** · falló con `setTimeout`, rehecho con `requestAnimationFrame` | EV-005, EV-006, EV-007 |
+| REQ-001 | AC-001 | posición del primer grupo respecto a la ventana tras encender | **not_run** · falló dos veces: `setTimeout` y `behavior: smooth` | EV-005 … EV-009 |
 | REQ-001 | AC-002 | presencia del aviso en los dos sentidos | **pass** | EV-005 |
 | REQ-001 | AC-003 | clase y alto del contenido del inspector | **pass** | EV-001, EV-002 |
 | REQ-001 | AC-004 | tipos, build y pruebas | **pass** | EV-004 |

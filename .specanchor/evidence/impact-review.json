@@ -1,5 +1,5 @@
 {
-  "revision": "5bf5efe6f5d811605cb23be0ee2d28e884f97c5b",
+  "revision": "5de04bfc84e37820029fc74a82ef9a1f3a02a390",
   "task_spec": ".specanchor/tasks/TASK-007.spec.md",
   "files": [
     {
@@ -8,19 +8,19 @@
       "specs": [
         ".specanchor/modules/studio.spec.md"
       ],
-      "rationale": "Segunda mitad de TASK-007. El desplazamiento no funcionaba: a los 80 ms React aún no había pintado y el grupo seguía en display:none, donde scrollIntoView no hace nada y tampoco avisa. Se pasa a requestAnimationFrame con reintentos, comprobando offsetParent antes de mover. Medido: el mismo scrollIntoView sobre el elemento ya visible lleva el grupo de y=1191 a y=134.",
+      "rationale": "Tercer intento del desplazamiento de TASK-007. Aislado en producción sobre el propio contenedor: scrollIntoView con behavior smooth deja el scrollTop en 0 y no hace nada; con auto lo lleva a 930 y el grupo de y=1191 a y=134. No es prefers-reduced-motion, que está desactivado. Se cambia a auto.",
       "evidence": [
-        ".specanchor/tasks/TASK-007.spec.md#ev-005",
-        ".specanchor/tasks/TASK-007.spec.md#ev-006"
+        ".specanchor/tasks/TASK-007.spec.md#ev-007",
+        ".specanchor/tasks/TASK-007.spec.md#ev-008"
       ]
     },
     {
       "path": ".specanchor/tasks/TASK-007.spec.md",
       "kind": "correction",
       "specs": [],
-      "rationale": "Se registra que AC-001 falló en el primer despliegue y por qué, y nace DEC-004: esperar al fotograma y no al reloj. Un setTimeout con un número a ojo es una carrera que, cuando se pierde, no da ningún error.",
+      "rationale": "Se registra el segundo fallo de AC-001 y la medición que aísla la causa, más DEC-005: entre una animación bonita que no se ejecuta y un salto que sí, gana el salto.",
       "evidence": [
-        ".specanchor/tasks/TASK-007.spec.md#ev-006"
+        ".specanchor/tasks/TASK-007.spec.md#ev-008"
       ]
     }
   ],
@@ -30,7 +30,7 @@
       "acceptance": "TASK-007/AC-001",
       "verification": "Posición del primer grupo respecto a la ventana tras encender, en producción",
       "result": "not_run",
-      "evidence": ".specanchor/tasks/TASK-007.spec.md#ev-007"
+      "evidence": ".specanchor/tasks/TASK-007.spec.md#ev-009"
     },
     {
       "requirement": "TASK-007/REQ-001",
@@ -49,7 +49,7 @@
     {
       "requirement": "TASK-007/REQ-001",
       "acceptance": "TASK-007/AC-004",
-      "verification": "npx tsc -b --force, npm run build y node scripts/pruebas-del-studio.mjs",
+      "verification": "tsc, build y pruebas del studio",
       "result": "pass",
       "evidence": ".specanchor/tasks/TASK-007.spec.md#ev-004"
     }

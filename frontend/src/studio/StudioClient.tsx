@@ -2320,7 +2320,12 @@ export default function StudioClient({ displayName }: StudioProps) {
       const grupo = globalThis.document.querySelector(GRUPOS_AVANZADOS);
       // offsetParent nulo = todavia oculto. No se desplaza y se reintenta.
       if (grupo instanceof HTMLElement && grupo.offsetParent !== null) {
-        grupo.scrollIntoView({ behavior: "smooth", block: "center" });
+        // behavior "auto", no "smooth". Medido en produccion sobre este mismo
+        // contenedor: con "smooth" el scrollTop se queda en 0 y no pasa nada,
+        // con "auto" va a 930 y el grupo sube de y=1191 a y=134. No es
+        // prefers-reduced-motion, que esta desactivado; el porque exacto se
+        // queda sin explicar, pero lo que hace cada uno esta medido.
+        grupo.scrollIntoView({ behavior: "auto", block: "center" });
         return;
       }
       if (intentos > 0) llevarLaVistaAlPrimerGrupoAvanzado(intentos - 1);
