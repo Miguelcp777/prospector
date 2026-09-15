@@ -1,5 +1,5 @@
 {
-  "revision": "799416065689a49bfb8efdd983e99c8c6db343af",
+  "revision": "345609674a018c98f71c8e102c746e1800ed67c0",
   "task_spec": ".specanchor/tasks/TASK-006.spec.md",
   "files": [
     {
@@ -8,21 +8,20 @@
       "specs": [
         ".specanchor/modules/studio.spec.md"
       ],
-      "rationale": "Se repone la expresión de clases de .workspace-grid que el porte de la V45 perdió: sin ella, leftPanelOpen, rightPanelOpen y advancedControlsOpen solo se leían para cambiar el icono del propio botón. Es contrato porque el comportamiento visible de tres controles pasa de «nada» a lo que su etiqueta promete. No toca el documento de plantilla, ni el renderizador, ni una llamada a la base. advancedControlsOpen arranca en true, y no en false como la V45, para que no desaparezca de golpe nada que hoy se vea.",
+      "rationale": "Segunda mitad de TASK-006. La clase de controles avanzados deja de mirar experienceMode: con el `|| experienceMode === \"professional\"` de la V45, en modo profesional la condición es siempre verdadera y el botón es inerte por diseño mientras sigue cambiando su propia etiqueta. Medido en producción tras el primer despliegue. El modo decide cómo empieza el editor; el clic decide cómo se queda.",
       "evidence": [
-        ".specanchor/tasks/TASK-006.spec.md#ev-002",
-        ".specanchor/tasks/TASK-006.spec.md#ev-003",
-        ".specanchor/tasks/TASK-006.spec.md#ev-004"
+        ".specanchor/tasks/TASK-006.spec.md#ev-005",
+        ".specanchor/tasks/TASK-006.spec.md#ev-006"
       ]
     },
     {
-      "path": ".specanchor/modules/studio.spec.md",
-      "kind": "requirement",
+      "path": ".specanchor/tasks/TASK-006.spec.md",
+      "kind": "correction",
       "specs": [],
-      "rationale": "Nace RESTR-STU-003: un control portado no está portado hasta que se comprueba que hace algo. Es la tercera vez que el porte pierde justo la pieza que conecta el CSS con el estado —las paletas de los temas, la clase mobile-open y ahora estas tres—, así que la restricción se escribe con sus tres precedentes. Y se añade la incógnita de que nadie ha repasado el resto de controles de la barra con la misma pregunta.",
+      "rationale": "Se registra lo que enseñó el primer despliegue: dos de los tres botones quedaron arreglados y el tercero seguía roto por un motivo que no se ve en el diff. Nace DEC-003 y la tarea sigue abierta con AC-002 en not_run.",
       "evidence": [
-        ".specanchor/tasks/TASK-006.spec.md#ev-001",
-        ".specanchor/tasks/TASK-006.spec.md#ev-002"
+        ".specanchor/tasks/TASK-006.spec.md#ev-005",
+        ".specanchor/tasks/TASK-006.spec.md#ev-006"
       ]
     }
   ],
@@ -30,7 +29,7 @@
     {
       "requirement": "TASK-006/REQ-001",
       "acceptance": "TASK-006/AC-001",
-      "verification": "Clases inyectadas a mano en el DOM de producción: left-collapsed, right-collapsed, las dos, y hide-advanced",
+      "verification": "Clases inyectadas a mano en el DOM de producción",
       "result": "pass",
       "evidence": ".specanchor/tasks/TASK-006.spec.md#ev-003"
     },
@@ -39,13 +38,13 @@
       "acceptance": "TASK-006/AC-002",
       "verification": "Pulsar los tres botones en la aplicación desplegada y medir className y anchos",
       "result": "not_run",
-      "evidence": ".specanchor/tasks/TASK-006.spec.md#ev-005"
+      "evidence": ".specanchor/tasks/TASK-006.spec.md#ev-007"
     },
     {
       "requirement": "TASK-006/REQ-002",
       "acceptance": "TASK-006/AC-003",
-      "verification": "Estado inicial de los controles avanzados al abrir el editor",
-      "result": "not_run",
+      "verification": "Estado inicial de los controles avanzados al abrir el editor, medido en producción",
+      "result": "pass",
       "evidence": ".specanchor/tasks/TASK-006.spec.md#ev-005"
     },
     {

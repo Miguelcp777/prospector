@@ -4237,16 +4237,18 @@ Deja de aparecer en la biblioteca y ` +
               CSS que los escucha (estilos-studio.css, .left-collapsed,
               .right-collapsed y .hide-advanced) llevaba meses sin que nadie
               le pusiera la clase. Ver TASK-006.
+              Lo de avanzados NO mira `experienceMode`, y la V45 si lo miraba
+              (`advancedControlsOpen || experienceMode === "professional"`).
+              Con esa condicion, en modo profesional la clase es siempre
+              `show-advanced` y el boton queda inerte aunque cambie su propia
+              etiqueta: justo el fallo del que venimos. El modo decide como
+              empieza el editor; el clic del usuario decide como se queda.
               El `workspace-hidden` de la V45 no entra: depende de `mainSpace`,
               que aqui no se lee — el espacio de inicio lo resuelve `start-hub`. */}
           <section
             className={`workspace-grid ${leftPanelOpen ? "" : "left-collapsed"} ${
               rightPanelOpen ? "" : "right-collapsed"
-            } ${
-              advancedControlsOpen || experienceMode === "professional"
-                ? "show-advanced"
-                : "hide-advanced"
-            }`}
+            } ${advancedControlsOpen ? "show-advanced" : "hide-advanced"}`}
           >
             {/* El carril de pasos del modo guiado.
                 Va aquí y no arriba porque en vertical caben el nombre y el
