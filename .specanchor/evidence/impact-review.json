@@ -1,54 +1,40 @@
 {
-  "revision": "47ddbc9c0b3ff9aa42f98285da428817240d88fe",
-  "task_spec": ".specanchor/tasks/TASK-007.spec.md",
+  "revision": "7daac3c14c3258ff66fa18c1f18ea1fb74463296",
+  "task_spec": ".specanchor/tasks/TASK-008.spec.md",
   "files": [
     {
-      "path": ".specanchor/modules/studio.spec.md",
+      "path": ".specanchor/modules/entrega.spec.md",
       "kind": "requirement",
       "specs": [],
-      "rationale": "Nace RESTR-STU-005: antes de concluir que algo no ocurre en el navegador, se comprueba que el instrumento pueda observarlo. Una pestaña oculta no ejecuta requestAnimationFrame ni el desplazamiento suave, así que ahí todo lo que dependa de ellos parece roto. Le costó a TASK-007 dos despliegues y dos conclusiones falsas.",
+      "rationale": "INV-ENT-001 afirmaba que el CI informa y no frena, y desde TASK-008 es al revés: main solo se modifica por pull request con las dos comprobaciones en verde, y eso alcanza al dueño del repositorio. Medido contra el servidor: empuje directo rechazado con GH006 y force-push rechazado. Se sustituye además el UNKNOWN sobre el estado de las protecciones por lo que se midió, incluido el dato de que sin enforce_all_for_admins la regla detectaba las violaciones y dejaba pasar igual.",
       "evidence": [
-        ".specanchor/tasks/TASK-007.spec.md#ev-010"
-      ]
-    },
-    {
-      "path": ".specanchor/tasks/TASK-007.spec.md",
-      "kind": "correction",
-      "specs": [],
-      "rationale": "Se retiran dos afirmaciones falsas de esta misma tarea: que behavior smooth se ignora en ese contenedor, y que con la espera al fotograma no se desplaza. Las dos se midieron con la pestaña en segundo plano, donde ni el scroll suave ni requestAnimationFrame se ejecutan. AC-001 vuelve a UNKNOWN: no está demostrado ni que funcione ni que no. No se toca código.",
-      "evidence": [
-        ".specanchor/tasks/TASK-007.spec.md#ev-010"
+        ".specanchor/tasks/TASK-008.spec.md#ev-001",
+        ".specanchor/tasks/TASK-008.spec.md#ev-002",
+        ".specanchor/tasks/TASK-008.spec.md#ev-003"
       ]
     }
   ],
   "traceability": [
     {
-      "requirement": "TASK-007/REQ-001",
-      "acceptance": "TASK-007/AC-001",
-      "verification": "Posición del primer grupo tras encender — NO MEDIBLE desde una pestaña en segundo plano",
-      "result": "not_run",
-      "evidence": ".specanchor/tasks/TASK-007.spec.md#ev-010"
+      "requirement": "TASK-008/REQ-001",
+      "acceptance": "TASK-008/AC-001",
+      "verification": "git push origin main con un commit vacío, esperando rechazo",
+      "result": "pass",
+      "evidence": ".specanchor/tasks/TASK-008.spec.md#ev-002"
     },
     {
-      "requirement": "TASK-007/REQ-001",
-      "acceptance": "TASK-007/AC-002",
-      "verification": "Presencia del aviso en los dos sentidos, en producción",
+      "requirement": "TASK-008/REQ-001",
+      "acceptance": "TASK-008/AC-002",
+      "verification": "git push --force-with-lease origin main, esperando rechazo",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-007.spec.md#ev-005"
+      "evidence": ".specanchor/tasks/TASK-008.spec.md#ev-003"
     },
     {
-      "requirement": "TASK-007/REQ-001",
-      "acceptance": "TASK-007/AC-003",
-      "verification": "Clase de .workspace-grid y alto del contenido del inspector",
+      "requirement": "TASK-008/REQ-001",
+      "acceptance": "TASK-008/AC-003",
+      "verification": "lectura de las casillas del formulario ya guardado",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-007.spec.md#ev-002"
-    },
-    {
-      "requirement": "TASK-007/REQ-001",
-      "acceptance": "TASK-007/AC-004",
-      "verification": "tsc, build y pruebas del studio",
-      "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-007.spec.md#ev-004"
+      "evidence": ".specanchor/tasks/TASK-008.spec.md#ev-004"
     }
   ]
 }

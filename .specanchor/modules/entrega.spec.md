@@ -52,12 +52,14 @@ vacía y no validaría nada. El inventario sí dice algo en ese momento.
 
 ## Invariantes de dominio
 
-- **INV-ENT-001** · El CI **informa, no frena**. Exigir que estas
-  comprobaciones pasen antes de fusionar es una protección de rama: un ajuste
-  del repositorio en GitHub, no un archivo de este repositorio, y necesita
-  autorización aparte. **No se ha tocado desde aquí** —OBSERVED: no hay en el
-  árbol nada que pueda tocarla—. En qué estado está hoy es **UNKNOWN**: no se
-  ha consultado, porque `gh` no está instalado en esta máquina.
+- **INV-ENT-001** · El CI **frena**, desde TASK-008. `main` solo se modifica
+  por pull request y con las dos comprobaciones en verde, y eso vale también
+  para el dueño del repositorio (`enforce_all_for_admins`). VERIFIED
+  2026-09-15 · empuje directo rechazado con `GH006`, force-push rechazado.
+  Hasta ese día esto decía lo contrario, y era cierto: GitHub no aplica
+  protección de rama en repositorios privados de cuenta personal. Lo que lo
+  desbloqueó fue abrir el repositorio, que es una decisión de Miguel y no una
+  consecuencia técnica.
 - **INV-ENT-002** · Ningún comprobador marca una prueba como pasada por su
   cuenta. `sellar-revision.mjs` toca **solo** el campo `revision`; `result`,
   `evidence` y las clasificaciones se copian tal cual. Un informe que la
@@ -138,9 +140,12 @@ mismo—. Lo que sí está medido, ejecutándolo:
   2026-09-14, ejecución **#1** (PR #3), 51 s, `Success`. Ver la tabla de
   abajo. Las tres incógnitas que quedaban —`ubuntu-latest`, el commit de
   fusión sintético y la caché de npm— están resueltas.
-- **UNKNOWN** · No se ha mirado si `main` tiene protecciones de rama, y no
-  se han tocado. Si no las tiene, un rojo del CI no impide fusionar nada:
-  avisa. Activarlas es una decisión de Miguel en los ajustes del repositorio.
+- ~~No se ha mirado si `main` tiene protecciones de rama~~ → puestas y
+  **medidas** el 2026-09-15 (TASK-008). Con la regla creada pero sin
+  `enforce_all_for_admins`, el servidor detectaba las dos violaciones y
+  **dejaba pasar igualmente** al administrador; con la casilla puesta, rechaza.
+  En un repositorio de un solo administrador, esa casilla es la diferencia
+  entre una regla y un adorno.
 - **UNKNOWN** · Nada comprueba las Edge Functions ni las migraciones. El CI
   cubre el frontend y los contratos; `supabase/` sigue sin una sola prueba
   automática.
@@ -150,6 +155,9 @@ mismo—. Lo que sí está medido, ejecutándolo:
 
 ## Historial de cambios
 
+- 2026-09-15 · TASK-008: `main` protegida de verdad. El repositorio pasó a
+  público, que es lo que permite a GitHub aplicar la regla, y `INV-ENT-001`
+  se da la vuelta: el CI ya no informa, frena.
 - 2026-09-14 · Creado con TASK-005. Primer CI del proyecto.
 - 2026-09-14 · Ejecutado por primera vez en GitHub (PR #3, ejecución #1): los
   tres trabajos se comportaron como dice esta spec. Y las acciones suben a
