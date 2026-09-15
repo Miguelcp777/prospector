@@ -36,6 +36,12 @@ llamadas del editor.
 - **RESTR-STU-002** · El CSS **no se porta línea a línea**: se aplica como
   parche. Reconstruirlo saca reglas de su `@media` y ninguna prueba lo detecta
   (`docs/decisiones/0005`).
+- **RESTR-STU-005** · Antes de concluir que algo **no** ocurre en el navegador,
+  se comprueba que el instrumento pueda observarlo. Una pestaña en segundo
+  plano (`document.visibilityState === "hidden"`) **no ejecuta
+  `requestAnimationFrame` ni el desplazamiento suave**, así que ahí todo lo que
+  dependa de ellos parece roto. Le costó dos despliegues y dos conclusiones
+  falsas a TASK-007. Un negativo sin esa comprobación no es un resultado.
 - **RESTR-STU-004** · Y «hace algo» significa **algo que se ve desde donde está
   el control**. Medir el DOM no es medir lo que ve una persona: un elemento
   puede pasar de `grid` a `none` sin que estuviera en pantalla ninguna de las
