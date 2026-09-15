@@ -1578,7 +1578,13 @@ export default function StudioClient({ displayName }: StudioProps) {
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [mobilePanel, setMobilePanel] = useState<"blocks" | "layers" | "edit" | "view" | null>(null);
-  const [advancedControlsOpen, setAdvancedControlsOpen] = useState(false);
+  // Arranca en true a proposito, aunque la V45 lo tenia en false. Hasta hoy
+  // el boton no hacia nada, asi que los controles avanzados estaban SIEMPRE a
+  // la vista; cablearlo con false los habria hecho desaparecer de golpe a quien
+  // lleva semanas usandolos, sin que nadie lo pidiera. El boton ahora funciona
+  // en los dos sentidos y la pantalla se ve igual que ayer. Cambiar a false es
+  // una palabra, el dia que se quiera que el modo guiado empiece limpio.
+  const [advancedControlsOpen, setAdvancedControlsOpen] = useState(true);
   const [templateTier, setTemplateTier] = useState<TemplateTier>("recommended");
   const [completedWorkflowSteps, setCompletedWorkflowSteps] = useState<WorkflowStep[]>([]);
   const [commandCenterOpen, setCommandCenterOpen] = useState(false);
@@ -4225,7 +4231,23 @@ Deja de aparecer en la biblioteca y ` +
             </div>
           </div>
 
-          <section className="workspace-grid">
+          {/* Las tres clases de estado. Se perdieron al portar la V45 y sin
+              ellas los botones «Bloques y capas», «Propiedades» y «Mostrar
+              controles avanzados» cambiaban su propio icono y nada mas: el
+              CSS que los escucha (estilos-studio.css, .left-collapsed,
+              .right-collapsed y .hide-advanced) llevaba meses sin que nadie
+              le pusiera la clase. Ver TASK-006.
+              El `workspace-hidden` de la V45 no entra: depende de `mainSpace`,
+              que aqui no se lee — el espacio de inicio lo resuelve `start-hub`. */}
+          <section
+            className={`workspace-grid ${leftPanelOpen ? "" : "left-collapsed"} ${
+              rightPanelOpen ? "" : "right-collapsed"
+            } ${
+              advancedControlsOpen || experienceMode === "professional"
+                ? "show-advanced"
+                : "hide-advanced"
+            }`}
+          >
             {/* El carril de pasos del modo guiado.
                 Va aquí y no arriba porque en vertical caben el nombre y el
                 estado de cada paso, y porque así está siempre a la vista
