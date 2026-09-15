@@ -142,6 +142,10 @@ las guardadas son 33,9 KB, lejos de los 102 KB a los que Gmail recorta.
 - 2026-09-15 · TASK-006: «Bloques y capas», «Propiedades» y «Mostrar controles
   avanzados» vuelven a hacer algo. Se repone la expresión de clases de
   `.workspace-grid` que el porte de la V45 perdió. Nace RESTR-STU-003.
+  **VERIFIED** en producción, los tres, ida y vuelta (TASK-006 EV-007). El de
+  avanzados necesitó además soltar el `|| experienceMode === "professional"`
+  de la V45, que lo volvía inerte en ese modo: un botón que no puede hacer
+  nada es peor que un valor por defecto que se puede cambiar.
 
 ## Evidencia de las afirmaciones
 
