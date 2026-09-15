@@ -72,9 +72,11 @@ plantilla ni el renderizador.
   `document` es el `TemplateDocument` que se está editando. Lo cazó `tsc`
   —«Property 'querySelector' does not exist on type 'TemplateDocument'»— y
   queda escrito porque es una trampa que volverá a aparecer.
-- **DEC-005** · `behavior: "auto"` y no `"smooth"`. Un desplazamiento
-  instantáneo es peor estéticamente y es el único que ocurre. Entre una
-  animación bonita que no se ejecuta y un salto que sí, gana el salto.
+- **DEC-005** · `behavior: "auto"` y no `"smooth"`. **El motivo que se dio era
+  falso** —ver EV-010—, pero el `auto` se queda: funciona en todos los casos en
+  los que funciona el suave y en algunos más, y volver a desplegar para
+  recuperar una animación es gastar un despliegue en estética mientras queda
+  algo sin verificar.
 - **DEC-004** · Se espera al **fotograma**, no al reloj:
   `requestAnimationFrame` con reintentos y comprobando `offsetParent !== null`
   antes de desplazar. Un `setTimeout` con un número elegido a ojo es una
@@ -119,20 +121,53 @@ plantilla ni el renderizador.
   | `scrollIntoView({ behavior: "smooth" })` | **0** | 1191 |
   | `scrollIntoView({ behavior: "auto" })` | **930** | **134** |
 
-  `smooth` se ignora en silencio en ese contenedor anidado. **No es
-  `prefers-reduced-motion`**: consultado, está desactivado
-  (`no-preference: true`). El porqué exacto se queda **UNKNOWN**; lo que hace
-  cada uno está medido.
-- **EV-009** · *(pendiente)* Medición con `behavior: "auto"`.
+  ⚠️ **Esta conclusión era falsa, y la medición también.** Ver EV-010.
+- **EV-009** · Con `behavior: "auto"`, **tampoco**: `scrollTop` se quedó en 0
+  durante 2,5 s completos, muestreado a 50, 120, 250, 500, 900, 1500 y 2500 ms,
+  con `offsetParent` ya válido a los 50 ms.
+
+- **EV-010** · **El fallo estaba en el instrumento, no en el código.** La
+  pestaña desde la que se medía estaba en segundo plano:
+
+  ```
+  document.visibilityState : "hidden"
+  document.hasFocus()      : false
+  requestAnimationFrame    : NO se ejecutó en 1200 ms
+  ```
+
+  Chrome **suspende `requestAnimationFrame` y el desplazamiento suave en las
+  pestañas ocultas**. Eso invalida dos conclusiones anteriores de esta misma
+  tarea:
+
+  | Lo que se concluyó | Qué pasaba en realidad |
+  |---|---|
+  | «`smooth` se ignora en ese contenedor» (EV-008) | Se medía con la pestaña oculta, donde el scroll suave tampoco corre |
+  | «con la espera al fotograma sigue sin desplazarse» (EV-007, EV-009) | El `requestAnimationFrame` del propio código **nunca llegó a ejecutarse** |
+
+  Cuando quien pulsa el botón es una persona, su pestaña está en primer plano
+  y el `rAF` sí corre. **AC-001 queda UNKNOWN**: no se ha demostrado ni que
+  funcione ni que no.
 
 ## Trazabilidad
 
 | Requisito | Aceptación | Verificación | Resultado | Evidencia |
 |---|---|---|---|---|
-| REQ-001 | AC-001 | posición del primer grupo respecto a la ventana tras encender | **not_run** · falló dos veces: `setTimeout` y `behavior: smooth` | EV-005 … EV-009 |
+| REQ-001 | AC-001 | posición del primer grupo respecto a la ventana tras encender | **not_run** · **no medible desde aquí**: la pestaña de medición está oculta y ahí no corre `requestAnimationFrame` | EV-010 |
 | REQ-001 | AC-002 | presencia del aviso en los dos sentidos | **pass** | EV-005 |
 | REQ-001 | AC-003 | clase y alto del contenido del inspector | **pass** | EV-001, EV-002 |
 | REQ-001 | AC-004 | tipos, build y pruebas | **pass** | EV-004 |
+
+## La leccion cara de esta tarea
+
+**Un instrumento que no se comprueba miente igual que un código que no se
+prueba.** Tres veces se midió «no pasa nada» y se sacó una conclusión sobre el
+código; la tercera vez lo que no pasaba nada era en el navegador de medición,
+por estar en segundo plano.
+
+Antes de concluir que algo **no** ocurre, hay que comprobar que el entorno de
+medición puede observar que ocurra: `document.visibilityState`,
+`document.hasFocus()` y, si se depende de él, que `requestAnimationFrame`
+dispare. Un negativo sin esa comprobación no es un resultado.
 
 ## Lo que esta tarea deja dicho para la próxima
 

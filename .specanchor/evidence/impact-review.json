@@ -1,26 +1,23 @@
 {
-  "revision": "5de04bfc84e37820029fc74a82ef9a1f3a02a390",
+  "revision": "47ddbc9c0b3ff9aa42f98285da428817240d88fe",
   "task_spec": ".specanchor/tasks/TASK-007.spec.md",
   "files": [
     {
-      "path": "frontend/src/studio/StudioClient.tsx",
-      "kind": "contract",
-      "specs": [
-        ".specanchor/modules/studio.spec.md"
-      ],
-      "rationale": "Tercer intento del desplazamiento de TASK-007. Aislado en producción sobre el propio contenedor: scrollIntoView con behavior smooth deja el scrollTop en 0 y no hace nada; con auto lo lleva a 930 y el grupo de y=1191 a y=134. No es prefers-reduced-motion, que está desactivado. Se cambia a auto.",
+      "path": ".specanchor/modules/studio.spec.md",
+      "kind": "requirement",
+      "specs": [],
+      "rationale": "Nace RESTR-STU-005: antes de concluir que algo no ocurre en el navegador, se comprueba que el instrumento pueda observarlo. Una pestaña oculta no ejecuta requestAnimationFrame ni el desplazamiento suave, así que ahí todo lo que dependa de ellos parece roto. Le costó a TASK-007 dos despliegues y dos conclusiones falsas.",
       "evidence": [
-        ".specanchor/tasks/TASK-007.spec.md#ev-007",
-        ".specanchor/tasks/TASK-007.spec.md#ev-008"
+        ".specanchor/tasks/TASK-007.spec.md#ev-010"
       ]
     },
     {
       "path": ".specanchor/tasks/TASK-007.spec.md",
       "kind": "correction",
       "specs": [],
-      "rationale": "Se registra el segundo fallo de AC-001 y la medición que aísla la causa, más DEC-005: entre una animación bonita que no se ejecuta y un salto que sí, gana el salto.",
+      "rationale": "Se retiran dos afirmaciones falsas de esta misma tarea: que behavior smooth se ignora en ese contenedor, y que con la espera al fotograma no se desplaza. Las dos se midieron con la pestaña en segundo plano, donde ni el scroll suave ni requestAnimationFrame se ejecutan. AC-001 vuelve a UNKNOWN: no está demostrado ni que funcione ni que no. No se toca código.",
       "evidence": [
-        ".specanchor/tasks/TASK-007.spec.md#ev-008"
+        ".specanchor/tasks/TASK-007.spec.md#ev-010"
       ]
     }
   ],
@@ -28,9 +25,9 @@
     {
       "requirement": "TASK-007/REQ-001",
       "acceptance": "TASK-007/AC-001",
-      "verification": "Posición del primer grupo respecto a la ventana tras encender, en producción",
+      "verification": "Posición del primer grupo tras encender — NO MEDIBLE desde una pestaña en segundo plano",
       "result": "not_run",
-      "evidence": ".specanchor/tasks/TASK-007.spec.md#ev-009"
+      "evidence": ".specanchor/tasks/TASK-007.spec.md#ev-010"
     },
     {
       "requirement": "TASK-007/REQ-001",
