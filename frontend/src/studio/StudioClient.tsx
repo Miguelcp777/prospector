@@ -2295,6 +2295,42 @@ export default function StudioClient({ displayName }: StudioProps) {
     } catch {}
   }
 
+  // Los cuatro grupos que gobierna «controles avanzados», en el orden en que
+  // aparecen dentro del inspector.
+  const GRUPOS_AVANZADOS =
+    ".global-look-controls, .hero-free-controls, .global-layer-controls, .button-depth-grid";
+
+  // El interruptor funcionaba y aun asi no se notaba, que para quien lo usa es
+  // lo mismo que si no funcionara. Medido en produccion: lo que apaga vive en
+  // y=1191 y y=2014 dentro del scroll del inspector, con una ventana de 911 px
+  // de alto — o sea, fuera de la pantalla. El contenido del panel pasa de 4194
+  // a 2869 px, un tercio menos, y desde donde esta el boton no se ve nada.
+  // Asi que el efecto se cuenta, y al encender se lleva la vista hasta lo que
+  // se acaba de descubrir. Ver TASK-007.
+  function alternarControlesAvanzados() {
+    const siguiente = !advancedControlsOpen;
+    setAdvancedControlsOpen(siguiente);
+
+    if (siguiente) {
+      toast.message("Controles avanzados visibles", {
+        description: "Capas, composicion libre del hero y profundidad, al final del panel de propiedades.",
+      });
+      // Un respiro para que React pinte antes de buscar el grupo.
+      globalThis.setTimeout(() => {
+        // globalThis.document, no document: dentro del componente `document` es
+        // el TemplateDocument que se esta editando.
+        globalThis.document
+          .querySelector(GRUPOS_AVANZADOS)
+          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 80);
+      return;
+    }
+
+    toast.message("Controles avanzados ocultos", {
+      description: "El panel de propiedades se queda bastante mas corto.",
+    });
+  }
+
   function completeWorkflowStep(step: WorkflowStep) {
     setCompletedWorkflowSteps((current) => {
       const next = current.includes(step) ? current : [...current, step];
@@ -4195,7 +4231,7 @@ Deja de aparecer en la biblioteca y ` +
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setAdvancedControlsOpen((value) => !value)}
+                onClick={alternarControlesAvanzados}
               >
                 <Layers3 /> {advancedControlsOpen ? "Ocultar avanzados" : "Mostrar controles avanzados"}
               </Button>
