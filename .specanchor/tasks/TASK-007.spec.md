@@ -1,7 +1,7 @@
 ---
 type: task-spec
 id: TASK-007
-status: in_progress
+status: verified
 created: 2026-09-15
 modules: [studio]
 behavior_preserving: false
@@ -152,10 +152,21 @@ plantilla ni el renderizador.
 
 | Requisito | Aceptación | Verificación | Resultado | Evidencia |
 |---|---|---|---|---|
-| REQ-001 | AC-001 | posición del primer grupo respecto a la ventana tras encender | **not_run** · **no medible desde aquí**: la pestaña de medición está oculta y ahí no corre `requestAnimationFrame` | EV-010 |
+| REQ-001 | AC-001 | comprobación de Miguel en la aplicación desplegada | **pass** | EV-011 |
 | REQ-001 | AC-002 | presencia del aviso en los dos sentidos | **pass** | EV-005 |
 | REQ-001 | AC-003 | clase y alto del contenido del inspector | **pass** | EV-001, EV-002 |
 | REQ-001 | AC-004 | tipos, build y pruebas | **pass** | EV-004 |
+
+- **EV-011** · **Comprobado por Miguel** en la aplicación desplegada, el
+  2026-09-15: pulsando «Ocultar avanzados» y «Mostrar controles avanzados» en
+  Plantillas, **funciona**.
+
+  Esta evidencia es de otra clase que las anteriores y conviene que se note:
+  no es una medición ejecutada, es el **informe de la persona que usa el
+  producto**. Es la única disponible — la pestaña desde la que se mide está en
+  segundo plano y ahí `requestAnimationFrame` no corre (EV-010)—, y para un
+  criterio que dice «se percibe qué ha pasado» es, de hecho, la evidencia
+  adecuada: quien juzga si algo se percibe es quien lo mira.
 
 ## La leccion cara de esta tarea
 
@@ -179,6 +190,19 @@ ventana**, no solo qué dice `getComputedStyle`.
 
 ## Revisión final
 
-- Cobertura documental: NOT_RUN
-- Spec → Código: NOT_VERIFIED
-- Código → Spec: NOT_VERIFIED
+- Cobertura documental: **PASS**
+- Spec → Código: **ALIGNED** — el control avisa de lo que hace y lleva la
+  vista hasta lo que descubre, que es lo que la tarea pedía.
+- Código → Spec: **ALIGNED**.
+
+## Lo que queda sin cubrir
+
+- **No está automatizado.** Vale para esta revisión y para el navegador de
+  Miguel, no para siempre. Automatizarlo exigiría un navegador de pruebas con
+  sesión, que es otra conversación.
+- **Un solo ancho, un solo modo, un solo navegador.** Por debajo de 900 px
+  estos botones ni se dibujan: manda la barra inferior.
+- **Los cuatro grupos avanzados siguen al final del inspector.** DEC-003
+  decidió no reordenarlo, y esa pregunta —si es su sitio— sigue abierta.
+- **UNKNOWN** · Si `behavior: "smooth"` habría funcionado. Se cambió a `auto`
+  por un motivo que resultó falso (EV-010) y no se ha vuelto a probar.
