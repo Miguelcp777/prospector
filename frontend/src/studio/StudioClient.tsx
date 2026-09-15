@@ -2289,7 +2289,13 @@ export default function StudioClient({ displayName }: StudioProps) {
 
   function changeExperienceMode(mode: ExperienceMode) {
     setExperienceMode(mode);
-    if (mode === "guided") setAdvancedControlsOpen(false);
+    if (mode === "guided") {
+      setAdvancedControlsOpen(false);
+      // Se reponen tambien en el estado, no solo en las clases: al volver a
+      // profesional no debe reaparecer un panel plegado que nadie recuerda.
+      setLeftPanelOpen(true);
+      setRightPanelOpen(true);
+    }
     try {
       globalThis.localStorage?.setItem("aurevanta-experience-mode", mode);
     } catch {}
@@ -4232,6 +4238,12 @@ Deja de aparecer en la biblioteca y ` +
 
           <div className="studio-commandbar">
             <div className="command-group">
+              {/* Solo en profesional: en guiado no harian nada, y un boton que
+                  no puede hacer nada es el fallo del que venimos (TASK-006,
+                  TASK-007). Antes de esconderlos hay que comprobar que no se
+                  esconde tambien la unica forma de recuperar un panel. */}
+              {experienceMode !== "guided" && (
+                <>
               <Button
                 variant="ghost"
                 size="sm"
@@ -4246,6 +4258,8 @@ Deja de aparecer en la biblioteca y ` +
               >
                 {rightPanelOpen ? <PanelRightClose /> : <PanelRightOpen />} Propiedades
               </Button>
+                </>
+              )}
               <Button
                 variant="ghost"
                 size="sm"
@@ -4300,8 +4314,17 @@ Deja de aparecer en la biblioteca y ` +
               El `workspace-hidden` de la V45 no entra: depende de `mainSpace`,
               que aqui no se lee — el espacio de inicio lo resuelve `start-hub`. */}
           <section
-            className={`workspace-grid ${leftPanelOpen ? "" : "left-collapsed"} ${
-              rightPanelOpen ? "" : "right-collapsed"
+            className={`workspace-grid ${
+              // El plegado de paneles es del modo profesional y solo de ese.
+              // En guiado la rejilla la fija el paso (.mode-guided.paso-*), que
+              // gana en especificidad y reserva la columna igualmente: plegar
+              // dejaba un hueco de 340 px vacio donde va el selector de
+              // plantillas. El paso manda sobre la preferencia manual.
+              experienceMode === "guided"
+                ? ""
+                : `${leftPanelOpen ? "" : "left-collapsed"} ${
+                    rightPanelOpen ? "" : "right-collapsed"
+                  }`
             } ${advancedControlsOpen ? "show-advanced" : "hide-advanced"}`}
           >
             {/* El carril de pasos del modo guiado.

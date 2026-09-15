@@ -1,40 +1,57 @@
 {
-  "revision": "7daac3c14c3258ff66fa18c1f18ea1fb74463296",
-  "task_spec": ".specanchor/tasks/TASK-008.spec.md",
+  "revision": "fd1a80279efbeb7dc5561ae8af0df2dcd0929fa0",
+  "task_spec": ".specanchor/tasks/TASK-009.spec.md",
   "files": [
     {
-      "path": ".specanchor/modules/entrega.spec.md",
+      "path": "frontend/src/studio/StudioClient.tsx",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/studio.spec.md"
+      ],
+      "rationale": "Regresión de TASK-006. Desde que los botones de plegado funcionan, plegar la paleta en modo guiado deja un hueco de 340 px vacío: la rejilla del paso gana en especificidad y reserva la columna, mientras el plegado solo apaga la visibilidad. El plegado pasa a emitirse únicamente en modo profesional, sus dos botones dejan de dibujarse en guiado —un botón que no puede hacer nada es el fallo del que venimos— y al entrar en guiado el estado se repone.",
+      "evidence": [
+        ".specanchor/tasks/TASK-009.spec.md#ev-001",
+        ".specanchor/tasks/TASK-009.spec.md#ev-002"
+      ]
+    },
+    {
+      "path": ".specanchor/modules/studio.spec.md",
       "kind": "requirement",
       "specs": [],
-      "rationale": "INV-ENT-001 afirmaba que el CI informa y no frena, y desde TASK-008 es al revés: main solo se modifica por pull request con las dos comprobaciones en verde, y eso alcanza al dueño del repositorio. Medido contra el servidor: empuje directo rechazado con GH006 y force-push rechazado. Se sustituye además el UNKNOWN sobre el estado de las protecciones por lo que se midió, incluido el dato de que sin enforce_all_for_admins la regla detectaba las violaciones y dejaba pasar igual.",
+      "rationale": "Nace RESTR-STU-006: arreglar un control que no hacía nada pone en circulación un estado que antes no existía, y la comprobación no es si el botón hace algo sino dónde más se nota que ahora lo haga. Seis pasos guiados con seis disposiciones, y en TASK-006 no se miró ninguno.",
       "evidence": [
-        ".specanchor/tasks/TASK-008.spec.md#ev-001",
-        ".specanchor/tasks/TASK-008.spec.md#ev-002",
-        ".specanchor/tasks/TASK-008.spec.md#ev-003"
+        ".specanchor/tasks/TASK-009.spec.md#ev-001"
       ]
     }
   ],
   "traceability": [
     {
-      "requirement": "TASK-008/REQ-001",
-      "acceptance": "TASK-008/AC-001",
-      "verification": "git push origin main con un commit vacío, esperando rechazo",
-      "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-008.spec.md#ev-002"
+      "requirement": "TASK-009/REQ-001",
+      "acceptance": "TASK-009/AC-001",
+      "verification": "Paleta visible y pestañas en pantalla, en guiado, con el plegado activado antes de entrar",
+      "result": "not_run",
+      "evidence": ".specanchor/tasks/TASK-009.spec.md#ev-003"
     },
     {
-      "requirement": "TASK-008/REQ-001",
-      "acceptance": "TASK-008/AC-002",
-      "verification": "git push --force-with-lease origin main, esperando rechazo",
-      "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-008.spec.md#ev-003"
+      "requirement": "TASK-009/REQ-002",
+      "acceptance": "TASK-009/AC-002",
+      "verification": "Ausencia de los dos botones de plegado en la barra, en guiado",
+      "result": "not_run",
+      "evidence": ".specanchor/tasks/TASK-009.spec.md#ev-003"
     },
     {
-      "requirement": "TASK-008/REQ-001",
-      "acceptance": "TASK-008/AC-003",
-      "verification": "lectura de las casillas del formulario ya guardado",
+      "requirement": "TASK-009/REQ-001",
+      "acceptance": "TASK-009/AC-003",
+      "verification": "Los dos botones siguen funcionando en profesional",
+      "result": "not_run",
+      "evidence": ".specanchor/tasks/TASK-009.spec.md#ev-003"
+    },
+    {
+      "requirement": "TASK-009/REQ-001",
+      "acceptance": "TASK-009/AC-004",
+      "verification": "npx tsc -b --force, npm run build y node scripts/pruebas-del-studio.mjs",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-008.spec.md#ev-004"
+      "evidence": ".specanchor/tasks/TASK-009.spec.md#ev-002"
     }
   ]
 }
