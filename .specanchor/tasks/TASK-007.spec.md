@@ -72,6 +72,12 @@ plantilla ni el renderizador.
   `document` es el `TemplateDocument` que se está editando. Lo cazó `tsc`
   —«Property 'querySelector' does not exist on type 'TemplateDocument'»— y
   queda escrito porque es una trampa que volverá a aparecer.
+- **DEC-004** · Se espera al **fotograma**, no al reloj:
+  `requestAnimationFrame` con reintentos y comprobando `offsetParent !== null`
+  antes de desplazar. Un `setTimeout` con un número elegido a ojo es una
+  carrera que se gana o se pierde según la máquina, y cuando se pierde no da
+  ningún error: simplemente no pasa nada. Que es, otra vez, el fallo del que
+  viene esta tarea.
 - **DEC-003** · No se reordena el inspector para subir los grupos avanzados.
   Sería un cambio de disposición mucho mayor, afecta a pantallas que nadie ha
   pedido tocar, y la pregunta de si esos cuatro grupos están en el sitio
@@ -92,15 +98,23 @@ plantilla ni el renderizador.
   dependen de qué haya seleccionado.
 - **EV-004** · `npx tsc -b --force` salida 0, `npm run build` salida 0,
   `node scripts/pruebas-del-studio.mjs` salida 0 · 71/4 · sin fallos nuevos.
-- **EV-005** · *(pendiente)* Medición en la aplicación desplegada: que el
-  primer grupo quede dentro de la ventana al encender, y que salga el aviso.
+- **EV-005** · Medición tras el primer despliegue. **Los avisos, bien; el
+  desplazamiento, no.** Al encender, el grupo seguía en `y = 1191`,
+  `dentroDeLaVentana: false`. AC-002 pass, AC-001 **fail**.
+- **EV-006** · Diagnóstico del fallo, en la misma pantalla: el mismo
+  `scrollIntoView`, llamado sobre el elemento **ya visible**, lo lleva de
+  `y = 1191` a `y = 134` y el contenedor de `scrollTop` 0 a 930. O sea que la
+  llamada es correcta y el problema era **cuándo**: a los 80 ms React todavía
+  no había pintado, el grupo seguía en `display: none`, y un elemento oculto no
+  se deja desplazar — `scrollIntoView` se lo traga sin decir nada.
+- **EV-007** · *(pendiente)* Medición con la espera al fotograma.
 
 ## Trazabilidad
 
 | Requisito | Aceptación | Verificación | Resultado | Evidencia |
 |---|---|---|---|---|
-| REQ-001 | AC-001 | posición del primer grupo respecto a la ventana tras encender | **not_run** | EV-005 |
-| REQ-001 | AC-002 | presencia del aviso en los dos sentidos | **not_run** | EV-005 |
+| REQ-001 | AC-001 | posición del primer grupo respecto a la ventana tras encender | **not_run** · falló con `setTimeout`, rehecho con `requestAnimationFrame` | EV-005, EV-006, EV-007 |
+| REQ-001 | AC-002 | presencia del aviso en los dos sentidos | **pass** | EV-005 |
 | REQ-001 | AC-003 | clase y alto del contenido del inspector | **pass** | EV-001, EV-002 |
 | REQ-001 | AC-004 | tipos, build y pruebas | **pass** | EV-004 |
 
