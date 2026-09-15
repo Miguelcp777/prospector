@@ -1,7 +1,7 @@
 ---
 type: task-spec
 id: TASK-006
-status: in_progress
+status: verified
 created: 2026-09-15
 modules: [studio]
 behavior_preserving: false
@@ -150,15 +150,28 @@ ya existía.
   etiqueta. Es exactamente el fallo del que venía la petición, escrito en el
   original.
 
-- **EV-007** · *(pendiente)* Medición del botón de avanzados tras el segundo
-  despliegue.
+- **EV-007** · Medición tras el segundo despliegue, en producción, con el
+  editor en **`mode-professional`** — el modo en el que el botón de avanzados
+  era inerte:
+
+  | Acción | `className` | columnas | paleta | inspector | avanzados |
+  |---|---|---|---|---|---|
+  | al abrir | `workspace-grid show-advanced` | `290 1022 360` | visible 290px | visible 360px | `grid` |
+  | «Bloques y capas» | `+ left-collapsed` | `0 1312 360` | **hidden 0px** | visible | `grid` |
+  | «Propiedades» | `+ right-collapsed` | `0 1672 0` | hidden | **hidden 0px** | `grid` |
+  | «Mostrar avanzados» | `hide-advanced` | `0 1672 0` | hidden | hidden | **`none`** |
+  | otra vez | `show-advanced` | `0 1672 0` | hidden | hidden | **`grid`** |
+  | reabrir los dos | `workspace-grid show-advanced` | `290 1022 360` | visible | visible | `grid` |
+
+  Los tres botones hacen lo que dice su etiqueta, en los dos sentidos, y el
+  estado inicial es el de antes del cambio.
 
 ## Trazabilidad
 
 | Requisito | Aceptación | Verificación | Resultado | Evidencia |
 |---|---|---|---|---|
 | REQ-001 | AC-001 | clases inyectadas en el DOM de producción | **pass** | EV-003 |
-| REQ-001 | AC-002 | pulsar los tres botones tras desplegar | **not_run** · dos de tres medidos | EV-005, EV-006, EV-007 |
+| REQ-001 | AC-002 | pulsar los tres botones tras desplegar | **pass** · tres de tres, ida y vuelta | EV-007 |
 | REQ-002 | AC-003 | estado inicial de los controles avanzados | **pass** | EV-005 |
 | REQ-001 | AC-004 | tipos, build y pruebas | **pass** | EV-004 |
 
@@ -189,6 +202,18 @@ comprobado. Se cierra con la medición, no antes.
 
 ## Revisión final
 
-- Cobertura documental: NOT_RUN
-- Spec → Código: NOT_VERIFIED
-- Código → Spec: NOT_VERIFIED
+- Cobertura documental: **PASS**
+- Spec → Código: **ALIGNED** — los tres controles hacen lo que la spec del
+  módulo dice que hacen, medido en el DOM de producción y no leído en el diff,
+  que es lo que exige RESTR-STU-003.
+- Código → Spec: **ALIGNED** — el cambio es el cableado que faltaba más una
+  condición retirada, ambos recogidos en DEC-001 y DEC-003. No hay nada en el
+  diff que las specs no expliquen.
+
+## Lo que esta tarea deja sin cubrir
+
+- **Un solo ancho y un solo modo.** Medido a 1920 px y en `professional`. En
+  el compacto de menos de 900 px estos tres botones ni se dibujan: ahí manda
+  la barra inferior, que es otra cosa y ya tuvo su propio fallo (0005).
+- **Los demás controles de la barra y del inspector siguen sin repasar.** Tres
+  de tres estaban rotos en el único sitio donde se miró.

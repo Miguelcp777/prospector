@@ -1,27 +1,14 @@
 {
-  "revision": "345609674a018c98f71c8e102c746e1800ed67c0",
+  "revision": "989bcdd493a2e98ab795b8432bd2392fc137d6c7",
   "task_spec": ".specanchor/tasks/TASK-006.spec.md",
   "files": [
     {
-      "path": "frontend/src/studio/StudioClient.tsx",
-      "kind": "contract",
-      "specs": [
-        ".specanchor/modules/studio.spec.md"
-      ],
-      "rationale": "Segunda mitad de TASK-006. La clase de controles avanzados deja de mirar experienceMode: con el `|| experienceMode === \"professional\"` de la V45, en modo profesional la condición es siempre verdadera y el botón es inerte por diseño mientras sigue cambiando su propia etiqueta. Medido en producción tras el primer despliegue. El modo decide cómo empieza el editor; el clic decide cómo se queda.",
-      "evidence": [
-        ".specanchor/tasks/TASK-006.spec.md#ev-005",
-        ".specanchor/tasks/TASK-006.spec.md#ev-006"
-      ]
-    },
-    {
-      "path": ".specanchor/tasks/TASK-006.spec.md",
-      "kind": "correction",
+      "path": ".specanchor/modules/studio.spec.md",
+      "kind": "clarification",
       "specs": [],
-      "rationale": "Se registra lo que enseñó el primer despliegue: dos de los tres botones quedaron arreglados y el tercero seguía roto por un motivo que no se ve en el diff. Nace DEC-003 y la tarea sigue abierta con AC-002 en not_run.",
+      "rationale": "Cierre de TASK-006. No cambia ningún contrato: se sustituye el estado de evidencia. Los tres controles pasan a VERIFIED con la medición en el DOM de producción, ida y vuelta, y se deja escrito que el de avanzados necesitó soltar la condición de modo de la V45.",
       "evidence": [
-        ".specanchor/tasks/TASK-006.spec.md#ev-005",
-        ".specanchor/tasks/TASK-006.spec.md#ev-006"
+        ".specanchor/tasks/TASK-006.spec.md#ev-007"
       ]
     }
   ],
@@ -36,16 +23,16 @@
     {
       "requirement": "TASK-006/REQ-001",
       "acceptance": "TASK-006/AC-002",
-      "verification": "Pulsar los tres botones en la aplicación desplegada y medir className y anchos",
-      "result": "not_run",
+      "verification": "Pulsar los tres botones en la aplicación desplegada, en mode-professional, ida y vuelta, midiendo className, columnas y display",
+      "result": "pass",
       "evidence": ".specanchor/tasks/TASK-006.spec.md#ev-007"
     },
     {
       "requirement": "TASK-006/REQ-002",
       "acceptance": "TASK-006/AC-003",
-      "verification": "Estado inicial de los controles avanzados al abrir el editor, medido en producción",
+      "verification": "Estado inicial de los controles avanzados al abrir el editor",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-006.spec.md#ev-005"
+      "evidence": ".specanchor/tasks/TASK-006.spec.md#ev-007"
     },
     {
       "requirement": "TASK-006/REQ-001",
