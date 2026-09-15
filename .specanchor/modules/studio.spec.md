@@ -155,8 +155,11 @@ las guardadas son 33,9 KB, lejos de los 102 KB a los que Gmail recorta.
   Invariantes 009 a 011.
 - 2026-09-15 · TASK-007: «controles avanzados» funcionaba y no se notaba — lo
   que apaga vive a mil píxeles de scroll por debajo del pliegue. Ahora avisa de
-  lo que hace y, al encender, lleva la vista hasta el primer grupo. Nace
-  RESTR-STU-004.
+  lo que hace y, al encender, lleva la vista hasta el primer grupo. Nacen
+  RESTR-STU-004 y RESTR-STU-005. **Cerrada** con la comprobación de Miguel en
+  la aplicación desplegada: funciona. Costó cuatro despliegues y tres causas
+  distintas para el mismo síntoma —el efecto fuera de pantalla, la carrera con
+  el pintado, y dos conclusiones falsas por medir en una pestaña oculta—.
 - 2026-09-15 · TASK-006: «Bloques y capas», «Propiedades» y «Mostrar controles
   avanzados» vuelven a hacer algo. Se repone la expresión de clases de
   `.workspace-grid` que el porte de la V45 perdió. Nace RESTR-STU-003.

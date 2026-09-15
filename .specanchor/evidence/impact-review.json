@@ -1,40 +1,45 @@
 {
-  "revision": "7daac3c14c3258ff66fa18c1f18ea1fb74463296",
-  "task_spec": ".specanchor/tasks/TASK-008.spec.md",
+  "revision": "fd1a80279efbeb7dc5561ae8af0df2dcd0929fa0",
+  "task_spec": ".specanchor/tasks/TASK-007.spec.md",
   "files": [
     {
-      "path": ".specanchor/modules/entrega.spec.md",
-      "kind": "requirement",
+      "path": ".specanchor/modules/studio.spec.md",
+      "kind": "clarification",
       "specs": [],
-      "rationale": "INV-ENT-001 afirmaba que el CI informa y no frena, y desde TASK-008 es al revés: main solo se modifica por pull request con las dos comprobaciones en verde, y eso alcanza al dueño del repositorio. Medido contra el servidor: empuje directo rechazado con GH006 y force-push rechazado. Se sustituye además el UNKNOWN sobre el estado de las protecciones por lo que se midió, incluido el dato de que sin enforce_all_for_admins la regla detectaba las violaciones y dejaba pasar igual.",
+      "rationale": "Cierre de TASK-007. No cambia ningún contrato: se sustituye el estado de evidencia. El control queda VERIFIED con la comprobación de Miguel en la aplicación desplegada, y se deja escrito lo que costó: cuatro despliegues y tres causas distintas para el mismo síntoma.",
       "evidence": [
-        ".specanchor/tasks/TASK-008.spec.md#ev-001",
-        ".specanchor/tasks/TASK-008.spec.md#ev-002",
-        ".specanchor/tasks/TASK-008.spec.md#ev-003"
+        ".specanchor/tasks/TASK-007.spec.md#ev-011"
       ]
     }
   ],
   "traceability": [
     {
-      "requirement": "TASK-008/REQ-001",
-      "acceptance": "TASK-008/AC-001",
-      "verification": "git push origin main con un commit vacío, esperando rechazo",
+      "requirement": "TASK-007/REQ-001",
+      "acceptance": "TASK-007/AC-001",
+      "verification": "Comprobación de Miguel en la aplicación desplegada: pulsa los dos sentidos del botón en Plantillas y confirma que funciona. No es una medición ejecutada; es el informe de quien usa el producto, que para un criterio de percepción es la evidencia adecuada.",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-008.spec.md#ev-002"
+      "evidence": ".specanchor/tasks/TASK-007.spec.md#ev-011"
     },
     {
-      "requirement": "TASK-008/REQ-001",
-      "acceptance": "TASK-008/AC-002",
-      "verification": "git push --force-with-lease origin main, esperando rechazo",
+      "requirement": "TASK-007/REQ-001",
+      "acceptance": "TASK-007/AC-002",
+      "verification": "Presencia del aviso en los dos sentidos, medida en producción",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-008.spec.md#ev-003"
+      "evidence": ".specanchor/tasks/TASK-007.spec.md#ev-005"
     },
     {
-      "requirement": "TASK-008/REQ-001",
-      "acceptance": "TASK-008/AC-003",
-      "verification": "lectura de las casillas del formulario ya guardado",
+      "requirement": "TASK-007/REQ-001",
+      "acceptance": "TASK-007/AC-003",
+      "verification": "Clase de .workspace-grid y alto del contenido del inspector, con los paneles abiertos",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-008.spec.md#ev-004"
+      "evidence": ".specanchor/tasks/TASK-007.spec.md#ev-002"
+    },
+    {
+      "requirement": "TASK-007/REQ-001",
+      "acceptance": "TASK-007/AC-004",
+      "verification": "npx tsc -b --force, npm run build y node scripts/pruebas-del-studio.mjs",
+      "result": "pass",
+      "evidence": ".specanchor/tasks/TASK-007.spec.md#ev-004"
     }
   ]
 }
