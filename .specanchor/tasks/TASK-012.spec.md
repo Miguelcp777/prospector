@@ -103,9 +103,42 @@ habría sido dejar «Salir» inalcanzable a sabiendas.
 - Spec → Código: **ALIGNED** — nace `INV-WEB-011` con el fallo del alto fija.
 - Código → Spec: **ALIGNED**.
 
+## La corrección: las reglas móviles no ganaban
+
+Encontrado al mirar el CSS ya empaquetado después de desplegar, y era **un
+fallo mío de esta misma tarea**.
+
+Las adaptaciones de `.lateral-pie` y `.sesion` se escribieron dentro del
+bloque `@media (max-width: 860px)` de la línea 238, que está **muy por encima**
+de sus reglas base —`.sesion` en la 767 y `.lateral-pie` en la 821—. Una media
+query **no añade especificidad**: a igual selector gana la que aparece más
+tarde en el archivo. Así que por debajo de 860 px las reglas base pisaban a
+las móviles y el pie salía en columna, y empujado hacia abajo, dentro de una
+barra horizontal.
+
+Es la misma familia de error que el ADR 0005 ya documenta —«el CSS no se porta
+línea a línea»— y no lo ve el build, ni `tsc`, ni una prueba de contrato. Se
+ve **leyendo el paquete**, que es donde se encontró:
+
+```
+antes:    .lateral-pie{flex-direction:row…}      @ 4494    ← móvil, y pierde
+          .lateral-pie{flex-direction:column…}   @ 18438   ← base, y gana
+
+después:  .lateral-pie{flex-direction:column…}   @ 18352   ← base
+          .lateral-pie{flex-direction:row…}      @ 18481   ← móvil, y gana
+          .sesion{margin-bottom:0}               @ 18543
+```
+
+Las dos reglas se mudan a su propio `@media` al final, junto a las bases que
+corrigen. `.nav-fin` se queda arriba porque **su** base está en la línea 224,
+antes del bloque, y ahí el orden ya era el bueno.
+
+- **EV-005** · El orden en el paquete, comprobado sobre el CSS construido y
+  citado arriba. Es lo que estaba roto y es lo que queda demostrado.
+
 ## Lo que queda por mirar
 
-El ensayo se hizo a la anchura de escritorio. **Por debajo de 860 px el
-lateral es una barra horizontal**, y ahí `.lateral-pie` tiene que ir en fila y
-empujarse a la derecha en lugar de al fondo — está escrito, pero **no se ha
-comprobado en pantalla**. Se mira después de desplegar.
+La barra horizontal **vista en pantalla** por debajo de 860 px. El orden de
+las reglas está demostrado; que el resultado se vea bien, no. Hace falta una
+ventana estrecha con sesión, y el navegador donde la hay no se puede
+redimensionar desde aquí.

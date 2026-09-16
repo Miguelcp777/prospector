@@ -1,57 +1,44 @@
 {
-  "revision": "410f1453e461c1f318063c6ad3fc34dae8a1de6c",
+  "revision": "d8fc7a72cd25fdc20e802326f778d68b55c54e66",
   "task_spec": ".specanchor/tasks/TASK-012.spec.md",
   "files": [
     {
-      "path": "frontend/src/App.tsx",
-      "kind": "contract",
-      "specs": [".specanchor/modules/app-web.spec.md"],
-      "rationale": "La tarjeta de sesion sube a la cabecera del lateral, debajo del logotipo: no es una accion como los dos botones de servicio entre los que estaba, es la respuesta a con que cuenta estoy, y esa pregunta se hace al llegar. Los dos botones de servicio se envuelven en .lateral-pie para que el hueco lo empuje el par entero y no uno de los dos.",
-      "evidence": [".specanchor/tasks/TASK-012.spec.md#ev-001"]
-    },
-    {
       "path": "frontend/src/estilos.css",
       "kind": "contract",
-      "specs": [".specanchor/modules/app-web.spec.md"],
-      "rationale": "El margin-top auto pasa de .sesion a .lateral-pie, el relleno inferior de .marca baja de 32 a 16 porque lo que va debajo ya no es el menu sino la misma cabecera, y .lateral gana overflow-y auto. Esto ultimo arregla un fallo anterior que este cambio destapo al obligar a mirar como se reparte la altura: el contenido mide 934 px con height 100vh y overflow visible, asi que en una ventana mas baja Salir y el pie se salian sin nada que los alcanzara.",
-      "evidence": [".specanchor/tasks/TASK-012.spec.md#ev-002", ".specanchor/tasks/TASK-012.spec.md#ev-003"]
+      "specs": [
+        ".specanchor/modules/app-web.spec.md"
+      ],
+      "rationale": "Correccion de un fallo propio de TASK-012: las adaptaciones moviles de .lateral-pie y .sesion se escribieron en el bloque @media de la linea 238, muy por encima de sus reglas base de las lineas 767 y 821. Una media query no anade especificidad, asi que a igual selector ganaba la de mas abajo y por debajo de 860 px el pie salia en columna dentro de una barra horizontal. Las dos reglas se mudan a su propio @media al final, junto a las bases que corrigen. .nav-fin se queda arriba porque su base esta en la 224, antes del bloque.",
+      "evidence": [
+        ".specanchor/tasks/TASK-012.spec.md#ev-005"
+      ]
+    },
+    {
+      "path": ".specanchor/tasks/TASK-012.spec.md",
+      "kind": "correction",
+      "specs": [],
+      "rationale": "Queda escrito el fallo y como se encontro: leyendo el CSS ya empaquetado despues de desplegar, con las posiciones de cada regla antes y despues. No lo ve el build ni tsc ni una prueba de contrato, que es lo que lo hace util anotar.",
+      "evidence": [
+        ".specanchor/tasks/TASK-012.spec.md#ev-005"
+      ]
     },
     {
       "path": ".specanchor/modules/app-web.spec.md",
       "kind": "requirement",
       "specs": [],
-      "rationale": "Nace INV-WEB-011 con la cifra medida: el lateral mide 934 px y por eso necesita poder desplazarse. Se deja escrito que cualquier entrada nueva del menu empeora ese margen, que es lo que convierte una medicion en un invariante util.",
-      "evidence": [".specanchor/tasks/TASK-012.spec.md#ev-002"]
-    },
-    {
-      "path": ".specanchor/tasks/TASK-012.spec.md",
-      "kind": "requirement",
-      "specs": [],
-      "rationale": "La tarea ligera, con el ensayo en caliente sobre la pagina real como evidencia de aspecto y las dos mediciones del alto. Deja dicho lo que no se ha mirado: la barra horizontal por debajo de 860 px.",
-      "evidence": [".specanchor/tasks/TASK-012.spec.md#ev-001"]
+      "rationale": "INV-WEB-012: una adaptacion movil va despues de la regla base que corrige, porque una media query no anade especificidad. Es la segunda vez que la cascada del CSS cuesta un despliegue en este proyecto, la primera esta en el ADR 0005.",
+      "evidence": [
+        ".specanchor/tasks/TASK-012.spec.md#ev-005"
+      ]
     }
   ],
   "traceability": [
     {
-      "requirement": "TASK-012/AC-001",
-      "acceptance": "TASK-012/AC-001",
-      "verification": "Ensayo en caliente sobre la produccion real: la tarjeta queda entre el logotipo y la primera entrada del menu, mirado en pantalla",
-      "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-012.spec.md#ev-001"
-    },
-    {
       "requirement": "TASK-012/AC-002",
       "acceptance": "TASK-012/AC-002",
-      "verification": "Modo claro y Salir medidos juntos al fondo, con .lateral-pie llevando el margin-top auto",
+      "verification": "Orden de las reglas en el CSS construido: la base de .lateral-pie en 18352 y la movil en 18481, y .sesion movil en 18543. Antes la movil caia en 4494 y la base en 18438, o sea que perdia",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-012.spec.md#ev-003"
-    },
-    {
-      "requirement": "TASK-012/AC-003",
-      "acceptance": "TASK-012/AC-003",
-      "verification": "Altura forzada a 700 px: contenido 931, visible 700, puede scrollear true y Salir alcanzable true. Sin el cambio, con la ventana a 744, Salir caia en 828 sin barra",
-      "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-012.spec.md#ev-002"
+      "evidence": ".specanchor/tasks/TASK-012.spec.md#ev-005"
     }
   ]
 }

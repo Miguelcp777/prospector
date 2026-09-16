@@ -111,6 +111,14 @@ chunk aparte, cargado bajo demanda.
   El hueco que separa el menú del pie lo empuja `.lateral-pie`, el par entero.
   Un `margin-top: auto` en uno solo de los dos botones deja al otro flotando
   en medio; en los dos, el hueco se reparte y salen dos espacios.
+- **INV-WEB-012** · Una adaptación de `@media` va **después** de la regla base
+  que corrige. Una media query no añade especificidad: a igual selector gana
+  la que aparece más tarde en el archivo, así que una adaptación escrita en el
+  bloque de 860 px de arriba la pisa cualquier regla base de más abajo — sin
+  error, sin aviso y sin que el build lo note. Ocurrió en TASK-012 con
+  `.lateral-pie`, y es la segunda vez que la cascada del CSS cuesta un
+  despliegue aquí; la primera está en `docs/decisiones/0005`. Se comprueba
+  leyendo el CSS **ya empaquetado**, no el fuente.
 
 ## Pruebas y verificación
 
