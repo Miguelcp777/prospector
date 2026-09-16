@@ -1,7 +1,7 @@
 ---
 type: task-lite
 id: TASK-018
-status: in_progress
+status: verified
 created: 2026-09-16
 modules: [datos, app-web]
 behavior_preserving: false
@@ -74,7 +74,14 @@ porque no se ha pedido y porque cambia `volcar_lista_en_campana` y `leads`.
 - **EV-003** · `tsc -b --force` → 0. `npm run build` → correcto, principal
   646,46 kB — **baja** respecto a los 647,47 de antes: se va código. Pruebas
   del studio sin fallos nuevos. `test:importacion` **34 de 34**.
-- **EV-004** · _(pendiente: la pantalla, después del despliegue)_
+- **EV-004** · **En producción**, con el paquete servido comprobado antes
+  (`index-C3tkxpFD.js`). El aviso de confirmación, literal:
+
+  > Se van a borrar **23 direcciones** y la lista entera —el archivo, las
+  > columnas usadas, tu declaración y el histórico—, y no se puede recuperar.
+
+  Y ni rastro de la lápida en la pantalla. La confirmación se canceló: la
+  lista de Miguel sigue donde estaba.
 
 ## Trazabilidad
 
@@ -82,7 +89,7 @@ porque no se ha pedido y porque cambia `volcar_lista_en_campana` y `leads`.
 |---|---|---|---|
 | AC-001 | El caso de la lápida contra la base, deshecho | **pass** | EV-001 |
 | AC-002 | El mismo caso con un lead colgando | **pass** | EV-002 |
-| AC-003 | Tipos, build y pruebas | **pass** · OBSERVED | EV-003 |
+| AC-003 | El aviso leído en la pantalla, en producción | **pass** · VERIFIED | EV-004 |
 
 ## La columna de la lápida se queda
 
@@ -93,4 +100,12 @@ comentario de la propia columna**, que es el criterio que la 045 ya usó con
 
 ## Revisión final
 
-_(pendiente de EV-004)_
+- Cobertura documental: **PASS**.
+- Spec → Código: **ALIGNED** — `INV-DAT-011` reescrito e `INV-WEB-016` con la
+  frase que el aviso tiene que decir.
+- Código → Spec: **ALIGNED**.
+
+**No se ha borrado ninguna lista real para comprobarlo**, y no hacía falta:
+el caso de la lápida se reprodujo contra la base en transacciones deshechas,
+que es donde se puede montar el escenario —una lista volcada, con un lead
+colgando— sin tocar los datos de nadie.

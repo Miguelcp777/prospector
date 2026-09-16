@@ -23,18 +23,6 @@
         "C:/Users/migue/Downloads"
       ],
       "port": 8791
-    },
-    {
-      "name": "bp-e2e",
-      "runtimeExecutable": "python",
-      "runtimeArgs": [
-        "-m",
-        "http.server",
-        "8819",
-        "--directory",
-        "C:/Users/migue/AppData/Local/Temp/claude/C--Users-migue-Documents-Proyectos-antigravity-Prospector-agent/ce708198-4640-4590-b725-02a3683343af/scratchpad/e2e"
-      ],
-      "port": 8819
     }
   ]
 }
