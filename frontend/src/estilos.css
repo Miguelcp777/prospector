@@ -157,6 +157,12 @@ a:hover { text-decoration: underline; }
   padding: var(--e5) var(--e3);
   display: flex; flex-direction: column; gap: 2px;
   position: sticky; top: 0; height: 100vh;
+  /* El contenido del lateral mide 934 px y aquí se le dan 100vh. En una
+     ventana más baja —un portátil de 768, o cualquiera con barras— lo de
+     abajo se salía sin nada que lo alcanzara: primero los botones se
+     aplastan por `flex-shrink`, y cuando ya no pueden, «Salir» y el
+     logotipo del pie quedan fuera de la pantalla. Medido, no supuesto. */
+  overflow-y: auto;
   border-right: 1px solid var(--borde);
   background: var(--velo);
   backdrop-filter: blur(12px);
@@ -166,7 +172,10 @@ a:hover { text-decoration: underline; }
   display: flex; align-items: center; gap: var(--e3);
   font-weight: 800; font-size: 1rem;
   letter-spacing: 0.02em; text-transform: uppercase;
-  padding: 0 var(--e3) var(--e6);
+  /* Antes separaba el logotipo del menú y pedía aire. Ahora debajo va la
+     tarjeta de sesión, que es de la misma cabecera: 32px la despegaban del
+     logotipo y la dejaban pareciendo el primer elemento del menú. */
+  padding: 0 var(--e3) var(--e4);
 }
 /* El isotipo ya trae su propio degradado: aquí solo se le da el halo que
    tenía el marcador de posición, para que no quede plano sobre el fondo. */
@@ -247,7 +256,13 @@ a:hover { text-decoration: underline; }
   .marca span { display: none; }
   .nav-item { width: auto; white-space: nowrap; }
   .nav-item.activa { box-shadow: none; }
-  .nav-fin { margin-top: 0; margin-left: auto; }
+  /* Aquí el lateral es una barra horizontal, así que el pie no cae abajo:
+     se va a la derecha. Y lo hace el par entero, no el último botón. */
+  .lateral-pie { flex-direction: row; margin-top: 0; margin-left: auto; }
+  .nav-fin { margin-top: 0; }
+  /* En columna la tarjeta de sesión se separa del menú por debajo; en fila
+     ese margen la descentra respecto a los botones de al lado. */
+  .sesion { margin-bottom: 0; }
   /* El lateral es una barra horizontal aquí: el logotipo a ancho completo no
      cabe. Queda el isotipo de la izquierda, que ya lleva la marca. */
   .pie-marca { display: none; }
@@ -750,7 +765,7 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e1) 0; width: 
 /* Va al pie de la barra, junto al tema y a Salir: es la zona de cuenta.
    Arriba competiría con la marca por la misma mirada. */
 .sesion {
-  margin-top: auto;
+  margin-bottom: var(--e4);
   display: flex; flex-direction: column; gap: 3px;
   padding: var(--e3);
   border: 1px solid var(--borde);
@@ -799,10 +814,15 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e1) 0; width: 
 /* La etiqueta de admin cabe en la misma línea que el estado. */
 .sesion-estado .etiqueta { margin-left: auto; font-size: 0.5625rem; padding: 1px 6px; }
 
-/* Salir tenía el `margin-top: auto` que lo mandaba al fondo. Ahora ese
-   papel lo hace .sesion, y dejar los dos repartiría el hueco entre ambos en
-   vez de agrupar el pie: saldría un espacio en medio. */
-.sesion ~ .nav-fin { margin-top: 0; }
+/* El hueco que separa el menú del pie lo empuja el par entero, no uno de
+   los dos botones. Con el `margin-top: auto` en solo uno, el otro se queda
+   flotando en medio; con él en los dos, el hueco se reparte y salen dos
+   espacios en vez de uno. */
+.lateral-pie {
+  margin-top: auto;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.lateral-pie .nav-fin { margin-top: 0; }
 
 
 /* ---------------- interruptor de módulo ---------------- */

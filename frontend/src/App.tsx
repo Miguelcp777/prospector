@@ -307,6 +307,13 @@ function Aplicacion() {
           <span>Prospector</span>
         </div>
 
+        {/* Quién eres va arriba, debajo del logotipo. Abajo quedaba entre el
+            menú y los dos botones de servicio —tema y salir— y se leía como
+            uno más de ellos, cuando no es una acción sino la respuesta a
+            «¿con qué cuenta estoy?». Esa pregunta se hace al llegar, no al
+            irse. */}
+        <Conectado sesion={sesion} esAdmin={esAdmin} />
+
         {GRUPOS.filter((g) =>
           g.id === "prospeccion" ? modulos.prospeccion
           : g.id === "email" ? modulos.email
@@ -344,14 +351,18 @@ function Aplicacion() {
             dónde ibas. */}
         <RecorridoLateral oculto={vistaValida === "campanas"} />
 
-        <Conectado sesion={sesion} esAdmin={esAdmin} />
+        {/* Los dos botones de servicio, juntos y al fondo. Van envueltos
+            porque el hueco lo tiene que empujar el par entero: con el
+            `margin-top: auto` en solo uno de ellos, el otro se quedaba
+            flotando en mitad de la barra. */}
+        <div className="lateral-pie">
+          <BotonTema />
 
-        <BotonTema />
-
-        <button className="nav-item nav-fin" onClick={() => supabase.auth.signOut()}>
-          <span aria-hidden="true">→</span>
-          Salir
-        </button>
+          <button className="nav-item nav-fin" onClick={() => supabase.auth.signOut()}>
+            <span aria-hidden="true">→</span>
+            Salir
+          </button>
+        </div>
 
         <div className="pie-marca">
           <img src="/aurevanta.png" alt="Aurevanta Labs" />

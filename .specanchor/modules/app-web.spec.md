@@ -101,6 +101,16 @@ chunk aparte, cargado bajo demanda.
 - **INV-WEB-009** · Por debajo de 860 px el armazón gira a columna y necesita
   `align-items: stretch`; sin él `main` se ajusta a su contenido y una tabla
   ancha arrastra la página entera.
+- **INV-WEB-011** · `.lateral` es `height: 100vh` y su contenido mide **934
+  px**, así que lleva `overflow-y: auto`. Sin él, en una ventana más baja los
+  botones primero se aplastan por `flex-shrink` y después «Salir» y el pie se
+  salen de la pantalla **sin nada que permita alcanzarlos**. Cualquier entrada
+  nueva en el menú empeora ese margen: la barra no puede crecer sin poder
+  desplazarse.
+
+  El hueco que separa el menú del pie lo empuja `.lateral-pie`, el par entero.
+  Un `margin-top: auto` en uno solo de los dos botones deja al otro flotando
+  en medio; en los dos, el hueco se reparte y salen dos espacios.
 
 ## Pruebas y verificación
 
