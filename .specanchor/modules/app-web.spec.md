@@ -60,6 +60,17 @@ contratados del tenant (`modulo_prospeccion`, `modulo_email`).
 - **INV-WEB-006** · Un `<button>` sin clase de botón se queda con la cara gris
   del navegador, que no es de ninguno de los dos temas. `.sutil` es una clase
   de texto y no vale para un botón.
+- **INV-WEB-015** · En el lateral, una cabecera de grupo **se lee más que sus
+  hijos**, no menos. Iba en `--texto-3` —más tenue que las entradas que
+  ordena, que van en `--texto-2`— y del mismo color exacto que ellas en
+  reposo. Ahora va a tope de brillo, con un filete y aire separando grupos.
+  Con los hijos ya sin sangrar (`INV-WEB-014`), el peso tipográfico es lo
+  único que queda para marcar la jerarquía, así que no puede estar invertido.
+
+  Corolario que costó una regla: `.nav-grupo.abierto` **no** puede fijar color
+  —existía para subir el brillo desde `--texto-3` y ahora lo bajaría—, y el
+  reinicio móvil tiene que nombrar `.nav-grupo + .nav-grupo` aparte, porque
+  dos clases pesan más que una y la especificidad gana al orden.
 - **INV-WEB-014** · El lateral tiene **una sola columna de iconos**: cabeceras
   de grupo, hijos y entradas sueltas, todos en el mismo borde izquierdo. Hasta
   TASK-014 había dos, separadas 31 px, porque `.nav-grupo-hijos` se sangraba y

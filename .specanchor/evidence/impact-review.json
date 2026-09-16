@@ -1,6 +1,6 @@
 {
-  "revision": "0726632d741493b44f4f937cda0a8f76e0b03acc",
-  "task_spec": ".specanchor/tasks/TASK-014.spec.md",
+  "revision": "663593e866177f5015d09fabd25f1d69b122730d",
+  "task_spec": ".specanchor/tasks/TASK-015.spec.md",
   "files": [
     {
       "path": "frontend/src/estilos.css",
@@ -8,37 +8,45 @@
       "specs": [
         ".specanchor/modules/app-web.spec.md"
       ],
-      "rationale": "El lateral tenia dos columnas de iconos separadas 31 px: cabeceras de grupo y entradas sueltas en x=24, hijos de grupo en x=55, por el margen, el relleno y el borde de guia de .nav-grupo-hijos. El propio CSS ya pedia lo contrario dos reglas mas arriba -misma columna, el lateral entero se lee como una sola rejilla- y la sangria ganaba, asi que la rejilla unica nunca existio. Se resuelve el empate a favor de la columna unica. Se pierde la guia, que servia para que plegar un grupo se leyera como jerarquia; lo siguen diciendo la cabecera en versalitas y su flecha, y no se pueden tener las dos cosas porque la guia ocupa justo el sitio que rompe la columna.",
+      "rationale": "La jerarquia del lateral estaba invertida: la cabecera de grupo iba en --texto-3, mas tenue que las entradas que ordena, y del mismo color exacto que ellas en reposo. Pasa a --texto, con un filete y aire entre grupos -el mismo recurso que ya separa las sueltas- y la marca sube a 17 px y triplica el espaciado para seguir ganandoles. Se borra .nav-grupo.abierto, que existia para subir el brillo desde --texto-3 y ahora apagaria los grupos abiertos. Y el reinicio movil nombra .nav-grupo + .nav-grupo aparte porque dos clases pesan mas que una y la especificidad gana al orden, que es INV-WEB-012 por el otro lado.",
       "evidence": [
-        ".specanchor/tasks/TASK-014.spec.md#ev-001"
+        ".specanchor/tasks/TASK-015.spec.md#ev-001",
+        ".specanchor/tasks/TASK-015.spec.md#ev-002"
       ]
     },
     {
       "path": ".specanchor/modules/app-web.spec.md",
       "kind": "requirement",
       "specs": [],
-      "rationale": "INV-WEB-014 fija la columna unica y deja escrito que la jerarquia la dice la cabecera del grupo, no una sangria. Sin eso, el proximo que anada un grupo vuelve a sangrarlo.",
+      "rationale": "INV-WEB-015: una cabecera de grupo se lee mas que sus hijos, no menos. Con los hijos ya sin sangrar por INV-WEB-014, el peso tipografico es lo unico que queda para marcar la jerarquia. Con sus dos corolarios, que son las dos reglas que hubo que tocar y no son evidentes.",
       "evidence": [
-        ".specanchor/tasks/TASK-014.spec.md#ev-001"
+        ".specanchor/tasks/TASK-015.spec.md#ev-001"
       ]
     },
     {
-      "path": ".specanchor/tasks/TASK-014.spec.md",
+      "path": ".specanchor/tasks/TASK-015.spec.md",
       "kind": "requirement",
       "specs": [],
-      "rationale": "La tarea, con la medicion de las dos columnas antes y despues y con lo que se pierde dicho de frente. Incluye lo que se deja fuera: el texto del logotipo empieza 12 px a la derecha del de las entradas porque el isotipo mide 30 y los iconos 18.",
+      "rationale": "La tarea, con la medicion de los tres niveles antes de tocar y con la nota de que esto es consecuencia directa de TASK-014: mientras los hijos iban sangrados la inversion se notaba poco.",
       "evidence": [
-        ".specanchor/tasks/TASK-014.spec.md#ev-001"
+        ".specanchor/tasks/TASK-015.spec.md#ev-001"
       ]
     }
   ],
   "traceability": [
     {
-      "requirement": "TASK-014/AC-001",
-      "acceptance": "TASK-014/AC-001",
-      "verification": "Recuento de columnas distintas de iconos sobre la pantalla real: dos antes [24, 55], una despues [24]",
+      "requirement": "TASK-015/AC-001",
+      "acceptance": "TASK-015/AC-001",
+      "verification": "Ensayo en caliente sobre la produccion real, mirado en pantalla: las dos cabeceras en blanco, el filete entre ellas y los tres bloques leyendose como bloques",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-014.spec.md#ev-001"
+      "evidence": ".specanchor/tasks/TASK-015.spec.md#ev-001"
+    },
+    {
+      "requirement": "TASK-015/AC-003",
+      "acceptance": "TASK-015/AC-003",
+      "verification": "Orden y especificidad en el CSS construido: el reinicio movil en 16615 con la misma especificidad que la base en 15705, y despues, asi que gana",
+      "result": "pass",
+      "evidence": ".specanchor/tasks/TASK-015.spec.md#ev-002"
     }
   ]
 }
