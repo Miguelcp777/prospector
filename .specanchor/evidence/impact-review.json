@@ -1,42 +1,90 @@
 {
-  "revision": "e9f50cd10d3f1d45698afe322d5e866dc7d14bca",
-  "task_spec": ".specanchor/tasks/TASK-017.spec.md",
+  "revision": "d5d59a0366df0f8d0a17b9b295cb6aac9b2eb659",
+  "task_spec": ".specanchor/tasks/TASK-018.spec.md",
   "files": [
     {
-      "path": "frontend/src/pages/Lista.tsx",
-      "kind": "behavior_preserving",
+      "path": "supabase/056_borrar_una_lista_lo_borra_todo.sql",
+      "kind": "contract",
       "specs": [
-        ".specanchor/modules/app-web.spec.md"
+        ".specanchor/modules/datos.spec.md"
       ],
-      "rationale": "Borrar la lista sube a la cabecera, junto al nombre y a Volver a las listas, y la confirmacion sale ahi mismo. Estaba a 3.747 px de alto en una ventana de 911, detras de la tabla de contactos y de sus 46 botones de editar y quitar, que operan sobre un contacto: la pantalla venia a decir que se pueden quitar contactos uno a uno y la lista entera no. La base no se toca, borrar_lista y sus dos ramas se quedan igual.",
+      "rationale": "borrar_lista pierde la rama de la lapida: una sola salida, se borra la lista y la cascada se lleva contactos e historico. Es contrato porque cambia que queda del registro de origen de un lead cuando su lista desaparece. La cabecera de la migracion deja escrito quien lo decide, cuando, con que motivo delante y que se pierde exactamente, para que nadie lo lea como un descuido. La columna de la lapida se queda marcada como obsoleta en su propio comentario, mismo criterio que la 045 con ajustes.modo_demo.",
       "evidence": [
-        ".specanchor/tasks/TASK-017.spec.md#ev-001"
+        ".specanchor/tasks/TASK-018.spec.md#ev-001",
+        ".specanchor/tasks/TASK-018.spec.md#ev-002"
       ]
     },
     {
-      "path": ".specanchor/tasks/TASK-017.spec.md",
+      "path": ".specanchor/modules/datos.spec.md",
       "kind": "requirement",
       "specs": [],
-      "rationale": "La tarea, con la medicion que convierte una impresion en un defecto localizado, y con la distincion que conviene no confundir: entera como accion sobre la lista frente a entera como que no quede ni la ficha, que es la regla de INV-DAT-011 y no se toca.",
+      "rationale": "INV-DAT-011 se reescribe: borrar una lista la borra entera. Deja la tabla de lo que sobrevive en el lead frente a lo que se pierde, dice que la alternativa se llego a implementar y quien la descarto, y apunta la salida futura: copiar la declaracion al lead en el volcado, que es el patron de messages.email_destino.",
       "evidence": [
-        ".specanchor/tasks/TASK-017.spec.md#ev-001"
+        ".specanchor/tasks/TASK-018.spec.md#ev-002"
+      ]
+    },
+    {
+      "path": "frontend/src/pages/Lista.tsx",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/app-web.spec.md"
+      ],
+      "rationale": "Fuera el aviso de lapida, fuera las dos ramas del texto de confirmacion y fuera la condicion que escondia Usar en una campana. El aviso pasa a decir que la lista desaparece entera y que los leads seguiran ahi pero dejaran de poder decir de que archivo salieron: es la consecuencia de INV-DAT-011 y hay que verla antes de pulsar, no despues.",
+      "evidence": [
+        ".specanchor/tasks/TASK-018.spec.md#ev-003"
+      ]
+    },
+    {
+      "path": "frontend/src/pages/Listas.tsx",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/app-web.spec.md"
+      ],
+      "rationale": "El indice deja de distinguir lapidas, porque ya no existen.",
+      "evidence": [
+        ".specanchor/tasks/TASK-018.spec.md#ev-003"
+      ]
+    },
+    {
+      "path": ".specanchor/modules/app-web.spec.md",
+      "kind": "requirement",
+      "specs": [],
+      "rationale": "INV-WEB-016 recoge lo que el aviso tiene que decir ahora, incluida la frase sobre el respaldo documental, y por que Borrar la lista vive en la cabecera y no al final.",
+      "evidence": [
+        ".specanchor/tasks/TASK-018.spec.md#ev-003"
+      ]
+    },
+    {
+      "path": ".specanchor/tasks/TASK-018.spec.md",
+      "kind": "requirement",
+      "specs": [],
+      "rationale": "La tarea, con la peticion, lo que se pierde exactamente y la salida futura. El build baja de 647,47 a 646,46 kB, que es la senal de que esto quita codigo en vez de anadirlo.",
+      "evidence": [
+        ".specanchor/tasks/TASK-018.spec.md#ev-003"
       ]
     }
   ],
   "traceability": [
     {
-      "requirement": "TASK-017/AC-001",
-      "acceptance": "TASK-017/AC-001",
-      "verification": "Posicion del boton medida sobre la pantalla en produccion: 3.747 px de alto en una ventana de 911, con 46 botones por delante",
+      "requirement": "TASK-018/AC-001",
+      "acceptance": "TASK-018/AC-001",
+      "verification": "El caso que antes disparaba la lapida, en transaccion deshecha: ficha 0, contactos 0, historico 0, huerfanos 0",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-017.spec.md#ev-001"
+      "evidence": ".specanchor/tasks/TASK-018.spec.md#ev-001"
     },
     {
-      "requirement": "TASK-017/AC-002",
-      "acceptance": "TASK-017/AC-002",
-      "verification": "tsc en 0, build correcto, studio sin fallos nuevos e importacion 34 de 34",
+      "requirement": "TASK-018/AC-002",
+      "acceptance": "TASK-018/AC-002",
+      "verification": "El mismo caso con un lead colgando de un contacto: lead vivo, contacto_id a nulo, y fuente, email_origen y fecha conservados",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-017.spec.md#ev-002"
+      "evidence": ".specanchor/tasks/TASK-018.spec.md#ev-002"
+    },
+    {
+      "requirement": "TASK-018/AC-003",
+      "acceptance": "TASK-018/AC-003",
+      "verification": "tsc en 0, build correcto y mas pequeno, studio sin fallos nuevos e importacion 34 de 34",
+      "result": "pass",
+      "evidence": ".specanchor/tasks/TASK-018.spec.md#ev-003"
     }
   ]
 }

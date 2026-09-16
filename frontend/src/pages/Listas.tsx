@@ -22,7 +22,6 @@ type Fila = {
   filas_validas: number;
   filas_leidas: number;
   subido_por_email: string | null;
-  contactos_borrados_en: string | null;
   creado_en: string;
 };
 
@@ -43,7 +42,7 @@ export function Listas() {
     setCargando(true);
     const { data, error: fallo } = await supabase
       .from("listas_de_contactos")
-      .select("id, nombre, origen, filas_validas, filas_leidas, subido_por_email, contactos_borrados_en, creado_en")
+      .select("id, nombre, origen, filas_validas, filas_leidas, subido_por_email, creado_en")
       .order("creado_en", { ascending: false });
     setCargando(false);
     if (fallo) { setError(fallo.message); return; }
@@ -123,17 +122,9 @@ export function Listas() {
                     </button>
                   </td>
                   <td>
-                    {/* Una lápida no tiene contactos: enseñar sus cifras de
-                        entonces haría creer que siguen ahí. */}
-                    {l.contactos_borrados_en ? (
-                      <span className="sutil">borrados</span>
-                    ) : (
-                      <>
-                        <strong>{l.filas_validas}</strong>
-                        {l.filas_leidas !== l.filas_validas && (
-                          <span className="sutil"> de {l.filas_leidas}</span>
-                        )}
-                      </>
+                    <strong>{l.filas_validas}</strong>
+                    {l.filas_leidas !== l.filas_validas && (
+                      <span className="sutil"> de {l.filas_leidas}</span>
                     )}
                   </td>
                   <td className="sutil">{ORIGENES[l.origen] ?? l.origen}</td>
