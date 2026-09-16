@@ -11,6 +11,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { coincide } from "../lib/busqueda";
 
 const TOPE = 200;
 
@@ -116,14 +117,7 @@ export function Leads() {
 
   const visibles = leads.filter((l) => {
     if (segmento && l.segments?.nombre !== segmento) return false;
-    if (busqueda) {
-      const t = busqueda.toLowerCase();
-      return (
-        l.nombre.toLowerCase().includes(t) ||
-        (l.direccion ?? "").toLowerCase().includes(t)
-      );
-    }
-    return true;
+    return coincide(busqueda, l.nombre, l.direccion);
   });
 
   if (campanas.length === 0 && !cargando) {

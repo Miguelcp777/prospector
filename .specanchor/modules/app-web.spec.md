@@ -60,6 +60,16 @@ contratados del tenant (`modulo_prospeccion`, `modulo_email`).
 - **INV-WEB-006** · Un `<button>` sin clase de botón se queda con la cara gris
   del navegador, que no es de ninguno de los dos temas. `.sutil` es una clase
   de texto y no vale para un botón.
+- **INV-WEB-017** · Los buscadores de la aplicación **ignoran las tildes**, y
+  lo hacen todos por `lib/busqueda.ts`. `toLowerCase()` no descompone los
+  diacríticos, así que `peluqueria` no encontraba «peluquería» — y fallaba en
+  silencio, diciendo «0 de 200», que se lee como «no hay». En un producto en
+  español y sobre negocios españoles eso falla justo en las palabras que la
+  gente escribe.
+
+  Es **otra** normalización que la de `deteccion-de-columnas.ts`, a propósito:
+  aquélla aplasta además la puntuación porque compara cabeceras de hoja de
+  cálculo, y aquí eso rompería buscar por dominio.
 - **INV-WEB-016** · La pantalla de una lista deja **renombrarla, corregir o
   quitar un contacto y borrarla entera**. «Borrar la lista» vive en la
   cabecera, junto al nombre: al final de la pantalla quedaba a 3.747 px de

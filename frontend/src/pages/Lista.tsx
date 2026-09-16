@@ -13,6 +13,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { coincide } from "../lib/busqueda";
 
 type Lista = {
   id: string;
@@ -211,11 +212,7 @@ export function Lista({ id, alVolver }: { id: string; alVolver: () => void }) {
   const suprimidos = contactos.filter((c) => c.suprimido).length;
   const utiles = contactos.filter((c) => c.estado === "valido" && !c.suprimido).length;
   const visibles = contactos
-    .filter((c) => {
-      if (busca.trim() === "") return true;
-      const t = busca.toLowerCase();
-      return [c.email, c.nombre, c.empresa].some((v) => (v ?? "").toLowerCase().includes(t));
-    })
+    .filter((c) => coincide(busca, c.email, c.nombre, c.empresa))
     .slice(0, tope);
 
   return (
