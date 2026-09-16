@@ -1,107 +1,24 @@
 {
-  "revision": "fe92b1a9d0b2c5023b2f24c357fec18d22920c88",
-  "task_spec": ".specanchor/tasks/TASK-016.spec.md",
+  "revision": "da499e08e20395eba047d10f834e1cb89523488d",
+  "task_spec": ".specanchor/tasks/TASK-014.spec.md",
   "files": [
     {
-      "path": "supabase/055_gestionar_las_listas.sql",
-      "kind": "contract",
-      "specs": [
-        ".specanchor/modules/datos.spec.md"
-      ],
-      "rationale": "Migracion nueva: la columna contactos_borrados_en, la funcion borrar_lista con sus dos ramas y el recorte de permisos. Es contrato porque define que pasa con el registro de origen de un lead cuando su lista desaparece, y porque quita a authenticated la escritura sobre diecinueve columnas que tenia de mas, incluida la declaracion de origen con su fecha. Aplicada y verificada contra el catalogo y con los tres casos en transacciones deshechas.",
-      "evidence": [
-        ".specanchor/tasks/TASK-016.spec.md#ev-002",
-        ".specanchor/tasks/TASK-016.spec.md#ev-003",
-        ".specanchor/tasks/TASK-016.spec.md#ev-004",
-        ".specanchor/tasks/TASK-016.spec.md#ev-005"
-      ]
-    },
-    {
-      "path": ".specanchor/modules/datos.spec.md",
+      "path": ".specanchor/tasks/TASK-014.spec.md",
       "kind": "requirement",
       "specs": [],
-      "rationale": "INV-DAT-011: borrar una lista no borra los leads que salieron de ella y no puede romper su registro de origen, de ahi las dos ramas. INV-DAT-012: authenticated solo escribe nombre en listas_de_contactos, y nada en volcados_de_lista. Los dos salen de lo que se midio.",
+      "rationale": "Cierre de TASK-014 con la medicion ya desplegada: catorce entradas del lateral -dos cabeceras de grupo, siete hijos y cinco sueltas- en una sola columna, con la hoja servida comprobada antes para no medir sobre la version anterior.",
       "evidence": [
-        ".specanchor/tasks/TASK-016.spec.md#ev-001",
-        ".specanchor/tasks/TASK-016.spec.md#ev-005"
-      ]
-    },
-    {
-      "path": "frontend/src/pages/Lista.tsx",
-      "kind": "contract",
-      "specs": [
-        ".specanchor/modules/app-web.spec.md"
-      ],
-      "rationale": "Renombrar en linea, corregir o quitar un contacto, y borrar la lista en dos tiempos diciendo antes cuantas direcciones se van y que los leads se quedan. Una lista ya borrada ensena su lapida y esconde Usar en una campana, porque sin direcciones ese boton no puede hacer nada. El correo corregido a mano se normaliza igual que lo hace guardar_lista, para que no se comporte distinto al volcar.",
-      "evidence": [
-        ".specanchor/tasks/TASK-016.spec.md#ev-006"
-      ]
-    },
-    {
-      "path": "frontend/src/pages/Listas.tsx",
-      "kind": "contract",
-      "specs": [
-        ".specanchor/modules/app-web.spec.md"
-      ],
-      "rationale": "El indice marca las lapidas como borrados en vez de ensenar sus cifras de entonces, que harian creer que los contactos siguen ahi.",
-      "evidence": [
-        ".specanchor/tasks/TASK-016.spec.md#ev-006"
-      ]
-    },
-    {
-      "path": ".specanchor/modules/app-web.spec.md",
-      "kind": "requirement",
-      "specs": [],
-      "rationale": "INV-WEB-016 con lo que la pantalla tiene que decir antes de borrar, incluida la parte que ningun boton de borrar dice por defecto: los leads que ya salieron no se van con la lista.",
-      "evidence": [
-        ".specanchor/tasks/TASK-016.spec.md#ev-006"
-      ]
-    },
-    {
-      "path": ".specanchor/tasks/TASK-016.spec.md",
-      "kind": "requirement",
-      "specs": [],
-      "rationale": "La tarea, con la medicion del arrastre, los tres casos, la trampa de medir en la misma sentencia que la llamada, y la mitad de actualizarlas que NO entra: anadir un archivo a una lista existente convertiria en mentira las tres columnas de valor unico del registro de origen. Quedan las dos salidas razonables escritas para elegir a sabiendas.",
-      "evidence": [
-        ".specanchor/tasks/TASK-016.spec.md#ev-001"
+        ".specanchor/tasks/TASK-014.spec.md#ev-003"
       ]
     }
   ],
   "traceability": [
     {
-      "requirement": "TASK-016/REQ-001",
-      "acceptance": "TASK-016/AC-001",
-      "verification": "Caso A contra la base en transaccion deshecha: borrada=true y 0 filas de la ficha",
+      "requirement": "TASK-014/AC-001",
+      "acceptance": "TASK-014/AC-001",
+      "verification": "En produccion, con la hoja index-UY_FJqqE.css servida: 14 entradas y una sola columna de iconos, [24]",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-016.spec.md#ev-002"
-    },
-    {
-      "requirement": "TASK-016/REQ-001",
-      "acceptance": "TASK-016/AC-002",
-      "verification": "Caso B separando la llamada de la lectura: ficha 1, es_lapida true, contactos 0, historico 1, declaracion y archivo conservados",
-      "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-016.spec.md#ev-003"
-    },
-    {
-      "requirement": "TASK-016/REQ-001",
-      "acceptance": "TASK-016/AC-003",
-      "verification": "Aislamiento por los dos caminos: la RLS no deja ver la lista, y con el uuid a pelo responde No autorizado con los 23 contactos intactos",
-      "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-016.spec.md#ev-004"
-    },
-    {
-      "requirement": "TASK-016/REQ-002",
-      "acceptance": "TASK-016/AC-004",
-      "verification": "Catalogo tras aplicar la 055: borrar_lista sin anon ni public, UPDATE solo sobre nombre, y 0 privilegios de escritura en volcados_de_lista",
-      "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-016.spec.md#ev-005"
-    },
-    {
-      "requirement": "TASK-016/REQ-003",
-      "acceptance": "TASK-016/AC-004",
-      "verification": "tsc en 0, build correcto, pruebas del studio sin fallos nuevos e importacion 34 de 34",
-      "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-016.spec.md#ev-006"
+      "evidence": ".specanchor/tasks/TASK-014.spec.md#ev-003"
     }
   ]
 }
