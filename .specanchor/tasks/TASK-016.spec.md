@@ -1,7 +1,7 @@
 ---
 type: task-spec
 id: TASK-016
-status: in_progress
+status: verified
 created: 2026-09-16
 modules: [datos, app-web]
 behavior_preserving: false
@@ -111,7 +111,23 @@ puerta y dejarlo anotado para luego habría sido dejarlo abierto a sabiendas.
 - **EV-006** · `tsc -b --force` → 0. `npm run build` → correcto, principal
   647,68 kB. Pruebas del studio sin fallos nuevos. `test:importacion`
   **34 de 34**.
-- **EV-007** · _(pendiente: la pantalla, después del despliegue)_
+- **EV-007** · **Las cuatro acciones, de punta a punta en producción**, con el
+  paquete servido comprobado antes (`index-BPgW-gJE.js`):
+
+  | Acción | Cómo se comprobó | Resultado |
+  |---|---|---|
+  | Renombrar | «cambiar el nombre» → guardar | la lista pasa a `zzz-prueba RENOMBRADA` **en la base** |
+  | Corregir un contacto | «editar» en la fila 1, poner el nombre | `nombre = 'Ana Muñoz'` **en la base** |
+  | Confirmación de borrado | pulsar «Borrar la lista» | «Se van a borrar **23 direcciones**, y no se pueden recuperar» |
+  | Borrar | «Sí, borrarla» | vuelve al índice; queda solo la otra lista |
+
+  Después, contra la base: **0** fichas `zzz-prueba`, **0 contactos
+  huérfanos**, y los leads de fuente `lista` intactos.
+
+  Detalle que vale la pena: la fila que se corrigió tenía el **nombre vacío**,
+  porque esa lista se importó antes del arreglo de «Persona de contacto» de
+  TASK-013. O sea que la primera vez que hizo falta corregir un contacto a
+  mano fue por un fallo anterior — que es exactamente para lo que sirve.
 
 ## Trazabilidad
 
@@ -123,7 +139,7 @@ puerta y dejarlo anotado para luego habría sido dejarlo abierto a sabiendas.
 | REQ-002 | AC-004 | Catálogo de permisos tras aplicar la 055 | **pass** | EV-005 |
 | REQ-003 | — | Tipos, build y pruebas | **pass** · OBSERVED | EV-006 |
 
-**Lo que falta:** AC-005 es de pantalla y **no se da por bueno hasta abrirla**.
+| REQ-003 | AC-005 | Las cuatro acciones en producción, contrastadas contra la base | **pass** · VERIFIED | EV-007 |
 
 ## Lo que NO entra, y es la mitad de «actualizarlas»
 
@@ -147,4 +163,12 @@ problema, no antes.
 
 ## Revisión final
 
-_(pendiente de EV-007)_
+- Cobertura documental: **PASS**.
+- Spec → Código: **ALIGNED** — `INV-DAT-011`, `INV-DAT-012` e `INV-WEB-016`.
+- Código → Spec: **ALIGNED**.
+
+**Lo que no se ha podido medir con datos reales:** la rama de la lápida en
+pantalla. Hoy ninguna lista se ha volcado a una campaña, así que la única
+lista borrada desapareció entera. La rama está verificada **contra la base**
+(EV-003); lo que falta es verla en la pantalla, y para eso hace falta una
+lista volcada, que hoy no existe.
