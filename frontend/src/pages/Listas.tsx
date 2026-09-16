@@ -66,19 +66,21 @@ export function Listas() {
 
   return (
     <section className="panel">
-      <div className="rotulo">
-        <h2>Listas</h2>
+      <div className="cabecera">
+        <div className="cabecera-texto">
+          <span className="rotulo">Prospección</span>
+          <h1>Tus <span className="destacado">listas</span></h1>
+          <p className="sutil">
+            Los contactos que ya tienes: tus clientes, los de tu CRM, los de
+            una hoja de cálculo. Se suben una vez y se pueden usar en las
+            campañas que quieras. No tienen nada que ver con los leads que
+            encuentra la búsqueda: estos los aportas tú.
+          </p>
+        </div>
         <button className="primario" onClick={() => setVista("importar")}>
           Importar una lista
         </button>
       </div>
-
-      <p className="sutil">
-        Los contactos que ya tienes: tus clientes, los de tu CRM, los de una
-        hoja de cálculo. Se suben una vez y se pueden usar en las campañas que
-        quieras. No tienen nada que ver con los leads que encuentra la
-        búsqueda: estos los aportas tú.
-      </p>
 
       {error && <p className="caja-error">{error}</p>}
 

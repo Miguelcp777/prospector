@@ -216,15 +216,18 @@ export function ImportarLista({
   if (paso === "origen") {
     return (
       <section className="panel">
-        <div className="rotulo">
-          <h2>Importar una lista</h2>
+        <div className="cabecera">
+          <div className="cabecera-texto">
+            <span className="rotulo">Paso 1 de 3 · el archivo</span>
+            <h1>Importar una lista</h1>
+            <p className="sutil">
+              Sube el archivo tal y como lo tengas. No hace falta que prepares
+              las columnas ni que las ordenes: te digo cuál creo que es cada
+              una y tú lo confirmas.
+            </p>
+          </div>
           <button className="fantasma" onClick={alCancelar}>Volver</button>
         </div>
-        <p className="sutil">
-          Sube el archivo tal y como lo tengas. No hace falta que prepares las
-          columnas ni que las ordenes: te digo cuál creo que es cada una y tú
-          lo confirmas.
-        </p>
 
         {error && <p className="caja-error">{error}</p>}
 
@@ -272,16 +275,18 @@ export function ImportarLista({
   if (paso === "mapeo") {
     return (
       <section className="panel">
-        <div className="rotulo">
-          <h2>¿Qué es cada columna?</h2>
+        <div className="cabecera">
+          <div className="cabecera-texto">
+            <span className="rotulo">Paso 2 de 3 · las columnas</span>
+            <h1>¿Qué es cada columna?</h1>
+            <p className="sutil">
+              {datos.length} filas · {cabeceras.length} columnas
+              {codificacion && ` · leído como ${codificacion}`}
+              {hojas.length > 1 && ` · el libro tiene ${hojas.length} hojas, se ha leído «${hojas[0]}»`}
+            </p>
+          </div>
           <button className="fantasma" onClick={() => setPaso("origen")}>Atrás</button>
         </div>
-
-        <p className="sutil">
-          {datos.length} filas · {cabeceras.length} columnas
-          {codificacion && ` · leído como ${codificacion}`}
-          {hojas.length > 1 && ` · el libro tiene ${hojas.length} hojas, se ha leído «${hojas[0]}»`}
-        </p>
 
         {ambiguo && (
           <p className="caja-aviso">
@@ -383,8 +388,11 @@ export function ImportarLista({
 
   return (
     <section className="panel">
-      <div className="rotulo">
-        <h2>Revisa antes de guardar</h2>
+      <div className="cabecera">
+        <div className="cabecera-texto">
+          <span className="rotulo">Paso 3 de 3 · la revisión</span>
+          <h1>Revisa antes de guardar</h1>
+        </div>
         <button className="fantasma" onClick={() => setPaso("mapeo")}>Atrás</button>
       </div>
 
@@ -435,20 +443,25 @@ export function ImportarLista({
         <small className="sutil">Para encontrarla luego. Solo lo ves tú.</small>
       </label>
 
-      <label className="campo">
+      {/* `.toggle` y no `.campo`: dentro de un `.campo` el texto va en el
+          <span> de la etiqueta, que el CSS pinta en versalitas de 11 px —
+          correcto para rotular un campo, y lo peor posible para la frase que
+          sostiene el marco legal de la lista. Y la casilla se come el
+          `input { width: 100% }` global, que `.toggle` ya acota a 17 px. */}
+      <label className="toggle declaracion">
+        <input
+          type="checkbox"
+          checked={declarado}
+          onChange={(e) => setDeclarado(e.target.checked)}
+        />
         <span>
-          <input
-            type="checkbox"
-            checked={declarado}
-            onChange={(e) => setDeclarado(e.target.checked)}
-          />{" "}
-          {DECLARACION}
+          <strong>{DECLARACION}</strong>
+          <small>
+            Se guarda esta frase, la fecha y tu usuario. Es lo que permite
+            responder si alguien pregunta de dónde salió su dirección.
+          </small>
         </span>
       </label>
-      <p className="sutil menudo">
-        Se guarda esta frase, la fecha y tu usuario. Es lo que permite
-        responder si alguien pregunta de dónde salió su dirección.
-      </p>
 
       <div className="acciones">
         <button

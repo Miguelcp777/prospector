@@ -63,7 +63,13 @@ const EXACTOS: Record<Rol, string[]> = {
 
 const CONTIENE: Record<Rol, string[]> = {
   email: ["mail", "correo"],
-  nombre: ["nombre", "name"],
+  // «contacto» y «persona» estaban solo en EXACTOS, así que «Persona de
+  // contacto» —de las cabeceras más comunes de un CRM español— no la cogía
+  // nadie: `nombre` no tiene firma de contenido, y si la cabecera falla no
+  // hay segunda oportunidad. No arrastra a las de correo ni teléfono porque
+  // esos roles se reparten ANTES y se llevan su columna: «Correo de
+  // contacto» ya está ocupada cuando le toca el turno a `nombre`.
+  nombre: ["nombre", "name", "contacto", "persona", "titular"],
   empresa: ["empresa", "company", "negocio"],
   telefono: ["tel", "phone", "movil"],
   web: ["web", "url", "site"],
