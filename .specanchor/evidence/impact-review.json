@@ -1,106 +1,67 @@
 {
-  "revision": "a740f33bfc54c26a8214b7b70927154bb6e1dac8",
+  "revision": "67c33426f9f5e9ee098d1aab2c458d6822eafea1",
   "task_spec": ".specanchor/tasks/TASK-013.spec.md",
   "files": [
     {
       "path": "frontend/src/pages/Listas.tsx",
-      "kind": "contract",
+      "kind": "behavior_preserving",
       "specs": [
         ".specanchor/modules/app-web.spec.md"
       ],
-      "rationale": "La cabecera pasa al patron real del proyecto, el de Campanas.tsx: .cabecera con .cabecera-texto dentro, rotulo como etiqueta aparte y h1 de verdad. Antes el nombre salia como etiqueta diminuta con el boton metido dentro.",
+      "rationale": "Efecto secundario del arreglo de cabeceras, visto al abrir la pantalla: .cabecera reparte el ancho entre el texto y el boton, y el texto lo pide por su contenido. Un parrafo de cuatro lineas se llevaba los 960 px y tiraba el boton a la fila de abajo. La cabecera se queda con una linea y la explicacion larga baja, que es lo que hacen las otras nueve pantallas.",
       "evidence": [
-        ".specanchor/tasks/TASK-013.spec.md#ev-001"
-      ]
-    },
-    {
-      "path": "frontend/src/pages/Lista.tsx",
-      "kind": "contract",
-      "specs": [
-        ".specanchor/modules/app-web.spec.md"
-      ],
-      "rationale": "Misma correccion de cabecera, y el recuento de filas pasa a vivir dentro de .cabecera-texto en vez de suelto debajo.",
-      "evidence": [
-        ".specanchor/tasks/TASK-013.spec.md#ev-001"
+        ".specanchor/tasks/TASK-013.spec.md#ev-004"
       ]
     },
     {
       "path": "frontend/src/pages/ImportarLista.tsx",
-      "kind": "contract",
+      "kind": "behavior_preserving",
       "specs": [
         ".specanchor/modules/app-web.spec.md"
       ],
-      "rationale": "Las tres cabeceras del asistente, y el rotulo aprovechado para decir por donde vas: Paso 2 de 3, que antes no lo decia nadie. Y la declaracion de origen pasa de .campo a .toggle: dentro de un .campo el texto iba en el span de la etiqueta, que se pinta en versalitas de 11 px, y la casilla se comia el input width 100 por ciento global. Es la frase que sostiene el marco legal de la funcion y era el texto menos legible de la pantalla.",
+      "rationale": "Lo mismo en el paso 1 del asistente, que era el otro con parrafo largo. Los pasos 2 y 3 no lo tenian y no se bajaban, medido en los tres.",
       "evidence": [
-        ".specanchor/tasks/TASK-013.spec.md#ev-001"
-      ]
-    },
-    {
-      "path": "frontend/src/estilos.css",
-      "kind": "contract",
-      "specs": [
-        ".specanchor/modules/app-web.spec.md"
-      ],
-      "rationale": "Un solo modificador nuevo, .toggle.declaracion, que sube la frase a tamano de texto. Una declaracion de origen no es la etiqueta de un ajuste.",
-      "evidence": [
-        ".specanchor/tasks/TASK-013.spec.md#ev-001"
-      ]
-    },
-    {
-      "path": "frontend/src/lib/deteccion-de-columnas.ts",
-      "kind": "contract",
-      "specs": [
-        ".specanchor/modules/app-web.spec.md"
-      ],
-      "rationale": "contacto, persona y titular entran en CONTIENE.nombre. Estaban solo en EXACTOS, asi que Persona de contacto -de las cabeceras mas comunes de un export espanol- no la cogia nadie, y nombre no tiene firma de contenido con la que rescatarlo. En la lista de prueba real los 23 contactos se guardaron sin nombre. No arrastra a los roles de correo y telefono porque se reparten antes y marcan su columna como usada.",
-      "evidence": [
-        ".specanchor/tasks/TASK-013.spec.md#ev-002"
-      ]
-    },
-    {
-      "path": "frontend/pruebas/deteccion-de-columnas.test.ts",
-      "kind": "contract",
-      "specs": [
-        ".specanchor/modules/app-web.spec.md"
-      ],
-      "rationale": "Tres pruebas: la que arregla el fallo y las dos que fijan que Correo de contacto y Telefono de contacto siguen yendo a su rol. El razonamiento del reparto en orden no hay que creerselo, queda medido.",
-      "evidence": [
-        ".specanchor/tasks/TASK-013.spec.md#ev-002"
-      ]
-    },
-    {
-      "path": ".specanchor/modules/app-web.spec.md",
-      "kind": "requirement",
-      "specs": [],
-      "rationale": "INV-WEB-013 con las dos clases que se confundieron. El error se repitio en cinco sitios seguidos y no falla el criterio sino el nombre de la clase, que es justo lo que un invariante puede evitar.",
-      "evidence": [
-        ".specanchor/tasks/TASK-013.spec.md#ev-001"
+        ".specanchor/tasks/TASK-013.spec.md#ev-004"
       ]
     },
     {
       "path": ".specanchor/tasks/TASK-013.spec.md",
       "kind": "requirement",
       "specs": [],
-      "rationale": "La tarea, con los cuatro defectos y su origen. Deja dicho que los tres de aspecto no se dan por buenos hasta abrir la pantalla, que es literalmente lo que los creo.",
+      "rationale": "Cierre con la evidencia de produccion: las tres pantallas abiertas, la declaracion medida sobre el elemento vivo -17 px de casilla, 14 px de texto, sin versalitas, color pleno- y la deteccion de Persona de contacto con el CSV subido de verdad. Y el efecto secundario, que solo se veia abriendo la pantalla.",
       "evidence": [
-        ".specanchor/tasks/TASK-013.spec.md#ev-001"
+        ".specanchor/tasks/TASK-013.spec.md#ev-003"
       ]
     }
   ],
   "traceability": [
     {
-      "requirement": "TASK-013/AC-004",
-      "acceptance": "TASK-013/AC-004",
-      "verification": "npm run test:importacion: 34 de 34, fail 0. Persona de contacto se propone como nombre, y Correo de contacto y Telefono de contacto siguen yendo a su rol",
-      "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-013.spec.md#ev-002"
-    },
-    {
       "requirement": "TASK-013/AC-001",
       "acceptance": "TASK-013/AC-001",
-      "verification": "tsc -b --force en 0, build correcto y pruebas del studio sin fallos nuevos. OBSERVED sobre el codigo: la comprobacion en pantalla va despues de desplegar y asi consta en la tarea",
+      "verification": "Las cinco cabeceras abiertas en produccion: rotulo de etiqueta y h1 de titulo en las tres pantallas, con el paquete servido comprobado antes",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-013.spec.md#ev-001"
+      "evidence": ".specanchor/tasks/TASK-013.spec.md#ev-003"
+    },
+    {
+      "requirement": "TASK-013/AC-002",
+      "acceptance": "TASK-013/AC-002",
+      "verification": "Medido sobre el elemento vivo: 14 px, text-transform none, letter-spacing normal y color de texto pleno",
+      "result": "pass",
+      "evidence": ".specanchor/tasks/TASK-013.spec.md#ev-003"
+    },
+    {
+      "requirement": "TASK-013/AC-003",
+      "acceptance": "TASK-013/AC-003",
+      "verification": "Medido sobre el elemento vivo: 17 por 17 px",
+      "result": "pass",
+      "evidence": ".specanchor/tasks/TASK-013.spec.md#ev-003"
+    },
+    {
+      "requirement": "TASK-013/AC-004",
+      "acceptance": "TASK-013/AC-004",
+      "verification": "Con el CSV de muestra subido en produccion: Nombre se propone como Persona de contacto y la previsualizacion trae los nombres donde antes habia rayas. Y 34 pruebas en verde con las dos de no regresion",
+      "result": "pass",
+      "evidence": ".specanchor/tasks/TASK-013.spec.md#ev-003"
     }
   ]
 }

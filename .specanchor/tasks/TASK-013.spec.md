@@ -1,7 +1,7 @@
 ---
 type: task-spec
 id: TASK-013
-status: in_progress
+status: verified
 created: 2026-09-16
 modules: [app-web]
 behavior_preserving: false
@@ -111,8 +111,44 @@ seguidos y lo que falla no es el criterio sino el nombre de la clase.
 - **EV-002** · `npm run test:importacion` → **34 de 34**, `# fail 0`. Tres
   pruebas nuevas: «Persona de contacto» como nombre, y las dos que fijan que
   «Correo de contacto» y «Teléfono de contacto» no se las lleva `nombre`.
-- **EV-003** · _(pendiente: las tres pantallas abiertas, después del
-  despliegue)_
+- **EV-003** · **Las tres pantallas abiertas en producción**, con el paquete
+  servido comprobado antes (`index-CExVcMph.js` y `index-CGzkfnuW.css`, los
+  mismos hashes del build local) para no medir sobre la versión anterior:
+
+  | | |
+  |---|---|
+  | Listas | «PROSPECCIÓN» de etiqueta y «Tus **listas**» de título |
+  | Una lista | «LISTA DE CONTACTOS» y el nombre en grande, «Volver» a la derecha |
+  | Asistente | «PASO 1 DE 3 · EL ARCHIVO», «PASO 2 DE 3 · LAS COLUMNAS», «PASO 3 DE 3 · LA REVISIÓN» |
+
+  Y la declaración, medida sobre el elemento vivo:
+
+  | | antes | ahora |
+  |---|---|---|
+  | casilla | ancho del panel | **17 × 17 px** |
+  | tamaño | 11 px | **14 px** |
+  | `text-transform` | `uppercase` | **`none`** |
+  | `letter-spacing` | 0.1 em | **`normal`** |
+  | color | `--texto-3` | `rgb(244,242,251)`, el texto pleno |
+
+  El cuarto, con el CSV de muestra subido de verdad: **Nombre → «Persona de
+  contacto»**, y la previsualización trae «Ana Muñoz», «Jordi Ferrer», «Río
+  Sánchez» donde antes había rayas.
+
+- **EV-004** · Y un efecto secundario del propio arreglo, medido en las tres
+  cabeceras: `.cabecera` reparte el ancho entre el texto y el botón, y el
+  texto lo pide **por su contenido**. Con un párrafo de cuatro líneas se
+  llevaba los 960 px enteros y **tiraba el botón a la fila de abajo**.
+
+  ```
+  paso 1 de 3  · ancho del texto 960 de 960 · se baja: SÍ
+  paso 2 de 3  ·                            · se baja: no
+  paso 3 de 3  ·                            · se baja: no
+  ```
+
+  Pasaba en Listas y en el paso 1, los dos que tenían el párrafo largo. Se
+  arregla dejando una línea en la cabecera y el resto debajo, que es lo que
+  hacen las otras nueve pantallas — `Campanas.tsx` cabe en una frase.
 
 ## Trazabilidad
 
@@ -121,10 +157,15 @@ seguidos y lo que falla no es el criterio sino el nombre de la clase.
 | AC-004 | Tres pruebas automáticas, incluidas las dos de no-regresión | **pass** | EV-002 |
 | AC-001, AC-002, AC-003 | Tipos, build y pruebas del studio | **pass** · OBSERVED | EV-001 |
 
-**Lo que falta:** los tres primeros son de aspecto y **no se dan por buenos
-hasta abrir la pantalla**. Es literalmente lo que los creó: TASK-010 los
-cerró con tipos y build en verde. Se comprueban después de fusionar.
+| AC-001, AC-002, AC-003 | Las tres pantallas abiertas en producción, con medición del elemento vivo | **pass** · VERIFIED | EV-003, EV-004 |
+
+Los tres de aspecto **no se dieron por buenos hasta abrir la pantalla**, y
+menos mal: abrirla destapó el efecto secundario de EV-004, que ninguna de las
+otras comprobaciones podía ver.
 
 ## Revisión final
 
-_(pendiente de EV-003)_
+- Cobertura documental: **PASS**.
+- Spec → Código: **ALIGNED** — `INV-WEB-013` nombra las dos clases que se
+  confundieron, que es lo que puede evitar la próxima vez.
+- Código → Spec: **ALIGNED**.

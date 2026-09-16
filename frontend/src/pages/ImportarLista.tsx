@@ -220,14 +220,17 @@ export function ImportarLista({
           <div className="cabecera-texto">
             <span className="rotulo">Paso 1 de 3 · el archivo</span>
             <h1>Importar una lista</h1>
-            <p className="sutil">
-              Sube el archivo tal y como lo tengas. No hace falta que prepares
-              las columnas ni que las ordenes: te digo cuál creo que es cada
-              una y tú lo confirmas.
-            </p>
+            {/* Corta, o el párrafo se lleva el ancho entero de `.cabecera` y
+                el botón cae a la fila de abajo. El resto, debajo. */}
+            <p className="sutil">Sube el archivo tal y como lo tengas.</p>
           </div>
           <button className="fantasma" onClick={alCancelar}>Volver</button>
         </div>
+
+        <p className="sutil">
+          No hace falta que prepares las columnas ni que las ordenes: te digo
+          cuál creo que es cada una y tú lo confirmas.
+        </p>
 
         {error && <p className="caja-error">{error}</p>}
 
