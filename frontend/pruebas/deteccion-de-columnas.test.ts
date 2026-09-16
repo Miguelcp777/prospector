@@ -122,3 +122,39 @@ test("el texto que se le enseña al usuario dice el porqué", () => {
   const d = detectar(["Nombre", "Correo"], filas(10, (i) => [`C ${i}`, `c${i}@x.es`]));
   assert.match(porQue(d.propuesta.email), /100 de cada 100/);
 });
+
+test("«Persona de contacto» es un nombre", () => {
+  // El caso que se escapó hasta que se abrió la pantalla con un CSV real: es
+  // de las cabeceras más comunes de un CRM español, y los 23 contactos de
+  // aquella lista se guardaron sin nombre. `nombre` no tiene firma de
+  // contenido —«Clínica Dental Ruiz» y «María Ruiz» son texto libre
+  // indistinguible—, así que si la cabecera falla no hay segunda oportunidad.
+  const d = detectar(
+    ["Empresa", "Persona de contacto", "Correo electrónico"],
+    filas(10, (i) => [`Negocio ${i}`, `Nombre Apellido ${i}`, `n${i}@ejemplo.es`]),
+  );
+  assert.equal(d.propuesta.nombre?.indice, 1);
+  assert.equal(d.propuesta.empresa?.indice, 0);
+  assert.equal(d.propuesta.email?.indice, 2);
+});
+
+test("«contacto» en la cabecera del correo no se la lleva el nombre", () => {
+  // El riesgo de meter «contacto» en el diccionario de nombres. No ocurre
+  // porque los roles se reparten en orden y cada columna se usa una vez: para
+  // cuando le toca a `nombre`, la del correo ya está pillada.
+  const d = detectar(
+    ["Correo de contacto", "Persona de contacto"],
+    filas(10, (i) => [`c${i}@ejemplo.es`, `Nombre ${i}`]),
+  );
+  assert.equal(d.propuesta.email?.indice, 0);
+  assert.equal(d.propuesta.nombre?.indice, 1);
+});
+
+test("«Teléfono de contacto» tampoco", () => {
+  const d = detectar(
+    ["Correo", "Teléfono de contacto", "Persona de contacto"],
+    filas(10, (i) => [`c${i}@ejemplo.es`, `96111222${i}`, `Nombre ${i}`]),
+  );
+  assert.equal(d.propuesta.telefono?.indice, 1);
+  assert.equal(d.propuesta.nombre?.indice, 2);
+});

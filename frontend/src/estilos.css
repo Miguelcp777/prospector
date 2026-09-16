@@ -855,6 +855,10 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e1) 0; width: 
 .toggle small  { display: block; margin-top: 3px; color: var(--texto-3); font-size: 0.6875rem; line-height: 1.4; }
 .toggle:has(input:checked) { border-color: var(--acento); background: var(--acento-suave); }
 
+/* Una declaración de origen no es la etiqueta de un ajuste: es la frase que
+   el cliente afirma, y de la que responde. Se lee a tamaño de texto. */
+.toggle.declaracion strong { font-size: 0.875rem; line-height: 1.5; }
+
 
 /* ---------------- filas dentro de una tarjeta ---------------- */
 

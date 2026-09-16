@@ -60,6 +60,15 @@ contratados del tenant (`modulo_prospeccion`, `modulo_email`).
 - **INV-WEB-006** · Un `<button>` sin clase de botón se queda con la cara gris
   del navegador, que no es de ninguno de los dos temas. `.sutil` es una clase
   de texto y no vale para un botón.
+- **INV-WEB-013** · Dos clases que se confunden, y confundirlas no da error:
+  **`.rotulo` es la etiqueta pequeña en versalitas**, no el contenedor de una
+  cabecera. Ese es `.cabecera` con `.cabecera-texto` dentro. Un `<h1>` metido
+  dentro de un `.rotulo` se dibuja como etiqueta diminuta y el botón de al
+  lado se le mete dentro. Pasó en cinco cabeceras seguidas de TASK-010.
+
+  Y una casilla con su explicación es **`.toggle`**, no `.campo`: dentro de un
+  `.campo` el texto va en el `<span>` de la etiqueta, que se pinta en
+  versalitas de 11 px, y la casilla se come el `input { width: 100% }` global.
 - **INV-WEB-007** · Los textos se apagan con **color**, no con `opacity`: la
   opacidad mezcla el texto con el fondo antes de que llegue al ojo y hunde el
   contraste sin que el color declarado lo delate.

@@ -133,16 +133,18 @@ export function Lista({ id, alVolver }: { id: string; alVolver: () => void }) {
 
   return (
     <section className="panel">
-      <div className="rotulo">
-        <h2>{lista.nombre}</h2>
+      <div className="cabecera">
+        <div className="cabecera-texto">
+          <span className="rotulo">Lista de contactos</span>
+          <h1>{lista.nombre}</h1>
+          <p className="sutil">
+            {lista.filas_leidas} filas leídas · <strong>{utiles}</strong> se pueden usar
+            {suprimidos > 0 && ` · ${suprimidos} en tu lista de supresión`}
+            {lista.filas_descartadas > 0 && ` · ${lista.filas_descartadas} descartadas`}
+          </p>
+        </div>
         <button className="fantasma" onClick={alVolver}>Volver a las listas</button>
       </div>
-
-      <p className="sutil">
-        {lista.filas_leidas} filas leídas · <strong>{utiles}</strong> se pueden usar
-        {suprimidos > 0 && ` · ${suprimidos} en tu lista de supresión`}
-        {lista.filas_descartadas > 0 && ` · ${lista.filas_descartadas} descartadas`}
-      </p>
 
       {suprimidos > 0 && (
         <p className="caja-aviso">
