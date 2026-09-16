@@ -6,7 +6,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test:studio": "node --test --test-concurrency=1 pruebas-porte/*.test.mjs"
+    "test:studio": "node --test --test-concurrency=1 pruebas-porte/*.test.mjs",
+    "test:importacion": "node --experimental-strip-types --test pruebas/*.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
@@ -17,6 +18,7 @@
     "radix-ui": "^1.6.7",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "read-excel-file": "9.3.10",
     "sonner": "^2.0.8",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.3",

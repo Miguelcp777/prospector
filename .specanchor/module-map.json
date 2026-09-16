@@ -75,7 +75,8 @@
         "frontend/netlify.toml",
         "frontend/README.md",
         "frontend/.env.example",
-        ".env.example"
+        ".env.example",
+        "frontend/pruebas/*"
       ],
       "spec": ".specanchor/modules/app-web.spec.md"
     },
