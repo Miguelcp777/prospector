@@ -61,11 +61,18 @@ contratados del tenant (`modulo_prospeccion`, `modulo_email`).
   del navegador, que no es de ninguno de los dos temas. `.sutil` es una clase
   de texto y no vale para un botón.
 - **INV-WEB-016** · La pantalla de una lista deja **renombrarla, corregir o
-  quitar un contacto y borrarla entera**. El borrado va en dos tiempos y dice
-  antes qué va a pasar, incluida la parte que ningún botón de borrar dice por
-  defecto: **los leads que ya salieron de la lista no se van con ella**. Una
-  lista con los contactos ya borrados enseña su lápida y esconde «Usar en una
-  campaña», porque sin direcciones ese botón no puede hacer nada.
+  quitar un contacto y borrarla entera**. «Borrar la lista» vive en la
+  cabecera, junto al nombre: al final de la pantalla quedaba a 3.747 px de
+  alto y detrás de 46 botones que operan sobre *un* contacto, así que la
+  pantalla venía a decir que la lista entera no se podía borrar. Una acción
+  que no se encuentra no existe.
+
+  Va en dos tiempos y el aviso dice cuántas direcciones se van, que la lista
+  desaparece entera y —si ya se usó en una campaña— que los leads siguen ahí
+  pero **dejarán de poder decir de qué archivo salieron**. Esa última frase no
+  es adorno: es la consecuencia de `INV-DAT-011` y el usuario tiene que verla
+  antes de pulsar, no después.
+
 - **INV-WEB-015** · En el lateral, una cabecera de grupo **se lee más que sus
   hijos**, no menos. Iba en `--texto-3` —más tenue que las entradas que
   ordena, que van en `--texto-2`— y del mismo color exacto que ellas en

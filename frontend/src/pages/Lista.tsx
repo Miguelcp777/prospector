@@ -27,7 +27,6 @@ type Lista = {
   filas_descartadas: number;
   subido_por_email: string | null;
   consentimiento_texto: string | null;
-  contactos_borrados_en: string | null;
   creado_en: string;
 };
 
@@ -123,22 +122,27 @@ export function Lista({ id, alVolver }: { id: string; alVolver: () => void }) {
   }
 
   /**
-   * Borrar la lista. Va por función porque la decisión no es del navegador:
-   * una lista que nunca se volcó desaparece entera, y una que sí se volcó
-   * deja su ficha como lápida —archivo, fecha, mapeo, declaración y cifras—
-   * para no romper el registro de origen de los leads que salieron de ella.
-   * Lo que se borra en los dos casos son las direcciones.
+   * Borrar la lista, entera y siempre: contactos, ficha e histórico de
+   * volcados. Decisión de Miguel del 16-09-2026, tomada con el motivo de la
+   * 055 delante; el razonamiento y lo que se pierde están en la cabecera de
+   * la migración 056.
+   *
+   * Los leads que salieron de ella **no** se borran —`contacto_id` queda a
+   * nulo— y conservan `fuente='lista'`, su `email_origen` y la fecha. Lo que
+   * pierden es el respaldo documental: de qué archivo, con qué mapeo y bajo
+   * qué declaración.
+   *
+   * Sigue yendo por función porque se salta la RLS y comprueba el tenant a
+   * mano, no porque quede ninguna decisión que tomar.
    */
   async function borrarLista() {
     setBorrando(true);
     setError(null);
-    const { data, error: fallo } = await supabase.rpc("borrar_lista", { p_lista: id });
+    const { error: fallo } = await supabase.rpc("borrar_lista", { p_lista: id });
     setBorrando(false);
     if (fallo) { setError(fallo.message); setConfirmando(false); return; }
-    const r = Array.isArray(data) ? data[0] : data;
-    // Si quedó lápida seguimos aquí y hay que recargar; si se fue entera, no
-    // hay nada que enseñar y se vuelve al índice.
-    if (r?.borrada) alVolver(); else void cargar();
+    // La lista ya no está, así que no hay nada que enseñar aquí.
+    alVolver();
   }
 
   async function guardarContacto(contactoId: string) {
@@ -261,25 +265,23 @@ export function Lista({ id, alVolver }: { id: string; alVolver: () => void }) {
             decir es que se pueden quitar contactos uno a uno y no la lista
             entera. Una acción que no se encuentra no existe. */}
         <div className="acciones">
-          {!lista.contactos_borrados_en && (
-            <button className="fantasma" onClick={() => setConfirmando(true)}>
-              Borrar la lista
-            </button>
-          )}
+          <button className="fantasma" onClick={() => setConfirmando(true)}>
+            Borrar la lista
+          </button>
           <button className="fantasma" onClick={alVolver}>Volver a las listas</button>
         </div>
       </div>
 
       {/* La confirmación sale aquí arriba, donde se ha pulsado. Abajo, al
           lado del botón viejo, había que volver a buscarla. */}
-      {confirmando && !lista.contactos_borrados_en && (
+      {confirmando && (
         <>
           <p className="caja-error">
-            Se van a borrar <strong>{contactos.length} direcciones</strong>, y no
-            se pueden recuperar.{" "}
-            {volcados.length > 0
-              ? "La ficha se queda —archivo, fecha, columnas usadas y tu declaración— porque ya has usado esta lista en una campaña y los leads que salieron de ella siguen ahí: esto es lo que permite decir de dónde salió cada dirección. No los toca."
-              : "Como no la has usado en ninguna campaña, desaparece entera."}
+            Se van a borrar <strong>{contactos.length} direcciones</strong> y la
+            lista entera —el archivo, las columnas usadas, tu declaración y el
+            histórico—, y no se puede recuperar.{" "}
+            {volcados.length > 0 &&
+              "Los leads que ya salieron de esta lista siguen en sus campañas y no se tocan, pero dejarán de poder decir de qué archivo salieron."}
           </p>
           <div className="acciones">
             <button className="secundario" disabled={borrando} onClick={() => void borrarLista()}>
@@ -290,50 +292,23 @@ export function Lista({ id, alVolver }: { id: string; alVolver: () => void }) {
         </>
       )}
 
-      {/* La lápida. Una lista que ya se volcó no desaparece al borrarla: se
-          van las direcciones y se queda la ficha, porque los leads que
-          salieron de ella siguen vivos y tienen que poder decir de dónde. */}
-      {lista.contactos_borrados_en && (
-        <p className="caja-aviso">
-          <strong>Los contactos de esta lista se borraron</strong> el{" "}
-          {new Date(lista.contactos_borrados_en).toLocaleString("es-ES")}. La ficha
-          se queda porque esta lista se usó en alguna campaña: los leads que
-          salieron de ella siguen ahí y esto es lo que permite decir de dónde
-          salió cada dirección. No quedan direcciones guardadas aquí.
-        </p>
-      )}
-
-      {suprimidos > 0 && (
-        <p className="caja-aviso">
-          {suprimidos} de estos contactos pidieron la baja o rebotaron. No
-          recibirán correo, y no hace falta que hagas nada: la base lo impide
-          sola al enviar.
-        </p>
-      )}
-
-      {/* Sin contactos no hay nada que volcar, y un botón que no puede hacer
-          nada es peor que no tenerlo. */}
-      {!lista.contactos_borrados_en && (
-        <>
-          <h3>Usar en una campaña</h3>
-          <div className="acciones">
-            <label className="campo">
-              <span>Campaña</span>
-              <select value={elegida} onChange={(e) => setElegida(e.target.value)}>
-                {campanas.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-              </select>
-            </label>
-            <button className="primario" disabled={volcando || !elegida} onClick={() => void volcar()}>
-              {volcando ? "Añadiendo…" : "Añadir a la campaña"}
-            </button>
-          </div>
-          <p className="sutil menudo">
-            Se copian como leads. Volver a pulsarlo no duplica nada: los que ya
-            estén se saltan.
-          </p>
-          {resultado && <p className="caja-aviso">{resultado}</p>}
-        </>
-      )}
+      <h3>Usar en una campaña</h3>
+      <div className="acciones">
+        <label className="campo">
+          <span>Campaña</span>
+          <select value={elegida} onChange={(e) => setElegida(e.target.value)}>
+            {campanas.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+          </select>
+        </label>
+        <button className="primario" disabled={volcando || !elegida} onClick={() => void volcar()}>
+          {volcando ? "Añadiendo…" : "Añadir a la campaña"}
+        </button>
+      </div>
+      <p className="sutil menudo">
+        Se copian como leads. Volver a pulsarlo no duplica nada: los que ya
+        estén se saltan.
+      </p>
+      {resultado && <p className="caja-aviso">{resultado}</p>}
       {error && <p className="caja-error">{error}</p>}
 
       <h3>De dónde salió</h3>

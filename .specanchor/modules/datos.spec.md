@@ -86,18 +86,26 @@ Lo que consume el resto del sistema:
   `tenant_id`, el de la lista y el de la campaña. Comprobar solo el de la
   campaña deja volcar la lista de otro tenant en la propia, que es la fuga
   entera. VERIFIED 2026-09-16 · `No autorizado`.
-- **INV-DAT-011** · Borrar una lista **no borra los leads que salieron de
-  ella**, y no puede romper su registro de origen. Medido contra la base en
-  una transacción deshecha: el lead sobrevive con `contacto_id` a nulo —por el
-  `on delete set null` de la 054— pero su `email_origen` seguía apuntando a
-  una lista inexistente, y `docs/compliance.md` pide poder responder de dónde
-  salió cada dirección.
+- **INV-DAT-011** · Borrar una lista **la borra entera**: sus contactos, su
+  ficha y su histórico de volcados. Lo que **no** se borra son los leads que
+  salieron de ella: `leads.contacto_id` queda a nulo por el `on delete set
+  null` de la 054, y conservan `fuente='lista'`, su `email_origen`
+  —`lista:<uuid>#fila-N`— y `email_capturado_en`.
 
-  De ahí las dos ramas de `borrar_lista`: una lista **nunca volcada**
-  desaparece entera, porque no hay nada a lo que responder; una **ya volcada**
-  pierde los contactos y conserva la ficha como lápida —archivo, fecha,
-  mapeo, declaración y cifras— marcada con `contactos_borrados_en`. En los dos
-  casos lo que se borra son las direcciones, que es el derecho que se ejerce.
+  **Lo que se pierde, y es una decisión tomada a la vista del motivo:** el
+  nombre del archivo, el mapeo de columnas, la declaración del cliente con su
+  fecha y quién la subió. `docs/compliance.md` pide «registro de origen del
+  dato por lead (fuente y fecha)»: la fuente y la fecha sobreviven en el lead;
+  el respaldo documental, no, y el uuid del `email_origen` deja de resolver.
+
+  La 055 llegó a implementar la alternativa —una lista ya volcada dejaba su
+  ficha como lápida— y **Miguel la descartó el 16 de septiembre de 2026**, con
+  este razonamiento delante: «que se borre todo siempre». La 056 la quita.
+  Queda escrito para que nadie lo lea como un descuido y lo «arregle».
+
+  Si algún día hace falta recuperar el respaldo sin renunciar al borrado, la
+  salida es **copiar la declaración y el archivo al lead en el volcado**, que
+  es el patrón de `messages.email_destino`. Eso sí sobreviviría.
 
 - **INV-DAT-012** · `authenticated` solo puede escribir `nombre` en
   `listas_de_contactos`. La 054 le concedía UPDATE sobre las **veinte**
