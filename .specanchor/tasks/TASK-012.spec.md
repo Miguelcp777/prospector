@@ -136,9 +136,32 @@ antes del bloque, y ahí el orden ya era el bueno.
 - **EV-005** · El orden en el paquete, comprobado sobre el CSS construido y
   citado arriba. Es lo que estaba roto y es lo que queda demostrado.
 
+## La barra horizontal, ya medida
+
+- **EV-006** · Replicando la estructura del lateral —`.lateral` con `.marca`,
+  `.sesion`, un `.nav-item` y `.lateral-pie` con sus dos botones— dentro de la
+  propia página de producción, en un navegador de **627 px** de ancho, y
+  preguntándole al navegador qué regla gana. El mismo ensayo con las dos
+  hojas, que es lo que lo hace concluyente:
+
+  | | hoja anterior | hoja corregida |
+  |---|---|---|
+  | `index-…` | `SxfgMdlk.css` | `CrNtBa4j.css` |
+  | `.lateral-pie` `flex-direction` | **`column`** ✗ | **`row`** ✓ |
+  | `.lateral-pie` `margin-left` | auto | auto · 213 px ✓ |
+  | `.sesion` `margin-bottom` | **16 px** ✗ | **0 px** ✓ |
+  | `.lateral` `overflow-y` | — | `auto` ✓ |
+
+  La primera columna es el fallo reproducido, no una conjetura: la página
+  llevaba cargada todavía la hoja anterior y dio `column`. Recargada con la
+  corregida, `row`.
+
+  Dos propiedades no sirven para esto y conviene saberlo: `margin-top` sale
+  `0px` en los dos casos, porque `getComputedStyle` devuelve el valor **usado**
+  y un `auto` sin hueco libre es cero; y `margin-left` también, porque ninguna
+  otra regla lo declara. **La única que discrimina es `flex-direction`.**
+
 ## Lo que queda por mirar
 
-La barra horizontal **vista en pantalla** por debajo de 860 px. El orden de
-las reglas está demostrado; que el resultado se vea bien, no. Hace falta una
-ventana estrecha con sesión, y el navegador donde la hay no se puede
-redimensionar desde aquí.
+Nada de esta tarea. El aspecto de la barra horizontal con contenido real
+—no la réplica— sigue sin verse, pero eso ya era así antes del cambio.

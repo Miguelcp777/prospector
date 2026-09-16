@@ -1,44 +1,56 @@
 {
-  "revision": "d8fc7a72cd25fdc20e802326f778d68b55c54e66",
+  "revision": "42f1097b0212bbb1097365d387c923179b06387c",
   "task_spec": ".specanchor/tasks/TASK-012.spec.md",
   "files": [
     {
-      "path": "frontend/src/estilos.css",
-      "kind": "contract",
-      "specs": [
-        ".specanchor/modules/app-web.spec.md"
-      ],
-      "rationale": "Correccion de un fallo propio de TASK-012: las adaptaciones moviles de .lateral-pie y .sesion se escribieron en el bloque @media de la linea 238, muy por encima de sus reglas base de las lineas 767 y 821. Una media query no anade especificidad, asi que a igual selector ganaba la de mas abajo y por debajo de 860 px el pie salia en columna dentro de una barra horizontal. Las dos reglas se mudan a su propio @media al final, junto a las bases que corrigen. .nav-fin se queda arriba porque su base esta en la 224, antes del bloque.",
+      "path": ".specanchor/tasks/TASK-011.spec.md",
+      "kind": "requirement",
+      "specs": [],
+      "rationale": "Cierre de TASK-011 con la evidencia que faltaba: la pantalla abierta en produccion, comprobando antes que el bundle servido es el mismo hash que el build local para no medir sobre la version anterior. Las tres posiciones del filtro, su combinacion con campana y buscador, y el 10 de 10 contrastado contra la base. Queda NOT_VERIFIED lo unico que hoy no existe: la rama de listas no ha filtrado nada porque no hay ningun mensaje de lista.",
       "evidence": [
-        ".specanchor/tasks/TASK-012.spec.md#ev-005"
+        ".specanchor/tasks/TASK-011.spec.md#ev-006"
       ]
     },
     {
       "path": ".specanchor/tasks/TASK-012.spec.md",
-      "kind": "correction",
+      "kind": "requirement",
       "specs": [],
-      "rationale": "Queda escrito el fallo y como se encontro: leyendo el CSS ya empaquetado despues de desplegar, con las posiciones de cada regla antes y despues. No lo ve el build ni tsc ni una prueba de contrato, que es lo que lo hace util anotar.",
+      "rationale": "Cierre de lo que TASK-012 dejaba pendiente: la barra horizontal por debajo de 860 px. Medido replicando la estructura del lateral dentro de la propia pagina de produccion en un navegador de 627 px, y con las dos hojas, la anterior y la corregida, para que el antes y el despues sean el mismo ensayo. Queda anotado que la unica propiedad que discrimina es flex-direction: margin-top sale 0px en los dos casos porque getComputedStyle devuelve el valor usado y un auto sin hueco libre es cero.",
       "evidence": [
-        ".specanchor/tasks/TASK-012.spec.md#ev-005"
+        ".specanchor/tasks/TASK-012.spec.md#ev-006"
       ]
     },
     {
-      "path": ".specanchor/modules/app-web.spec.md",
-      "kind": "requirement",
+      "path": ".specanchor/findings/0002-el-buscador-no-ignora-los-acentos.md",
+      "kind": "clarification",
       "specs": [],
-      "rationale": "INV-WEB-012: una adaptacion movil va despues de la regla base que corrige, porque una media query no anade especificidad. Es la segunda vez que la cascada del CSS cuesta un despliegue en este proyecto, la primera esta en el ADR 0005.",
+      "rationale": "Hallazgo fuera de alcance encontrado al verificar TASK-011: el buscador de Mensajes compara con toLowerCase e includes, que no descomponen diacriticos, asi que peluqueria no encuentra peluqueria con tilde y lo dice como 0 de 200, que se lee como no hay. El patron esta en cuatro pantallas, asi que se anota en vez de arreglarse suelto dentro de otro cambio.",
       "evidence": [
-        ".specanchor/tasks/TASK-012.spec.md#ev-005"
+        ".specanchor/tasks/TASK-011.spec.md#ev-006"
       ]
     }
   ],
   "traceability": [
     {
+      "requirement": "TASK-011/REQ-001",
+      "acceptance": "TASK-011/AC-004",
+      "verification": "En produccion: filtro mas buscador da 2 de 200, y filtro mas campana da 10 de 10, contrastado contra la base que dice 10 de prospeccion y 0 de listas en esa campana",
+      "result": "pass",
+      "evidence": ".specanchor/tasks/TASK-011.spec.md#ev-006"
+    },
+    {
+      "requirement": "TASK-011/REQ-003",
+      "acceptance": "TASK-011/AC-005",
+      "verification": "En produccion: con Solo mis listas el estado vacio dice No hay mensajes a tus listas y explica como llegan, en vez de No hay mensajes",
+      "result": "pass",
+      "evidence": ".specanchor/tasks/TASK-011.spec.md#ev-006"
+    },
+    {
       "requirement": "TASK-012/AC-002",
       "acceptance": "TASK-012/AC-002",
-      "verification": "Orden de las reglas en el CSS construido: la base de .lateral-pie en 18352 y la movil en 18481, y .sesion movil en 18543. Antes la movil caia en 4494 y la base en 18438, o sea que perdia",
+      "verification": "A 627 px de ancho y contra el CSS desplegado: .lateral-pie en row con margin-left auto y .sesion sin margen inferior. Con la hoja anterior el mismo ensayo daba column, que es el fallo reproducido",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-012.spec.md#ev-005"
+      "evidence": ".specanchor/tasks/TASK-012.spec.md#ev-006"
     }
   ]
 }
