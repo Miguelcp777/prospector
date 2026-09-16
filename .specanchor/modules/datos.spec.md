@@ -63,6 +63,29 @@ Lo que consume el resto del sistema:
   VERIFIED 2026-09-14 · escritura de `telefono` devuelve 200, de `plan`
   devuelve `403 · 42501`.
 - **INV-DAT-005** · `ajustes` no se escribe desde el navegador (042).
+- **INV-DAT-007** · Los contactos de una lista importada **solo entran por
+  `guardar_lista`**. `contactos_de_lista` no concede `INSERT` a nadie: tiene
+  tres políticas —select, update, delete— y ninguna de inserción. Con una
+  política `for all` el tope de `ajustes.max_contactos_por_lista` se esquiva
+  metiendo filas por PostgREST con la clave publicable, igual que un límite
+  puesto solo en el navegador. VERIFIED 2026-09-16 · `pg_policies` devuelve 3
+  políticas y 0 de INSERT.
+- **INV-DAT-008** · Un lead importado lleva `fuente='lista'` y su
+  `email_origen` apunta a la fila concreta del archivo concreto
+  (`lista:<uuid>#fila-N`), que es el «registro de origen del dato por lead»
+  que pide `docs/compliance.md:19-20`. Y `email_capturado_en` es la fecha en
+  que el cliente aportó el dato, no la del volcado: un segundo volcado no
+  rejuvenece el dato. VERIFIED 2026-09-16 · TASK-010 EV-003.
+- **INV-DAT-009** · Volcar una lista dos veces no duplica nada. Lo sostienen
+  dos cosas independientes: el `not exists` por `lower(email)` y el
+  `unique (campaign_id, place_id)` con un `place_id` sintético `'email:'||email`
+  más `on conflict do nothing` — el segundo es el que cubre el doble clic y
+  las dos pestañas abiertas, que el primero solo no cubre. VERIFIED
+  2026-09-16 · segundo volcado, `insertados = 0`.
+- **INV-DAT-010** · `volcar_lista_en_campana` comprueba **los dos**
+  `tenant_id`, el de la lista y el de la campaña. Comprobar solo el de la
+  campaña deja volcar la lista de otro tenant en la propia, que es la fuga
+  entera. VERIFIED 2026-09-16 · `No autorizado`.
 - **INV-DAT-006** · Un job alcanza siempre un estado terminal. Lo sostienen
   `cerrar_job_si_completo` y el cron `reponer_tareas_colgadas` (031).
 
@@ -116,6 +139,12 @@ o sea CI.
 
 ## Historial de cambios
 
+- 2026-09-16 · TASK-010, migración 054: listas de contactos del cliente.
+  Tres tablas, una vista con `security_invoker`, dos RPC y `leads.contacto_id`.
+  Invariantes 007 a 010. **El marco legal del producto se parte en dos**: la
+  regla de «solo buzones corporativos» de `docs/compliance.md` gobierna el
+  correo en frío; una lista que aporta el cliente de su cartera la gobiernan
+  su declaración y —cuando exista el envío— sus dos interruptores.
 - 2026-09-14 · Redactada durante la adopción de SDD. Sin cambio de esquema.
 
 ## Evidencia de las afirmaciones

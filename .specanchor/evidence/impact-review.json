@@ -1,45 +1,296 @@
 {
-  "revision": "fd1a80279efbeb7dc5561ae8af0df2dcd0929fa0",
-  "task_spec": ".specanchor/tasks/TASK-007.spec.md",
+  "revision": "1a7c9d1157aeff7d8debdd60d113e5f4b7fb6d9f",
+  "task_spec": ".specanchor/tasks/TASK-010.spec.md",
   "files": [
     {
-      "path": ".specanchor/modules/studio.spec.md",
-      "kind": "clarification",
-      "specs": [],
-      "rationale": "Cierre de TASK-007. No cambia ningún contrato: se sustituye el estado de evidencia. El control queda VERIFIED con la comprobación de Miguel en la aplicación desplegada, y se deja escrito lo que costó: cuatro despliegues y tres causas distintas para el mismo síntoma.",
+      "path": "supabase/054_listas_de_contactos.sql",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/datos.spec.md"
+      ],
+      "rationale": "Migración nueva: tres tablas con tenant_id y RLS en la misma migración, una vista con security_invoker, dos RPC SECURITY DEFINER con su revoke/grant, el tope en ajustes y leads.contacto_id. Es contrato porque abre una segunda vía de entrada a leads, que hasta hoy solo tenía la del descubrimiento, y porque parte el marco legal del producto en dos caminos. Aplicada y verificada contra el catálogo de Postgres y con pruebas funcionales en transacciones deshechas.",
       "evidence": [
-        ".specanchor/tasks/TASK-007.spec.md#ev-011"
+        ".specanchor/tasks/TASK-010.spec.md#ev-001",
+        ".specanchor/tasks/TASK-010.spec.md#ev-002",
+        ".specanchor/tasks/TASK-010.spec.md#ev-003",
+        ".specanchor/tasks/TASK-010.spec.md#ev-004"
+      ]
+    },
+    {
+      "path": ".specanchor/modules/datos.spec.md",
+      "kind": "requirement",
+      "specs": [],
+      "rationale": "Nacen INV-DAT-007 a 010: los contactos solo entran por guardar_lista (cero políticas de INSERT), el registro de origen por lead apunta a la fila del archivo, el revolcado es idempotente por dos vías independientes, y el volcado comprueba los DOS tenant_id. Los cuatro salen de lo que se midió.",
+      "evidence": [
+        ".specanchor/tasks/TASK-010.spec.md#ev-001",
+        ".specanchor/tasks/TASK-010.spec.md#ev-003",
+        ".specanchor/tasks/TASK-010.spec.md#ev-004"
+      ]
+    },
+    {
+      "path": "frontend/src/lib/tabla-importada.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/app-web.spec.md"
+      ],
+      "rationale": "Lector de CSV/TSV sin dependencias: codificación (BOM, UTF-16, UTF-8 estricto y caída a Windows-1252, que es lo que escribe Excel en español), delimitador por consistencia entre líneas, y un tokenizador RFC 4180 con las tolerancias reales. Puro y en lib/ para poder probarse sin montar React.",
+      "evidence": [
+        ".specanchor/tasks/TASK-010.spec.md#ev-005",
+        ".specanchor/tasks/TASK-010.spec.md#ev-007"
+      ]
+    },
+    {
+      "path": "frontend/src/lib/deteccion-de-columnas.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/app-web.spec.md"
+      ],
+      "rationale": "La detección de columnas: manda el contenido y la cabecera solo desempata. Propone, nunca decide. Dos fallos propios los encontraron las pruebas: el criterio de ambigüedad miraba si empataban los puntos en vez de si había otra columna llena de correos, y la guarda de muestra mínima vetaba una cabecera exacta en una hoja de tres filas.",
+      "evidence": [
+        ".specanchor/tasks/TASK-010.spec.md#ev-005",
+        ".specanchor/tasks/TASK-010.spec.md#ev-007"
+      ]
+    },
+    {
+      "path": "frontend/src/lib/excel.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/app-web.spec.md"
+      ],
+      "rationale": "La única superficie de read-excel-file en el proyecto: doce líneas, import dinámico y subruta /browser. No SheetJS, cuyo paquete de npm lleva congelado en 0.18.5 desde que el proyecto se mudó a su CDN y arrastra CVE conocidos.",
+      "evidence": [
+        ".specanchor/tasks/TASK-010.spec.md#ev-005",
+        ".specanchor/tasks/TASK-010.spec.md#ev-007"
+      ]
+    },
+    {
+      "path": "frontend/src/pages/ImportarLista.tsx",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/app-web.spec.md"
+      ],
+      "rationale": "El asistente de tres pasos. Previsualiza las filas tal como van a quedar guardadas, no tal como venían; exige la declaración de origen con su texto literal; y no deja continuar sin columna de correo.",
+      "evidence": [
+        ".specanchor/tasks/TASK-010.spec.md#ev-005",
+        ".specanchor/tasks/TASK-010.spec.md#ev-007"
+      ]
+    },
+    {
+      "path": "frontend/src/pages/Lista.tsx",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/app-web.spec.md"
+      ],
+      "rationale": "El detalle: registro de origen completo, las cifras del volcado explicadas una a una, el histórico, y los contactos con su marca de supresión calculada por la vista.",
+      "evidence": [
+        ".specanchor/tasks/TASK-010.spec.md#ev-005",
+        ".specanchor/tasks/TASK-010.spec.md#ev-007"
+      ]
+    },
+    {
+      "path": "frontend/src/pages/Listas.tsx",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/app-web.spec.md"
+      ],
+      "rationale": "El índice, y el que decide cuál de las tres vistas se enseña, igual que Campanas.tsx con Campana.tsx.",
+      "evidence": [
+        ".specanchor/tasks/TASK-010.spec.md#ev-005",
+        ".specanchor/tasks/TASK-010.spec.md#ev-007"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/app-web.spec.md"
+      ],
+      "rationale": "La sección Listas: el union Vista, el menú en Prospección entre Campañas y Leads, la guarda de módulos y el render. Los cuatro sitios que exige añadir una sección en una aplicación sin router.",
+      "evidence": [
+        ".specanchor/tasks/TASK-010.spec.md#ev-005",
+        ".specanchor/tasks/TASK-010.spec.md#ev-007"
+      ]
+    },
+    {
+      "path": "frontend/src/pages/Campana.tsx",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/app-web.spec.md"
+      ],
+      "rationale": "El segundo camino del paso 3: volcar una lista en la campaña. Necesita un hermano de llamar() que sí devuelva el data de la RPC, porque sin las cinco cifras el cliente ve «se han añadido 312» de una lista de 340 y no sabe qué pasó con los otros 28.",
+      "evidence": [
+        ".specanchor/tasks/TASK-010.spec.md#ev-005",
+        ".specanchor/tasks/TASK-010.spec.md#ev-007"
+      ]
+    },
+    {
+      "path": "frontend/package.json",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/app-web.spec.md"
+      ],
+      "rationale": "Dependencia read-excel-file 9.3.10 con versión exacta y sin ^, y el guion test:importacion.",
+      "evidence": [
+        ".specanchor/tasks/TASK-010.spec.md#ev-005",
+        ".specanchor/tasks/TASK-010.spec.md#ev-007"
+      ]
+    },
+    {
+      "path": "frontend/package-lock.json",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/app-web.spec.md"
+      ],
+      "rationale": "El bloqueo de la dependencia nueva.",
+      "evidence": [
+        ".specanchor/tasks/TASK-010.spec.md#ev-005",
+        ".specanchor/tasks/TASK-010.spec.md#ev-007"
+      ]
+    },
+    {
+      "path": "frontend/pruebas/tabla-importada.test.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/app-web.spec.md"
+      ],
+      "rationale": "16 pruebas del lector. Las muestras se construyen byte a byte en la propia prueba en vez de esconderse en binarios.",
+      "evidence": [
+        ".specanchor/tasks/TASK-010.spec.md#ev-005",
+        ".specanchor/tasks/TASK-010.spec.md#ev-007"
+      ]
+    },
+    {
+      "path": "frontend/pruebas/deteccion-de-columnas.test.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/app-web.spec.md"
+      ],
+      "rationale": "13 pruebas de la detección, una por tipo de hoja de cliente. Dos de ellas encontraron fallos reales.",
+      "evidence": [
+        ".specanchor/tasks/TASK-010.spec.md#ev-005",
+        ".specanchor/tasks/TASK-010.spec.md#ev-007"
+      ]
+    },
+    {
+      "path": "frontend/pruebas/excel.test.ts",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/app-web.spec.md"
+      ],
+      "rationale": "2 pruebas del camino de Excel con un .xlsx real. Usa la entrada /node, no la /browser: lo que verifica es el parser y la forma de la API v9, y así lo dice.",
+      "evidence": [
+        ".specanchor/tasks/TASK-010.spec.md#ev-005",
+        ".specanchor/tasks/TASK-010.spec.md#ev-007"
+      ]
+    },
+    {
+      "path": "frontend/pruebas/muestras/clientes.xlsx",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/app-web.spec.md"
+      ],
+      "rationale": "La muestra, versionada para que el CI no necesite Python.",
+      "evidence": [
+        ".specanchor/tasks/TASK-010.spec.md#ev-005",
+        ".specanchor/tasks/TASK-010.spec.md#ev-007"
+      ]
+    },
+    {
+      "path": "frontend/pruebas/muestras/generar-xlsx.py",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/app-web.spec.md"
+      ],
+      "rationale": "El generador de la muestra: un .xlsx es un zip con cinco piezas XML, y se genera en vez de commitear un binario opaco.",
+      "evidence": [
+        ".specanchor/tasks/TASK-010.spec.md#ev-005",
+        ".specanchor/tasks/TASK-010.spec.md#ev-007"
+      ]
+    },
+    {
+      "path": ".specanchor/modules/app-web.spec.md",
+      "kind": "requirement",
+      "specs": [],
+      "rationale": "El módulo deja de tener cero pruebas automáticas: 31, en su propio paso del CI y llamadas a pelo porque no arrastran ningún fallo conocido. Y se documenta la sección Listas y la dependencia nueva.",
+      "evidence": [
+        ".specanchor/tasks/TASK-010.spec.md#ev-005",
+        ".specanchor/tasks/TASK-010.spec.md#ev-006"
+      ]
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/entrega.spec.md"
+      ],
+      "rationale": "Un paso más en el trabajo frontend para las pruebas de importación. Se llaman a pelo, al contrario que las del studio: son nuevas y no tienen fallos conocidos que tolerar.",
+      "evidence": [
+        ".specanchor/tasks/TASK-010.spec.md#ev-005"
+      ]
+    },
+    {
+      "path": ".specanchor/module-map.json",
+      "kind": "contract",
+      "specs": [
+        ".specanchor/modules/app-web.spec.md"
+      ],
+      "rationale": "frontend/pruebas/* pasa a pertenecer a app-web. Sin esta línea el job inventario del CI falla, que es justo lo que tiene que hacer con un archivo material sin módulo.",
+      "evidence": [
+        ".specanchor/tasks/TASK-010.spec.md#ev-007"
+      ]
+    },
+    {
+      "path": ".specanchor/modules/entrega.spec.md",
+      "kind": "requirement",
+      "specs": [],
+      "rationale": "La tabla de qué ejecuta cada trabajo se quedaba desfasada con el paso nuevo, y nace la distinción entre los dos bancos: el del studio tolera cuatro fallos por nombre, el de importación se llama a pelo. Una lista de excepciones es deuda que hay que podar, y un banco nuevo no nace con ella.",
+      "evidence": [
+        ".specanchor/tasks/TASK-010.spec.md#ev-005"
       ]
     }
   ],
   "traceability": [
     {
-      "requirement": "TASK-007/REQ-001",
-      "acceptance": "TASK-007/AC-001",
-      "verification": "Comprobación de Miguel en la aplicación desplegada: pulsa los dos sentidos del botón en Plantillas y confirma que funciona. No es una medición ejecutada; es el informe de quien usa el producto, que para un criterio de percepción es la evidencia adecuada.",
+      "requirement": "TASK-010/REQ-001",
+      "acceptance": "TASK-010/AC-001",
+      "verification": "31 pruebas automáticas sobre CSV, TSV, pegado y un .xlsx real",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-007.spec.md#ev-011"
+      "evidence": ".specanchor/tasks/TASK-010.spec.md#ev-005"
     },
     {
-      "requirement": "TASK-007/REQ-001",
-      "acceptance": "TASK-007/AC-002",
-      "verification": "Presencia del aviso en los dos sentidos, medida en producción",
+      "requirement": "TASK-010/REQ-002",
+      "acceptance": "TASK-010/AC-002",
+      "verification": "Pruebas de detección, incluido el caso sin ninguna columna de correos",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-007.spec.md#ev-005"
+      "evidence": ".specanchor/tasks/TASK-010.spec.md#ev-005"
     },
     {
-      "requirement": "TASK-007/REQ-001",
-      "acceptance": "TASK-007/AC-003",
-      "verification": "Clase de .workspace-grid y alto del contenido del inspector, con los paneles abiertos",
+      "requirement": "TASK-010/REQ-003",
+      "acceptance": "TASK-010/AC-005",
+      "verification": "Doble volcado contra la base, en transacción deshecha",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-007.spec.md#ev-002"
+      "evidence": ".specanchor/tasks/TASK-010.spec.md#ev-003"
     },
     {
-      "requirement": "TASK-007/REQ-001",
-      "acceptance": "TASK-007/AC-004",
-      "verification": "npx tsc -b --force, npm run build y node scripts/pruebas-del-studio.mjs",
+      "requirement": "TASK-010/REQ-004",
+      "acceptance": "TASK-010/AC-009",
+      "verification": "Lectura de leads tras el volcado: fuente, email_origen y email_capturado_en",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-007.spec.md#ev-004"
+      "evidence": ".specanchor/tasks/TASK-010.spec.md#ev-003"
+    },
+    {
+      "requirement": "TASK-010/REQ-005",
+      "acceptance": "TASK-010/AC-006 y AC-007",
+      "verification": "Dos sesiones simuladas con request.jwt.claims, más pg_class y pg_policies",
+      "result": "pass",
+      "evidence": ".specanchor/tasks/TASK-010.spec.md#ev-004"
+    },
+    {
+      "requirement": "TASK-010/REQ-006",
+      "acceptance": "TASK-010/AC-003 y AC-008",
+      "verification": "Los cinco rechazos de guardar_lista y el modo demo con 45 leads y lista de 20",
+      "result": "pass",
+      "evidence": ".specanchor/tasks/TASK-010.spec.md#ev-004"
     }
   ]
 }

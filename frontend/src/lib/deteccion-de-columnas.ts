@@ -108,7 +108,11 @@ function proporcion(muestra: string[][], col: number, re: RegExp): { p: number; 
     const v = (f[col] ?? "").trim();
     if (v !== "") celdas.push(v);
   }
-  if (celdas.length < MIN_CELDAS) return { p: 0, n: celdas.length };
+  if (celdas.length === 0) return { p: 0, n: 0 };
+  // Devuelve siempre la proporción real y cuántas celdas la sostienen. Quién
+  // se fía de una muestra pequeña lo decide quien acepta, no quien mide:
+  // devolver 0 aquí hacía que una cabecera exacta sobre tres filas quedara
+  // vetada por una guarda pensada para no adivinar por contenido.
   const aciertos = celdas.filter((c) => re.test(c)).length;
   return { p: aciertos / celdas.length, n: celdas.length };
 }
@@ -138,12 +142,14 @@ export function detectar(cabeceras: string[], datos: string[][]): Deteccion {
 
   const aceptaEmail =
     mejor !== undefined &&
-    (mejor.proporcion >= 0.6 ||
-      (mejor.proporcion >= 0.3 && mejor.cabecera > 0) ||
-      // El export de CRM con la columna «Email» casi entera vacía. La
-      // cabecera exacta sobre 20 celdas basta para PRESELECCIONAR; no para
-      // importar sin mirar, que eso no lo decide esto.
-      (mejor.proporcion >= 0.1 && mejor.cabecera === 1 && mejor.celdas >= 20));
+    // Por contenido: hace falta una muestra que lo sostenga.
+    ((mejor.celdas >= MIN_CELDAS && mejor.proporcion >= 0.6) ||
+      (mejor.celdas >= MIN_CELDAS && mejor.proporcion >= 0.3 && mejor.cabecera > 0) ||
+      // Por cabecera exacta: aquí el tamaño de la muestra da igual mientras
+      // el contenido no la contradiga. Es el caso de «tengo doce clientes»,
+      // y el de una columna «Email» de un CRM casi entera vacía. Preselecciona;
+      // no importa sin mirar, que eso no lo decide esto.
+      (mejor.cabecera === 1 && (mejor.proporcion >= 0.5 || (mejor.celdas >= 20 && mejor.proporcion >= 0.1))));
 
   let ambiguo = false;
   if (aceptaEmail) {
@@ -187,7 +193,9 @@ export function detectar(cabeceras: string[], datos: string[][]): Deteccion {
       // Una columna de correos casa parcialmente con el patrón de web.
       if (rol === "web" && proporcion(muestra, j, RE_EMAIL).p > 0.2) continue;
       const h = puntosDeCabecera(cabeceras[j] ?? "", rol);
-      const acepta = p >= umbral || (p >= 0.3 && h > 0) || h === 1;
+      // Mismo criterio que el email: por contenido hace falta muestra; por
+      // cabecera exacta, no.
+      const acepta = (n >= MIN_CELDAS && (p >= umbral || (p >= 0.3 && h > 0))) || h === 1;
       if (!acepta) continue;
       const puntos = 0.7 * p + 0.3 * h;
       if (puntos > mejoresPuntos) {

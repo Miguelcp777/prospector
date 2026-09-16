@@ -48,6 +48,11 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [frenada, setFrenada] = useState(false);
+
+  // Las listas del cliente, para el otro camino del paso 3.
+  const [listas, setListas] = useState<Array<{ id: string; nombre: string; filas_validas: number }>>([]);
+  const [listaElegida, setListaElegida] = useState("");
+  const [volcado, setVolcado] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [editandoDesc, setEditandoDesc] = useState(false);
   const [desc, setDesc] = useState("");
@@ -58,7 +63,7 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
   const { publicar } = useRecorrido();
 
   const cargar = useCallback(async () => {
-    const [c, s, l, m, j, a] = await Promise.all([
+    const [c, s, l, m, j, a, li] = await Promise.all([
       supabase.from("campaigns")
         .select("id, nombre, descripcion, ciudad, radio_km, estado, max_consultas, ultima_busqueda_en")
         .eq("id", id).single(),
@@ -69,6 +74,8 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
         .eq("campaign_id", id).order("creado_en", { ascending: false }),
       supabase.from("ajustes")
         .select("max_mensajes_por_campana, modo_demo, max_mensajes_demo").limit(1),
+      supabase.from("listas_de_contactos")
+        .select("id, nombre, filas_validas").order("creado_en", { ascending: false }),
     ]);
 
     if (c.error) { setError(c.error.message); setCargando(false); return; }
@@ -95,6 +102,10 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
       mensajes: (m.data ?? []).length,
       jobs,
     });
+    const misListas = (li.data ?? []) as Array<{ id: string; nombre: string; filas_validas: number }>;
+    setListas(misListas);
+    setListaElegida((actual) => actual || misListas[0]?.id || "");
+
     setCargando(false);
   }, [id]);
 
@@ -119,6 +130,37 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
     if (fallo) {
       setError(fallo.message);
       if (fallo.message.includes("en pausa")) setFrenada(true);
+    }
+    await cargar();
+  }
+
+  /**
+   * Volcar una lista de contactos en esta campaña.
+   *
+   * No usa `llamar()` porque ese helper descarta el `data` de la RPC, y aquí
+   * hacen falta las cinco cifras: sin ellas el cliente ve «se han añadido
+   * 312» de una lista de 340 y no sabe qué pasó con los otros 28, que es lo
+   * primero que va a preguntar.
+   */
+  async function volcarLista() {
+    if (!listaElegida) return;
+    setError(null);
+    setVolcado(null);
+    setOcupado("volcar");
+    const { data, error: fallo } = await supabase.rpc("volcar_lista_en_campana", {
+      p_lista: listaElegida,
+      p_campana: id,
+    });
+    setOcupado(null);
+    if (fallo) { setError(fallo.message); return; }
+    const r = Array.isArray(data) ? data[0] : data;
+    if (r) {
+      const partes: string[] = [];
+      if (r.duplicados > 0) partes.push(`${r.duplicados} ya estaban`);
+      if (r.suprimidos > 0) partes.push(`${r.suprimidos} están en tu lista de supresión`);
+      if (r.sin_email > 0) partes.push(`${r.sin_email} no tenían un correo utilizable`);
+      if (r.fuera_por_demo > 0) partes.push(`${r.fuera_por_demo} no caben por el límite de la versión de prueba`);
+      setVolcado(`Se han añadido ${r.insertados} leads${partes.length ? `. ${partes.join(", ")}` : ""}.`);
     }
     await cargar();
   }
@@ -294,6 +336,31 @@ export function Campana({ id, volver }: { id: string; volver: () => void }) {
                 )}
               </div>
               {segmentos === 0 && <p className="menudo">Antes hay que aceptar algún segmento.</p>}
+
+              {/* La otra forma de llenar una campaña: los contactos que el
+                  cliente ya tiene. Va aquí, junto a «Buscar clientes», porque
+                  las dos responden a la misma pregunta —a quién escribir— y
+                  una campaña puede tener las dos cosas mezcladas. */}
+              {listas.length > 0 && (
+                <>
+                  <p className="menudo">— o —</p>
+                  <div className="acciones">
+                    <label className="campo">
+                      <span>Una lista tuya</span>
+                      <select value={listaElegida} onChange={(e) => setListaElegida(e.target.value)}>
+                        {listas.map((l) => (
+                          <option key={l.id} value={l.id}>{l.nombre} ({l.filas_validas})</option>
+                        ))}
+                      </select>
+                    </label>
+                    <button className="secundario" disabled={ocupado === "volcar" || !listaElegida}
+                            onClick={volcarLista}>
+                      {ocupado === "volcar" ? "Añadiendo…" : "Añadir a esta campaña"}
+                    </button>
+                  </div>
+                  {volcado && <p className="caja-aviso">{volcado}</p>}
+                </>
+              )}
             </>
           )}
         </Paso>

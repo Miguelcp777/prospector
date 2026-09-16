@@ -42,7 +42,7 @@ node scripts/sellar-revision.mjs .specanchor/evidence/impact-review.json /tmp/ir
 
 | Trabajo | Se dispara en | Qué hace |
 |---|---|---|
-| `frontend` | pull request **y** empujón a `main` | `npm ci`, `tsc -b --force`, `npm run build`, pruebas del studio |
+| `frontend` | pull request **y** empujón a `main` | `npm ci`, `tsc -b --force`, `npm run build`, pruebas del studio, pruebas de importación |
 | `contratos` | solo pull request | sella la revisión y ejecuta el guard con `--base origin/<rama destino>` |
 | `inventario` | solo empujón a `main` | guard con `--baseline`: ningún archivo material sin módulo |
 
@@ -77,7 +77,17 @@ vacía y no validaría nada. El inventario sí dice algo en ese momento.
   credenciales: no despliega, no llama a Supabase y no toca proveedores de
   pago. `permissions: contents: read` lo deja por escrito.
 
-## Por qué las pruebas no se ejecutan a pelo
+## Dos bancos de pruebas, y solo uno tiene excepciones
+
+| Banco | Cómo se llama | Por qué |
+|---|---|---|
+| Studio | `node scripts/pruebas-del-studio.mjs` | Sale con código 1 **siempre**: hay cuatro fallos anteriores al porte de la V45. El comprobador los tolera por nombre |
+| Importación | `npm run test:importacion` | **A pelo.** Son de TASK-010, no arrastran ningún fallo conocido, y el día que una falle tiene que romper el CI sin excepciones que mantener |
+
+La diferencia no es capricho: una lista de fallos tolerados es deuda que hay
+que podar. Un banco nuevo no nace con ella, y no conviene enseñarle.
+
+## Por qué las pruebas del studio no se ejecutan a pelo
 
 `npm run test:studio` sale **siempre** con código 1. Son 75 pruebas, pasan 71 y
 fallan 4 desde el porte de la V45; las cuatro están explicadas una por una en
@@ -155,6 +165,8 @@ mismo—. Lo que sí está medido, ejecutándolo:
 
 ## Historial de cambios
 
+- 2026-09-16 · TASK-010: un paso más en el trabajo `frontend`, las pruebas de
+  importación. Son las primeras del proyecto que se llaman a pelo.
 - 2026-09-15 · TASK-008: `main` protegida de verdad. El repositorio pasó a
   público, que es lo que permite a GitHub aplicar la regla, y `INV-ENT-001`
   se da la vuelta: el CI ya no informa, frena.

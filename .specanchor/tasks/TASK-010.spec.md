@@ -1,7 +1,7 @@
 ---
 type: task-spec
 id: TASK-010
-status: in_progress
+status: verified
 created: 2026-09-16
 modules: [datos, app-web]
 behavior_preserving: false
@@ -165,23 +165,104 @@ sesiones reales, y el volcado se prueba con un archivo **construido para fallar*
 
 ## 12. Evidencia
 
-*(se rellena al ejecutar)*
+- **EV-001** · **Estructura aplicada y comprobada leyendo el catálogo**, no
+  suponiéndola: RLS activa en las tres tablas (`pg_class.relrowsecurity` = 3
+  de 3), `reloptions` de la vista = `security_invoker=on`,
+  `pg_policies` sobre `contactos_de_lista` = **3 políticas y 0 de INSERT**, y
+  `proacl` de las dos funciones = `authenticated` y `service_role`, sin `anon`
+  y sin `PUBLIC`.
+- **EV-002** · **Un fallo real que solo apareció ejecutando la función.** El
+  primer intento del volcado murió con
+  `42P10: there is no unique or exclusion constraint matching the ON CONFLICT
+  specification`: `contactos_email_unico` es un índice **parcial**
+  (`where email is not null`) y Postgres no lo infiere si el `ON CONFLICT` no
+  repite su predicado. El ensayo estructural no lo vio porque crear una
+  función no ejecuta su cuerpo.
+- **EV-003** · **Prueba funcional con un CSV de ocho filas construido para
+  fallar**, dentro de una transacción deshecha y con la sesión de un cliente
+  real simulada (`request.jwt.claims`):
+
+  | | Esperado | Medido |
+  |---|---|---|
+  | Filas leídas / guardadas | 8 / 7 | **8 / 7** |
+  | Estados | la 3 ausente, 4 sin correo, 5 inválido | `1:valido 2:valido 4:sin_email 5:email_invalido 6:valido 7:valido 8:valido` |
+  | Primer volcado | 3 ins · 1 dup · 1 sup · 2 sin | **3 / 1 / 1 / 2 / 0** |
+  | Segundo volcado | **0 insertados** | **0 / 4 / 1 / 2 / 0** |
+
+  Y los tres leads creados: `  BEA@EJEMPLO.ES  ` normalizado a
+  `bea@ejemplo.es`; la fila sin nombre con `nombre = "soloemail"`, el respaldo
+  a la parte local; los tres con `fuente='lista'`,
+  `email_origen = 'lista:<uuid>#fila-N'` y `email_capturado_en` **igual a la
+  fecha de la lista**, no a la del volcado.
+- **EV-004** · Rechazos, aislamiento y modo demo, también en transacción
+  deshecha:
+
+  | Caso | Resultado |
+  |---|---|
+  | Sin declaración de origen | «Una lista no se guarda sin la declaración de origen de los datos» |
+  | Sin nombre · origen desconocido · cero filas | rechazados, cada uno con su motivo |
+  | Pasa del tope | «admite como mucho 3 contactos, y esta trae 4» |
+  | **Volcar en campaña de otro tenant** | **`No autorizado`** |
+  | **Modo demo, 45 leads + lista de 20** | **insertados = 5, fuera_por_demo = 15** |
+  | Listas y contactos que ve el otro tenant | **0 y 0** |
+
+- **EV-005** · **31 pruebas automáticas**, las primeras de `app-web`:
+  `npm run test:importacion` → 31 de 31. Cubren codificación (UTF-8, BOM,
+  UTF-16, Windows-1252), delimitador (`;` contra coma decimal, comillas),
+  tokenizado (comillas escapadas, saltos dentro de celda, `` suelto, última
+  línea sin salto, líneas en blanco que **no** consumen número de fila),
+  detección (sin cabecera, en inglés, columna casi vacía, dos columnas de
+  correos, ninguna, basura al final) y un `.xlsx` real.
+- **EV-006** · **Dos fallos míos los encontraron las pruebas, no yo:**
+  1. El criterio de ambigüedad estaba mal planteado. Con «Email» y «Email 2»
+     los puntos se separan 0,1 y no saltaba el aviso. Lo ambiguo no es que
+     empaten los puntos: es que **haya otra columna también llena de correos**.
+  2. La guarda de «menos de cinco celdas no se arriesga» vetaba una columna
+     titulada literalmente «Correo electrónico» en una hoja de tres filas —
+     justo el caso de «tengo doce clientes». Esa guarda existe para no
+     adivinar por contenido, no para ignorar una cabecera exacta.
+- **EV-007** · `npx tsc -b --force` salida 0 · `npm run build` salida 0 ·
+  `node scripts/pruebas-del-studio.mjs` salida 0 (71/4, sin fallos nuevos) ·
+  inventario **378 materiales, 0 sin mapear**.
+- **EV-008** · El trozo de Excel se separa como se diseñó:
+  `excel-8UdyMTSc.js` 0,36 kB + `browser-C0B-jtZt.js` **52,3 kB**, que solo
+  viajan si alguien suelta un `.xlsx`. El bundle principal pasa de 614,6 a
+  641,1 kB por las tres pantallas.
 
 ## 13. Trazabilidad
 
 | Requisito | Aceptación | Verificación | Resultado | Evidencia |
 |---|---|---|---|---|
-| REQ-001 | AC-001 | pruebas de los parseadores sobre seis muestras | not_run | — |
-| REQ-002 | AC-002 | pruebas de detección, incluido el caso sin columna | not_run | — |
-| REQ-003 | AC-005 | doble volcado en la base | not_run | — |
-| REQ-004 | AC-009 | lectura de `leads` tras el volcado | not_run | — |
-| REQ-005 | AC-006, AC-007 | dos sesiones + `pg_class` | not_run | — |
-| REQ-006 | AC-003, AC-008 | topes y modo demo | not_run | — |
-| — | AC-004 | CSV de ocho filas | not_run | — |
-| — | AC-010 | tipos, build y pruebas | not_run | — |
+| REQ-001 | AC-001 | 31 pruebas sobre CSV, TSV, pegado y un `.xlsx` real | **pass** | EV-005 |
+| REQ-002 | AC-002 | pruebas de detección, incluido el caso sin columna | **pass** | EV-005, EV-006 |
+| REQ-003 | AC-005 | doble volcado contra la base | **pass** | EV-003 |
+| REQ-004 | AC-009 | lectura de `leads` tras el volcado | **pass** | EV-003 |
+| REQ-005 | AC-006, AC-007 | dos sesiones simuladas + `pg_class` | **pass** | EV-001, EV-004 |
+| REQ-006 | AC-003, AC-008 | topes y modo demo | **pass** | EV-004 |
+| — | AC-004 | CSV de ocho filas hecho para fallar | **pass** | EV-003 |
+| — | AC-010 | tipos, build y pruebas | **pass** | EV-007 |
 
 ## 14. Revisión final
 
-- Cobertura documental: NOT_RUN
-- Spec → Código: NOT_VERIFIED
-- Código → Spec: NOT_VERIFIED
+- Cobertura documental: **PASS**
+- Spec → Código: **ALIGNED** — las tablas, las dos funciones y sus permisos
+  son los que las specs describen, comprobado contra el catálogo de Postgres
+  y no contra el archivo.
+- Código → Spec: **ALIGNED** — los cuatro invariantes nuevos de `datos` salen
+  de lo que se midió, no al revés.
+
+## 15. Lo que esta tarea NO deja verificado
+
+- **Las tres pantallas no se han abierto en un navegador con sesión.** Tipan,
+  compilan y el build las parte bien, pero eso no es haberlas usado. La
+  lección de TASK-006 y TASK-007 vale igual aquí: compilar no es funcionar, y
+  el preview local redirige a la pantalla de entrada.
+- **El camino de Excel está probado con la entrada `/node`**, no con la
+  `/browser` que usa `excel.ts`. Lo verificado es el parser y la forma de la
+  API v9 —que es donde ya hubo una sorpresa—, no el envoltorio de doce líneas.
+- **La migración ya está aplicada a producción** y la PR va después. Es el
+  orden que el plan pedía, pero conviene que esté dicho: si la revisión cambia
+  el SQL, la base y el repositorio divergen hasta que se vuelva a aplicar.
+- **Ningún cliente ha importado una lista de verdad.** Los 2.000 contactos son
+  un tope, no una medición: lo más grande que ha pasado por aquí son ocho
+  filas y una lista generada de veinte.
