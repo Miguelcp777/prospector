@@ -39,3 +39,7 @@ supabase/.temp/
 
 # SDD — copia sellada del informe de impacto, la genera el CI
 .specanchor/evidence/impact-review.sellado.json
+
+# Copia de seguridad que deja la herramienta de previsualizacion al reescribir
+# launch.json. Es local y no tiene por que viajar en el repositorio.
+.claude/launch.json.bak
