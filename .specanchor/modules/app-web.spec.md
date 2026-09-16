@@ -60,6 +60,12 @@ contratados del tenant (`modulo_prospeccion`, `modulo_email`).
 - **INV-WEB-006** · Un `<button>` sin clase de botón se queda con la cara gris
   del navegador, que no es de ninguno de los dos temas. `.sutil` es una clase
   de texto y no vale para un botón.
+- **INV-WEB-016** · La pantalla de una lista deja **renombrarla, corregir o
+  quitar un contacto y borrarla entera**. El borrado va en dos tiempos y dice
+  antes qué va a pasar, incluida la parte que ningún botón de borrar dice por
+  defecto: **los leads que ya salieron de la lista no se van con ella**. Una
+  lista con los contactos ya borrados enseña su lápida y esconde «Usar en una
+  campaña», porque sin direcciones ese botón no puede hacer nada.
 - **INV-WEB-015** · En el lateral, una cabecera de grupo **se lee más que sus
   hijos**, no menos. Iba en `--texto-3` —más tenue que las entradas que
   ordena, que van en `--texto-2`— y del mismo color exacto que ellas en
