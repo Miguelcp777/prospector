@@ -253,8 +253,42 @@ export function Lista({ id, alVolver }: { id: string; alVolver: () => void }) {
             {lista.filas_descartadas > 0 && ` · ${lista.filas_descartadas} descartadas`}
           </p>
         </div>
-        <button className="fantasma" onClick={alVolver}>Volver a las listas</button>
+        {/* Las acciones sobre LA LISTA van aquí, junto a su nombre. Estaban
+            al final de la pantalla, detrás de la tabla de contactos: medido,
+            a 3.747 px de alto en una ventana de 911, o sea cuatro pantallas
+            más abajo. Por el camino se ven 46 botones de «editar» y «quitar»
+            que operan sobre UN contacto, así que lo que la pantalla parecía
+            decir es que se pueden quitar contactos uno a uno y no la lista
+            entera. Una acción que no se encuentra no existe. */}
+        <div className="acciones">
+          {!lista.contactos_borrados_en && (
+            <button className="fantasma" onClick={() => setConfirmando(true)}>
+              Borrar la lista
+            </button>
+          )}
+          <button className="fantasma" onClick={alVolver}>Volver a las listas</button>
+        </div>
       </div>
+
+      {/* La confirmación sale aquí arriba, donde se ha pulsado. Abajo, al
+          lado del botón viejo, había que volver a buscarla. */}
+      {confirmando && !lista.contactos_borrados_en && (
+        <>
+          <p className="caja-error">
+            Se van a borrar <strong>{contactos.length} direcciones</strong>, y no
+            se pueden recuperar.{" "}
+            {volcados.length > 0
+              ? "La ficha se queda —archivo, fecha, columnas usadas y tu declaración— porque ya has usado esta lista en una campaña y los leads que salieron de ella siguen ahí: esto es lo que permite decir de dónde salió cada dirección. No los toca."
+              : "Como no la has usado en ninguna campaña, desaparece entera."}
+          </p>
+          <div className="acciones">
+            <button className="secundario" disabled={borrando} onClick={() => void borrarLista()}>
+              {borrando ? "Borrando…" : "Sí, borrarla"}
+            </button>
+            <button className="fantasma" onClick={() => setConfirmando(false)}>Cancelar</button>
+          </div>
+        </>
+      )}
 
       {/* La lápida. Una lista que ya se volcó no desaparece al borrarla: se
           van las direcciones y se queda la ficha, porque los leads que
@@ -403,46 +437,6 @@ export function Lista({ id, alVolver }: { id: string; alVolver: () => void }) {
         </div>
       )}
 
-      {/* Borrar, al final y en dos tiempos, y diciendo antes lo que va a
-          pasar. Lo que no dice ningún botón de borrar por defecto es lo
-          importante aquí: los leads que ya salieron de esta lista NO se van
-          con ella. */}
-      {!lista.contactos_borrados_en && (
-        <>
-          <h3>Borrar esta lista</h3>
-          {!confirmando ? (
-            <>
-              <p className="sutil menudo">
-                Se borran las {contactos.length} direcciones.{" "}
-                {volcados.length > 0
-                  ? "Como ya la has usado en una campaña, la ficha se queda —archivo, fecha, columnas usadas y tu declaración— para poder responder de dónde salió cada lead."
-                  : "Como no la has usado en ninguna campaña, desaparece entera."}
-              </p>
-              <div className="acciones">
-                <button className="secundario" onClick={() => setConfirmando(true)}>
-                  Borrar la lista
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <p className="caja-error">
-                Se van a borrar <strong>{contactos.length} direcciones</strong>, y
-                no se pueden recuperar.
-                {volcados.length > 0
-                  ? " Los leads que ya salieron de esta lista siguen en sus campañas: esto no los toca."
-                  : ""}
-              </p>
-              <div className="acciones">
-                <button className="secundario" disabled={borrando} onClick={() => void borrarLista()}>
-                  {borrando ? "Borrando…" : "Sí, borrarla"}
-                </button>
-                <button className="fantasma" onClick={() => setConfirmando(false)}>Cancelar</button>
-              </div>
-            </>
-          )}
-        </>
-      )}
     </section>
   );
 }

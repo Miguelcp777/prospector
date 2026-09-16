@@ -1,31 +1,42 @@
 {
-  "revision": "c3ef8c53bf69975f36f1d006b38d6cbc83db1153",
-  "task_spec": ".specanchor/tasks/TASK-016.spec.md",
+  "revision": "e9f50cd10d3f1d45698afe322d5e866dc7d14bca",
+  "task_spec": ".specanchor/tasks/TASK-017.spec.md",
   "files": [
     {
-      "path": ".specanchor/tasks/TASK-016.spec.md",
+      "path": "frontend/src/pages/Lista.tsx",
+      "kind": "behavior_preserving",
+      "specs": [
+        ".specanchor/modules/app-web.spec.md"
+      ],
+      "rationale": "Borrar la lista sube a la cabecera, junto al nombre y a Volver a las listas, y la confirmacion sale ahi mismo. Estaba a 3.747 px de alto en una ventana de 911, detras de la tabla de contactos y de sus 46 botones de editar y quitar, que operan sobre un contacto: la pantalla venia a decir que se pueden quitar contactos uno a uno y la lista entera no. La base no se toca, borrar_lista y sus dos ramas se quedan igual.",
+      "evidence": [
+        ".specanchor/tasks/TASK-017.spec.md#ev-001"
+      ]
+    },
+    {
+      "path": ".specanchor/tasks/TASK-017.spec.md",
       "kind": "requirement",
       "specs": [],
-      "rationale": "Cierre de TASK-016 con las cuatro acciones probadas de punta a punta en produccion y contrastadas contra la base: renombrar, corregir un contacto, el aviso de confirmacion con las 23 direcciones, y el borrado. Despues, 0 fichas, 0 contactos huerfanos y los leads intactos. Queda dicho lo que no se ha podido ver en pantalla: la rama de la lapida, porque hoy ninguna lista se ha volcado a una campana.",
+      "rationale": "La tarea, con la medicion que convierte una impresion en un defecto localizado, y con la distincion que conviene no confundir: entera como accion sobre la lista frente a entera como que no quede ni la ficha, que es la regla de INV-DAT-011 y no se toca.",
       "evidence": [
-        ".specanchor/tasks/TASK-016.spec.md#ev-007"
+        ".specanchor/tasks/TASK-017.spec.md#ev-001"
       ]
     }
   ],
   "traceability": [
     {
-      "requirement": "TASK-016/REQ-002",
-      "acceptance": "TASK-016/AC-005",
-      "verification": "En produccion: renombrar deja zzz-prueba RENOMBRADA en la base, y corregir la fila 1 deja nombre Ana Munoz",
+      "requirement": "TASK-017/AC-001",
+      "acceptance": "TASK-017/AC-001",
+      "verification": "Posicion del boton medida sobre la pantalla en produccion: 3.747 px de alto en una ventana de 911, con 46 botones por delante",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-016.spec.md#ev-007"
+      "evidence": ".specanchor/tasks/TASK-017.spec.md#ev-001"
     },
     {
-      "requirement": "TASK-016/REQ-001",
-      "acceptance": "TASK-016/AC-005",
-      "verification": "En produccion: el aviso dice las 23 direcciones antes de borrar, y tras confirmar la lista desaparece, vuelve al indice y no quedan contactos huerfanos",
+      "requirement": "TASK-017/AC-002",
+      "acceptance": "TASK-017/AC-002",
+      "verification": "tsc en 0, build correcto, studio sin fallos nuevos e importacion 34 de 34",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-016.spec.md#ev-007"
+      "evidence": ".specanchor/tasks/TASK-017.spec.md#ev-002"
     }
   ]
 }
