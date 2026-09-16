@@ -1,75 +1,57 @@
 {
-  "revision": "d8b3116",
-  "task_spec": ".specanchor/tasks/TASK-011.spec.md",
+  "revision": "410f1453e461c1f318063c6ad3fc34dae8a1de6c",
+  "task_spec": ".specanchor/tasks/TASK-012.spec.md",
   "files": [
     {
-      "path": "frontend/src/pages/Mensajes.tsx",
+      "path": "frontend/src/App.tsx",
       "kind": "contract",
-      "specs": [
-        ".specanchor/modules/app-web.spec.md"
-      ],
-      "rationale": "Mensajes acota los borradores por procedencia del lead y cada tarjeta la declara. Es contrato porque desde el volcado de TASK-010 una campaña puede tener las dos mezcladas y el filtro de campaña ya no separa dos grupos con marco legal distinto. El filtro va en la consulta y no sobre lo ya cargado: con el tope de 200 por carga, filtrar en el navegador enseñaría «los de tu lista que había entre los 200 últimos». Se compara con <> 'lista' y no con = 'places' para que una fuente nueva no se caiga de los dos filtros sin avisar. La pantalla dice que acota lo que ves y que no autoriza ni frena ningún envío.",
-      "evidence": [
-        ".specanchor/tasks/TASK-011.spec.md#ev-001",
-        ".specanchor/tasks/TASK-011.spec.md#ev-003",
-        ".specanchor/tasks/TASK-011.spec.md#ev-004"
-      ]
+      "specs": [".specanchor/modules/app-web.spec.md"],
+      "rationale": "La tarjeta de sesion sube a la cabecera del lateral, debajo del logotipo: no es una accion como los dos botones de servicio entre los que estaba, es la respuesta a con que cuenta estoy, y esa pregunta se hace al llegar. Los dos botones de servicio se envuelven en .lateral-pie para que el hueco lo empuje el par entero y no uno de los dos.",
+      "evidence": [".specanchor/tasks/TASK-012.spec.md#ev-001"]
+    },
+    {
+      "path": "frontend/src/estilos.css",
+      "kind": "contract",
+      "specs": [".specanchor/modules/app-web.spec.md"],
+      "rationale": "El margin-top auto pasa de .sesion a .lateral-pie, el relleno inferior de .marca baja de 32 a 16 porque lo que va debajo ya no es el menu sino la misma cabecera, y .lateral gana overflow-y auto. Esto ultimo arregla un fallo anterior que este cambio destapo al obligar a mirar como se reparte la altura: el contenido mide 934 px con height 100vh y overflow visible, asi que en una ventana mas baja Salir y el pie se salian sin nada que los alcanzara.",
+      "evidence": [".specanchor/tasks/TASK-012.spec.md#ev-002", ".specanchor/tasks/TASK-012.spec.md#ev-003"]
     },
     {
       "path": ".specanchor/modules/app-web.spec.md",
       "kind": "requirement",
       "specs": [],
-      "rationale": "Nace INV-WEB-010, y la mitad que importa es la frontera: esto es un filtro de lectura, no una autorización. Confundirlo con los interruptores que vendrán —tenants.envio_en_frio_autorizado y campaigns.enviar_a_descubiertos, comprobados en encolar_envio y al reclamar la tarea— es el error caro, y por INV-WEB-001 esconder mensajes de una pantalla no impide nada.",
-      "evidence": [
-        ".specanchor/tasks/TASK-011.spec.md#ev-001",
-        ".specanchor/tasks/TASK-011.spec.md#ev-002"
-      ]
+      "rationale": "Nace INV-WEB-011 con la cifra medida: el lateral mide 934 px y por eso necesita poder desplazarse. Se deja escrito que cualquier entrada nueva del menu empeora ese margen, que es lo que convierte una medicion en un invariante util.",
+      "evidence": [".specanchor/tasks/TASK-012.spec.md#ev-002"]
     },
     {
-      "path": ".specanchor/tasks/TASK-011.spec.md",
+      "path": ".specanchor/tasks/TASK-012.spec.md",
       "kind": "requirement",
       "specs": [],
-      "rationale": "La tarea, con lo que se midió y lo que no. EV-002 deja escrito que la mitad distintiva de la aceptación no se puede medir hoy: cero de los 619 mensajes vienen de una lista, y fabricar el caso exigiría sacar a un cliente del modo demo, que no es una decisión mía.",
-      "evidence": [
-        ".specanchor/tasks/TASK-011.spec.md#ev-002"
-      ]
+      "rationale": "La tarea ligera, con el ensayo en caliente sobre la pagina real como evidencia de aspecto y las dos mediciones del alto. Deja dicho lo que no se ha mirado: la barra horizontal por debajo de 860 px.",
+      "evidence": [".specanchor/tasks/TASK-012.spec.md#ev-001"]
     }
   ],
   "traceability": [
     {
-      "requirement": "TASK-011/REQ-001",
-      "acceptance": "TASK-011/AC-003",
-      "verification": "Partición disjunta y exhaustiva sobre las 619 filas de messages, con fuente not null",
+      "requirement": "TASK-012/AC-001",
+      "acceptance": "TASK-012/AC-001",
+      "verification": "Ensayo en caliente sobre la produccion real: la tarjeta queda entre el logotipo y la primera entrada del menu, mirado en pantalla",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-011.spec.md#ev-001"
+      "evidence": ".specanchor/tasks/TASK-012.spec.md#ev-001"
     },
     {
-      "requirement": "TASK-011/REQ-001",
-      "acceptance": "TASK-011/AC-001",
-      "verification": "El predicado = 'lista' sobre la base: 0 filas, ninguna con otra fuente. Caso degenerado, y así queda dicho",
+      "requirement": "TASK-012/AC-002",
+      "acceptance": "TASK-012/AC-002",
+      "verification": "Modo claro y Salir medidos juntos al fondo, con .lateral-pie llevando el margin-top auto",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-011.spec.md#ev-002"
+      "evidence": ".specanchor/tasks/TASK-012.spec.md#ev-003"
     },
     {
-      "requirement": "TASK-011/REQ-001",
-      "acceptance": "TASK-011/AC-002",
-      "verification": "El predicado <> 'lista' sobre la base: 619 filas, ninguna de lista",
+      "requirement": "TASK-012/AC-003",
+      "acceptance": "TASK-012/AC-003",
+      "verification": "Altura forzada a 700 px: contenido 931, visible 700, puede scrollear true y Salir alcanzable true. Sin el cambio, con la ventana a 744, Salir caia en 828 sin barra",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-011.spec.md#ev-001"
-    },
-    {
-      "requirement": "TASK-011/REQ-002",
-      "acceptance": "TASK-011/AC-002",
-      "verification": "La procedencia viaja en la consulta incrustada y se pinta por tarjeta. tsc -b --force en 0 y build correcto",
-      "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-011.spec.md#ev-003"
-    },
-    {
-      "requirement": "TASK-011/REQ-003",
-      "acceptance": "TASK-011/AC-005",
-      "verification": "Revisión del diff en las dos direcciones: lo que la pantalla afirma sobre sí misma y cómo se ramifica el estado vacío por el filtro. OBSERVED sobre el código, no sobre la pantalla en marcha, y así consta. Pruebas del proyecto sin fallos nuevos: studio con sus cuatro conocidos, importación 31 de 31",
-      "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-011.spec.md#ev-005"
+      "evidence": ".specanchor/tasks/TASK-012.spec.md#ev-002"
     }
   ]
 }
