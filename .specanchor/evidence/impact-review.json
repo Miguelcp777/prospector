@@ -1,98 +1,14 @@
 {
-  "revision": "9facc706885429f4d2d9f92c1d9db669bfddb14a",
+  "revision": "7b7194ee8f9498bbfd0ddca45cb45de136d0ce9f",
   "task_spec": ".specanchor/tasks/TASK-019.spec.md",
   "files": [
-    {
-      "path": "frontend/src/lib/busqueda.ts",
-      "kind": "contract",
-      "specs": [
-        ".specanchor/modules/app-web.spec.md"
-      ],
-      "rationale": "Pieza nueva y compartida: plegar() baja a minusculas y quita diacriticos con NFD conservando la puntuacion, y coincide() busca en varios campos. No se reutiliza la normalizar() de deteccion-de-columnas porque aquella aplasta arrobas, puntos y guiones a espacios -los necesita, compara cabeceras de hoja de calculo- y aqui eso romperia buscar por dominio.",
-      "evidence": [
-        ".specanchor/tasks/TASK-019.spec.md#ev-001"
-      ]
-    },
-    {
-      "path": "frontend/src/pages/Mensajes.tsx",
-      "kind": "behavior_preserving",
-      "specs": [
-        ".specanchor/modules/app-web.spec.md"
-      ],
-      "rationale": "El filtro pasa por coincide(). Es la pantalla donde se encontro el fallo: peluqueria daba 0 de 200 habiendo dos borradores que decian peluqueria con tilde.",
-      "evidence": [
-        ".specanchor/tasks/TASK-019.spec.md#ev-002"
-      ]
-    },
-    {
-      "path": "frontend/src/pages/Leads.tsx",
-      "kind": "behavior_preserving",
-      "specs": [
-        ".specanchor/modules/app-web.spec.md"
-      ],
-      "rationale": "Mismo filtro, mismo error. Busca por nombre y direccion, que en Valencia estan llenos de tildes.",
-      "evidence": [
-        ".specanchor/tasks/TASK-019.spec.md#ev-002"
-      ]
-    },
-    {
-      "path": "frontend/src/pages/Historial.tsx",
-      "kind": "behavior_preserving",
-      "specs": [
-        ".specanchor/modules/app-web.spec.md"
-      ],
-      "rationale": "Mismo filtro, mismo error. Busca por lead, correo y campana.",
-      "evidence": [
-        ".specanchor/tasks/TASK-019.spec.md#ev-002"
-      ]
-    },
-    {
-      "path": "frontend/src/pages/Lista.tsx",
-      "kind": "behavior_preserving",
-      "specs": [
-        ".specanchor/modules/app-web.spec.md"
-      ],
-      "rationale": "Mismo filtro, mismo error. Busca por correo, nombre y empresa dentro de una lista importada.",
-      "evidence": [
-        ".specanchor/tasks/TASK-019.spec.md#ev-002"
-      ]
-    },
-    {
-      "path": "frontend/pruebas/busqueda.test.ts",
-      "kind": "contract",
-      "specs": [
-        ".specanchor/modules/app-web.spec.md"
-      ],
-      "rationale": "Ocho pruebas, y la primera es literalmente el caso del hallazgo. Incluye una que comprueba que el arreglo amplia lo que se encuentra y no convierte el buscador en un comodin.",
-      "evidence": [
-        ".specanchor/tasks/TASK-019.spec.md#ev-001"
-      ]
-    },
-    {
-      "path": ".specanchor/modules/app-web.spec.md",
-      "kind": "requirement",
-      "specs": [],
-      "rationale": "INV-WEB-017: los buscadores ignoran las tildes y lo hacen todos por lib/busqueda.ts. Deja escrito por que son dos normalizaciones distintas y no una.",
-      "evidence": [
-        ".specanchor/tasks/TASK-019.spec.md#ev-001"
-      ]
-    },
-    {
-      "path": ".specanchor/findings/0002-el-buscador-no-ignora-los-acentos.md",
-      "kind": "correction",
-      "specs": [],
-      "rationale": "El hallazgo se cierra, y se corrige de paso: decia cinco pantallas y son cuatro. Nombre Supresiones de memoria al anotarlo y no lo comprobe; no tiene buscador.",
-      "evidence": [
-        ".specanchor/tasks/TASK-019.spec.md#ev-002"
-      ]
-    },
     {
       "path": ".specanchor/tasks/TASK-019.spec.md",
       "kind": "requirement",
       "specs": [],
-      "rationale": "La tarea, con las dos decisiones que convenia justificar -no tocar la puntuacion y plegar la n- y con la nota de que el guion test:importacion se le ha quedado corto el nombre.",
+      "rationale": "Cierre de TASK-019 con la comprobacion en Mensajes en produccion: peluqueria sin tilde pasa de 0 de 200 a 5 de 200, con tilde da lo mismo, y dentista sigue dando 0, que es lo que separa un arreglo de un comodin. Se corrige de paso que al anotar el hallazgo dije dos borradores y eran cinco. Queda dicho que las otras tres pantallas no se abrieron.",
       "evidence": [
-        ".specanchor/tasks/TASK-019.spec.md#ev-001"
+        ".specanchor/tasks/TASK-019.spec.md#ev-003"
       ]
     }
   ],
@@ -100,23 +16,9 @@
     {
       "requirement": "TASK-019/AC-001",
       "acceptance": "TASK-019/AC-001",
-      "verification": "Prueba automatica con el caso exacto del hallazgo: peluqueria encuentra peluqueria con tilde",
+      "verification": "En Mensajes en produccion con index-CmPQTyUX.js: peluqueria sin tilde da 5 de 200 donde antes daba 0, con tilde da 5, y dentista da 0",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-019.spec.md#ev-001"
-    },
-    {
-      "requirement": "TASK-019/AC-002",
-      "acceptance": "TASK-019/AC-002",
-      "verification": "Prueba del correo con dominio y tilde dentro: se sigue pudiendo buscar por @dominio",
-      "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-019.spec.md#ev-001"
-    },
-    {
-      "requirement": "TASK-019/AC-003",
-      "acceptance": "TASK-019/AC-003",
-      "verification": "42 de 42 pruebas, incluida una que comprueba que dentista no encuentra Optica La Almudena",
-      "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-019.spec.md#ev-002"
+      "evidence": ".specanchor/tasks/TASK-019.spec.md#ev-003"
     }
   ]
 }

@@ -1,7 +1,7 @@
 ---
 type: task-lite
 id: TASK-019
-status: in_progress
+status: verified
 created: 2026-09-16
 modules: [app-web]
 behavior_preserving: false
@@ -75,7 +75,17 @@ nunca los quita.** Lo mismo con la ç.
   `tsc -b --force` → 0. `npm run build` → correcto, principal 646,17 kB —
   **baja** de 646,46: cuatro filtros a mano pesan más que una función. Pruebas
   del studio sin fallos nuevos.
-- **EV-003** · _(pendiente: la pantalla, después del despliegue)_
+- **EV-003** · **En Mensajes, en producción**, con el paquete servido
+  comprobado antes (`index-CmPQTyUX.js`):
+
+  | Se busca | Contador |
+  |---|---|
+  | `peluqueria` sin tilde | **5 de 200** — antes **0 de 200** |
+  | `peluquería` con tilde | 5 de 200 — lo que ya funcionaba |
+  | `dentista` | **0 de 200** — sigue sin ser un comodín |
+
+  Cinco, no dos: al anotar el hallazgo dije «dos borradores» contando los que
+  vi en pantalla. Eran cinco.
 
 ## Trazabilidad
 
@@ -84,6 +94,7 @@ nunca los quita.** Lo mismo con la ç.
 | AC-001 | Prueba automática con el caso exacto del hallazgo | **pass** | EV-001 |
 | AC-002 | Prueba del correo con dominio y tilde dentro | **pass** | EV-001 |
 | AC-003 | Prueba de que «dentista» no encuentra «Óptica La Almudena» | **pass** | EV-001 |
+| AC-001 | En producción: 5 de 200 con y sin tilde, 0 con «dentista» | **pass** · VERIFIED | EV-003 |
 
 ## Dos cosas que se corrigen de paso
 
@@ -99,4 +110,11 @@ hace es de las cosas que despistan a los seis meses.
 
 ## Revisión final
 
-_(pendiente de EV-003)_
+- Cobertura documental: **PASS**.
+- Spec → Código: **ALIGNED** — `INV-WEB-017`.
+- Código → Spec: **ALIGNED**.
+
+Solo se comprobó en pantalla **Mensajes**, que es donde apareció el fallo. Las
+otras tres llaman a la misma función y están cubiertas por las ocho pruebas,
+pero no se han abierto: si alguna tiene un problema, será de cómo pasa los
+campos, no del plegado.
