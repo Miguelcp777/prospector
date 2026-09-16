@@ -36,8 +36,20 @@ type Mensaje = {
   /** El diseño aplicado, si lo hay. Es lo que verá el destinatario. */
   html: string | null;
   plantillas: { nombre: string } | null;
-  leads: { nombre: string; email: string | null } | null;
+  leads: { nombre: string; email: string | null; fuente: string } | null;
 };
+
+/**
+ * De dónde salió el destinatario. Son dos grupos con marco legal distinto
+ * —correo en frío frente a cartera que aporta el propio cliente— y desde el
+ * volcado de listas una misma campaña puede tener los dos mezclados, así que
+ * el filtro de campaña ya no los separa.
+ *
+ * `'lista'` es el único valor que escribe la importación; todo lo demás
+ * —hoy `'places'`— es prospección. Se compara así, y no con `= 'places'`,
+ * para que una fuente nueva no se caiga de los dos filtros sin avisar.
+ */
+type Procedencia = "" | "lista" | "prospeccion";
 
 /**
  * `alIrA` lleva a Plantillas desde el estado vacío. Se tipa solo con
@@ -47,6 +59,7 @@ type Mensaje = {
 export function Mensajes({ alIrA }: { alIrA?: (vista: "studio") => void }) {
   const [campanas, setCampanas] = useState<Campana[]>([]);
   const [elegida, setElegida] = useState("");     // "" = todas
+  const [procedencia, setProcedencia] = useState<Procedencia>(""); // "" = ambas
   const [busqueda, setBusqueda] = useState("");
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
   const [abierto, setAbierto] = useState<string | null>(null);
@@ -85,17 +98,23 @@ export function Mensajes({ alIrA }: { alIrA?: (vista: "studio") => void }) {
 
     let q = supabase
       .from("messages")
-      .select("id, asunto, cuerpo, estado, creado_en, html, plantillas(nombre), leads!inner(nombre, email, campaign_id)")
+      .select("id, asunto, cuerpo, estado, creado_en, html, plantillas(nombre), leads!inner(nombre, email, fuente, campaign_id)")
       .order("creado_en", { ascending: false })
       .limit(TOPE);
 
     if (elegida) q = q.eq("leads.campaign_id", elegida);
 
+    // El filtro va en la consulta y no sobre lo ya cargado: con el tope de
+    // 200 por carga, filtrar en el navegador enseñaría "los de tu lista que
+    // había entre los 200 últimos", que es una cifra que no significa nada.
+    if (procedencia === "lista") q = q.eq("leads.fuente", "lista");
+    if (procedencia === "prospeccion") q = q.neq("leads.fuente", "lista");
+
     const { data, error: fallo } = await q;
     if (fallo) setError(fallo.message);
     else setMensajes((data ?? []) as unknown as Mensaje[]);
     setCargando(false);
-  }, [elegida]);
+  }, [elegida, procedencia]);
 
   useEffect(() => { cargar(); }, [cargar]);
 
@@ -204,9 +223,23 @@ export function Mensajes({ alIrA }: { alIrA?: (vista: "studio") => void }) {
             <option key={c.id} value={c.id}>{c.nombre} · {c.ciudad}</option>
           ))}
         </select>
+        <select value={procedencia}
+                onChange={(e) => setProcedencia(e.target.value as Procedencia)}>
+          <option value="">Prospección y mis listas</option>
+          <option value="prospeccion">Solo leads de prospección</option>
+          <option value="lista">Solo mis listas de clientes</option>
+        </select>
         <input placeholder="Buscar por asunto, negocio o correo"
                value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
       </div>
+
+      {/* Que quede dicho aquí y no solo en la spec: esto acota lo que ves.
+          Mientras el envío sea manual eso ES elegir a quién escribes, pero
+          no autoriza ni frena nada, y prometerlo sería peor que no tenerlo. */}
+      <p className="menudo">
+        Acota lo que ves y sobre lo que actúas. No autoriza ni frena ningún
+        envío: hoy los correos salen de tu buzón, uno a uno.
+      </p>
 
       {/* Aparece solo con una campaña elegida: el diseño se aplica a una
           campaña, no a mensajes sueltos de varias. */}
@@ -314,10 +347,19 @@ export function Mensajes({ alIrA }: { alIrA?: (vista: "studio") => void }) {
 
       {!cargando && mensajes.length === 0 && (
         <div className="tarjeta">
-          <h2>No hay mensajes</h2>
+          {/* «No hay de este grupo» no es «no hay mensajes». Decir lo segundo
+              con un filtro puesto manda a buscar un problema que no existe. */}
+          <h2>
+            {procedencia === "lista" ? "No hay mensajes a tus listas"
+              : procedencia === "prospeccion" ? "No hay mensajes a leads de prospección"
+              : "No hay mensajes"}
+          </h2>
           <p className="sutil">
-            Se generan en el paso 5 del recorrido de una campaña, y solo para
-            leads con correo que no estén en la lista de supresión.
+            {procedencia === ""
+              ? "Se generan en el paso 5 del recorrido de una campaña, y solo para leads con correo que no estén en la lista de supresión."
+              : procedencia === "lista"
+              ? "Los contactos que subes en Listas se escriben cuando los añades a una campaña y generas sus mensajes en el paso 5."
+              : "Se generan en el paso 5 del recorrido de una campaña, para los leads que encuentra la búsqueda."}
           </p>
         </div>
       )}
@@ -410,6 +452,11 @@ function Tarjeta({
           </div>
         </div>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          {/* De dónde salió el destinatario. Se enseña siempre, también con
+              el filtro en «ambas»: es ahí donde hace falta distinguirlos. */}
+          <span className={`etiqueta ${m.leads?.fuente === "lista" ? "alta" : ""}`}>
+            {m.leads?.fuente === "lista" ? "de tu lista" : "prospección"}
+          </span>
           {m.html && <span className="etiqueta lista">con diseño</span>}
           <span className={`etiqueta ${m.estado}`}>{m.estado}</span>
         </div>

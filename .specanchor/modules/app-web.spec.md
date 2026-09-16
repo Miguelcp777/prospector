@@ -63,6 +63,19 @@ contratados del tenant (`modulo_prospeccion`, `modulo_email`).
 - **INV-WEB-007** · Los textos se apagan con **color**, no con `opacity`: la
   opacidad mezcla el texto con el fondo antes de que llegue al ojo y hunde el
   contraste sin que el color declarado lo delate.
+- **INV-WEB-010** · Mensajes acota los borradores por **procedencia del lead**
+  —prospección (`leads.fuente <> 'lista'`), listas propias (`= 'lista'`), o
+  ambas— y cada tarjeta la declara. Desde el volcado de TASK-010 una campaña
+  puede tener las dos mezcladas, así que el filtro de campaña ya no separa dos
+  grupos con marco legal distinto.
+
+  **Es un filtro de lectura, no una autorización**, y la pantalla no puede
+  decir lo contrario. Mientras el envío sea manual, acotar la lista es la
+  forma de elegir a quién se escribe; cuando exista el envío automático, quien
+  decide son `tenants.envio_en_frio_autorizado` y
+  `campaigns.enviar_a_descubiertos`, comprobados en `encolar_envio` **y** al
+  reclamar la tarea. Por `INV-WEB-001`, esconder mensajes de una pantalla no
+  impide nada.
 
 ## Datos y persistencia
 
