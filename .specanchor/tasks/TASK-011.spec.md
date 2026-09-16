@@ -1,7 +1,7 @@
 ---
 type: task-spec
 id: TASK-011
-status: in_progress
+status: verified
 created: 2026-09-16
 modules: [app-web]
 behavior_preserving: false
@@ -145,7 +145,26 @@ pantallas de TASK-010.
   uno.» Y el estado vacío se ramifica por el filtro, así que «no hay mensajes»
   ya no se dice cuando lo que no hay es de un grupo. Es evidencia OBSERVED del
   código, no de la pantalla en marcha.
-- **EV-006** · _(pendiente: la pantalla abierta, después del despliegue)_
+- **EV-006** · **La pantalla, abierta en producción con la sesión real**, tras
+  desplegarse el bundle `index-Buh2LsIR.js` —comprobado que es el mismo hash
+  que produjo el build local, para no medir sobre la versión anterior—:
+
+  | Filtro | Qué enseña |
+  |---|---|
+  | Prospección y mis listas | 200 de 200 · tope de 200 por carga |
+  | Solo leads de prospección | 200 de 200, todas con la insignia `PROSPECCIÓN` |
+  | Solo mis listas de clientes | «**No hay mensajes a tus listas**» y la explicación de cómo llegan |
+  | + buscador «Sandra» | 2 de 200 |
+  | + campaña «Woody Tattoo» | **10 de 10** |
+
+  Ese último 10 se contrastó con la base: la campaña tiene exactamente **10**
+  mensajes de prospección y **0** de listas. La pantalla y la base dicen lo
+  mismo.
+
+  También comprobado antes de fusionar que `leads.fuente` tiene concesión de
+  `SELECT` para `authenticated`: este proyecto usa concesiones por columna en
+  varias tablas, y una columna sin conceder habría roto Mensajes **para todos
+  los clientes**, no solo el filtro nuevo.
 
 ## Trazabilidad
 
@@ -155,7 +174,8 @@ pantallas de TASK-010.
 | REQ-001 | AC-001 | `= 'lista'` sobre la base: 0 filas, ninguna con otra fuente | **pass** (degenerado) | EV-001, EV-002 |
 | REQ-001 | AC-002 | `<> 'lista'` sobre la base: 619, ninguna de lista | **pass** | EV-001 |
 | REQ-002 | AC-002 | La procedencia viaja en la consulta y se pinta por tarjeta | **pass** · tipos y build | EV-003 |
-| REQ-003 | AC-005 | Revisión del diff: qué afirma la pantalla y cómo se ramifica el estado vacío | **pass** · OBSERVED, no en marcha | EV-005 |
+| REQ-003 | AC-005 | Revisión del diff, y después el estado vacío en pantalla | **pass** · VERIFIED | EV-005, EV-006 |
+| REQ-001 | AC-004 | Filtro + buscador (2 de 200) y filtro + campaña (10 de 10) | **pass** · VERIFIED | EV-006 |
 
 **Lo que falta por medir, y no se da por bueno:** AC-004 (combinar con campaña
 y buscador) y la comprobación **en pantalla** de AC-005 —que el contador y el
@@ -168,6 +188,16 @@ las tres pantallas de la importación.
 
 ## Revisión final
 
-- Cobertura documental: _(pendiente del guard)_
-- Spec → Código: _(pendiente de EV-005)_
-- Código → Spec: _(pendiente de EV-005)_
+- Cobertura documental: **PASS** (el guard, contra `origin/main`).
+- Spec → Código: **ALIGNED** — `INV-WEB-010` describe lo que la pantalla hace,
+  incluida la frontera con los interruptores que no existen.
+- Código → Spec: **PARTIAL**, y por un solo motivo: la rama «solo listas» del
+  filtro no ha filtrado nada todavía porque no hay nada que filtrar. Todo lo
+  demás está medido en producción.
+
+## Lo que se encontró de paso
+
+`findings/0002` · **el buscador de Mensajes no ignora los acentos**. Buscar
+`peluqueria` da 0 de 200 con dos borradores que dicen «peluquería». Es
+anterior a esta tarea y no se ha tocado: arreglarlo aquí habría mezclado dos
+cosas en la misma revisión, y además el patrón está en cuatro pantallas.

@@ -3,73 +3,45 @@
   "task_spec": ".specanchor/tasks/TASK-011.spec.md",
   "files": [
     {
-      "path": "frontend/src/pages/Mensajes.tsx",
-      "kind": "contract",
-      "specs": [
-        ".specanchor/modules/app-web.spec.md"
-      ],
-      "rationale": "Mensajes acota los borradores por procedencia del lead y cada tarjeta la declara. Es contrato porque desde el volcado de TASK-010 una campaña puede tener las dos mezcladas y el filtro de campaña ya no separa dos grupos con marco legal distinto. El filtro va en la consulta y no sobre lo ya cargado: con el tope de 200 por carga, filtrar en el navegador enseñaría «los de tu lista que había entre los 200 últimos». Se compara con <> 'lista' y no con = 'places' para que una fuente nueva no se caiga de los dos filtros sin avisar. La pantalla dice que acota lo que ves y que no autoriza ni frena ningún envío.",
-      "evidence": [
-        ".specanchor/tasks/TASK-011.spec.md#ev-001",
-        ".specanchor/tasks/TASK-011.spec.md#ev-003",
-        ".specanchor/tasks/TASK-011.spec.md#ev-004"
-      ]
-    },
-    {
-      "path": ".specanchor/modules/app-web.spec.md",
-      "kind": "requirement",
-      "specs": [],
-      "rationale": "Nace INV-WEB-010, y la mitad que importa es la frontera: esto es un filtro de lectura, no una autorización. Confundirlo con los interruptores que vendrán —tenants.envio_en_frio_autorizado y campaigns.enviar_a_descubiertos, comprobados en encolar_envio y al reclamar la tarea— es el error caro, y por INV-WEB-001 esconder mensajes de una pantalla no impide nada.",
-      "evidence": [
-        ".specanchor/tasks/TASK-011.spec.md#ev-001",
-        ".specanchor/tasks/TASK-011.spec.md#ev-002"
-      ]
-    },
-    {
       "path": ".specanchor/tasks/TASK-011.spec.md",
       "kind": "requirement",
       "specs": [],
-      "rationale": "La tarea, con lo que se midió y lo que no. EV-002 deja escrito que la mitad distintiva de la aceptación no se puede medir hoy: cero de los 619 mensajes vienen de una lista, y fabricar el caso exigiría sacar a un cliente del modo demo, que no es una decisión mía.",
+      "rationale": "Cierre de TASK-011 con la evidencia que faltaba: la pantalla abierta en produccion, comprobando antes que el bundle servido es el mismo hash que el build local para no medir sobre la version anterior. Las tres posiciones del filtro, su combinacion con campana y buscador, y el 10 de 10 contrastado contra la base. Queda NOT_VERIFIED lo unico que hoy no existe: la rama de listas no ha filtrado nada porque no hay ningun mensaje de lista.",
       "evidence": [
-        ".specanchor/tasks/TASK-011.spec.md#ev-002"
+        ".specanchor/tasks/TASK-011.spec.md#ev-006"
+      ]
+    },
+    {
+      "path": ".specanchor/findings/0002-el-buscador-no-ignora-los-acentos.md",
+      "kind": "clarification",
+      "specs": [],
+      "rationale": "Hallazgo fuera de alcance encontrado al verificar: el buscador de Mensajes compara con toLowerCase e includes, que no descomponen diacriticos, asi que peluqueria no encuentra peluqueria con tilde y lo dice como 0 de 200, que se lee como no hay. Es anterior a la tarea y el patron esta en cuatro pantallas, asi que se anota en vez de arreglarse suelto dentro de otro cambio.",
+      "evidence": [
+        ".specanchor/tasks/TASK-011.spec.md#ev-006"
       ]
     }
   ],
   "traceability": [
     {
       "requirement": "TASK-011/REQ-001",
-      "acceptance": "TASK-011/AC-003",
-      "verification": "Partición disjunta y exhaustiva sobre las 619 filas de messages, con fuente not null",
+      "acceptance": "TASK-011/AC-004",
+      "verification": "En produccion: filtro mas buscador da 2 de 200, y filtro mas campana da 10 de 10, contrastado contra la base que dice 10 de prospeccion y 0 de listas en esa campana",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-011.spec.md#ev-001"
-    },
-    {
-      "requirement": "TASK-011/REQ-001",
-      "acceptance": "TASK-011/AC-001",
-      "verification": "El predicado = 'lista' sobre la base: 0 filas, ninguna con otra fuente. Caso degenerado, y así queda dicho",
-      "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-011.spec.md#ev-002"
-    },
-    {
-      "requirement": "TASK-011/REQ-001",
-      "acceptance": "TASK-011/AC-002",
-      "verification": "El predicado <> 'lista' sobre la base: 619 filas, ninguna de lista",
-      "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-011.spec.md#ev-001"
-    },
-    {
-      "requirement": "TASK-011/REQ-002",
-      "acceptance": "TASK-011/AC-002",
-      "verification": "La procedencia viaja en la consulta incrustada y se pinta por tarjeta. tsc -b --force en 0 y build correcto",
-      "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-011.spec.md#ev-003"
+      "evidence": ".specanchor/tasks/TASK-011.spec.md#ev-006"
     },
     {
       "requirement": "TASK-011/REQ-003",
       "acceptance": "TASK-011/AC-005",
-      "verification": "Revisión del diff en las dos direcciones: lo que la pantalla afirma sobre sí misma y cómo se ramifica el estado vacío por el filtro. OBSERVED sobre el código, no sobre la pantalla en marcha, y así consta. Pruebas del proyecto sin fallos nuevos: studio con sus cuatro conocidos, importación 31 de 31",
+      "verification": "En produccion: con Solo mis listas el estado vacio dice No hay mensajes a tus listas y explica como llegan, en vez de No hay mensajes",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-011.spec.md#ev-005"
+      "evidence": ".specanchor/tasks/TASK-011.spec.md#ev-006"
+    },
+    {
+      "requirement": "TASK-011/REQ-002",
+      "acceptance": "TASK-011/AC-002",
+      "verification": "En produccion: las 200 tarjetas del filtro de prospeccion llevan su insignia PROSPECCION",
+      "result": "pass",
+      "evidence": ".specanchor/tasks/TASK-011.spec.md#ev-006"
     }
   ]
 }
