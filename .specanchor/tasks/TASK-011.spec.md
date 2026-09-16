@@ -139,7 +139,13 @@ pantallas de TASK-010.
 - **EV-004** · `node scripts/pruebas-del-studio.mjs` → **sin fallos nuevos**,
   los cuatro conocidos de siempre. `npm run test:importacion` → **31 de 31**,
   `# fail 0`.
-- **EV-005** · _(pendiente: la pantalla, después del despliegue)_
+- **EV-005** · Revisión del diff en las dos direcciones. Lo que la pantalla
+  afirma sobre sí misma, literal: «Acota lo que ves y sobre lo que actúas. No
+  autoriza ni frena ningún envío: hoy los correos salen de tu buzón, uno a
+  uno.» Y el estado vacío se ramifica por el filtro, así que «no hay mensajes»
+  ya no se dice cuando lo que no hay es de un grupo. Es evidencia OBSERVED del
+  código, no de la pantalla en marcha.
+- **EV-006** · _(pendiente: la pantalla abierta, después del despliegue)_
 
 ## Trazabilidad
 
@@ -148,11 +154,13 @@ pantallas de TASK-010.
 | REQ-001 | AC-003 | Partición disjunta y exhaustiva sobre las 619 filas | **pass** | EV-001 |
 | REQ-001 | AC-001 | `= 'lista'` sobre la base: 0 filas, ninguna con otra fuente | **pass** (degenerado) | EV-001, EV-002 |
 | REQ-001 | AC-002 | `<> 'lista'` sobre la base: 619, ninguna de lista | **pass** | EV-001 |
-| REQ-002 | — | La procedencia viaja en la consulta y se pinta por tarjeta | **pass** · tipos y build | EV-003 |
+| REQ-002 | AC-002 | La procedencia viaja en la consulta y se pinta por tarjeta | **pass** · tipos y build | EV-003 |
+| REQ-003 | AC-005 | Revisión del diff: qué afirma la pantalla y cómo se ramifica el estado vacío | **pass** · OBSERVED, no en marcha | EV-005 |
 
 **Lo que falta por medir, y no se da por bueno:** AC-004 (combinar con campaña
-y buscador) y AC-005 (contador y estado vacío con el filtro puesto) necesitan
-la pantalla abierta con una sesión. El preview local redirige a la entrada y
+y buscador) y la comprobación **en pantalla** de AC-005 —que el contador y el
+estado vacío digan la verdad con el filtro puesto— necesitan la pantalla
+abierta con una sesión. El preview local redirige a la entrada y
 no hay forma legítima de entrar desde aquí, así que se comprueban **después de
 fusionar**, contra producción — igual que se hizo con TASK-010, y con la misma
 advertencia: tipar y compilar no es funcionar. Eso costó cuatro defectos en
