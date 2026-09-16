@@ -710,13 +710,24 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e1) 0; width: 
 .nav-grupo-flecha { color: var(--texto-3); font-size: 0.75rem; }
 .nav-grupo.abierto .nav-grupo-cabeza { color: var(--texto-2); }
 
-/* Los hijos se sangran y llevan una guía: sin ella, plegar y desplegar no
-   se entiende como jerarquía sino como que aparecen y desaparecen cosas. */
+/* Los hijos NO se sangran, y esto contradice a propósito lo que ponía aquí.
+
+   La sangría y su guía —21 px de margen, 9 de relleno y un borde— dejaban el
+   lateral con DOS columnas de iconos: las cabeceras de grupo y las entradas
+   sueltas en x=24, y los hijos en x=55. Medido sobre la pantalla: 31 px de
+   diferencia entre destinos que hacen lo mismo, pulsar y navegar.
+
+   Lo curioso es que la regla de al lado ya pedía lo contrario: «Misma columna
+   que los iconos de las entradas: el lateral entero se lee como una sola
+   rejilla». Las dos intenciones estaban escritas y solo se cumplía una.
+
+   Lo que se pierde es la guía, que existía para que plegar un grupo se leyera
+   como jerarquía y no como que aparecen y desaparecen cosas. Lo siguen
+   diciendo la cabecera del grupo, en versalitas y apagada, y su flecha. Lo
+   que no se puede es tener las dos cosas: la guía ocupa sitio, y el sitio que
+   ocupa es justo el que rompe la columna. */
 .nav-grupo-hijos {
   display: flex; flex-direction: column; gap: 2px;
-  margin-left: calc(var(--e3) + 9px);
-  padding-left: 9px;
-  border-left: 1px solid var(--borde);
 }
 .nav-grupo-hijos .nav-item.activa { box-shadow: inset 2px 0 0 var(--cian); }
 
