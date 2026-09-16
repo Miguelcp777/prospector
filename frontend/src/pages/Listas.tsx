@@ -70,17 +70,24 @@ export function Listas() {
         <div className="cabecera-texto">
           <span className="rotulo">Prospección</span>
           <h1>Tus <span className="destacado">listas</span></h1>
+          {/* Una línea, y la explicación larga debajo. `.cabecera` reparte el
+              ancho entre el texto y el botón, y el texto lo pide por su
+              contenido: un párrafo de cuatro líneas se lleva los 960 px y
+              tira el botón a la fila siguiente. */}
           <p className="sutil">
-            Los contactos que ya tienes: tus clientes, los de tu CRM, los de
-            una hoja de cálculo. Se suben una vez y se pueden usar en las
-            campañas que quieras. No tienen nada que ver con los leads que
-            encuentra la búsqueda: estos los aportas tú.
+            Los contactos que ya tienes. Los aportas tú, no la búsqueda.
           </p>
         </div>
         <button className="primario" onClick={() => setVista("importar")}>
           Importar una lista
         </button>
       </div>
+
+      <p className="sutil">
+        Tus clientes, los de tu CRM, los de una hoja de cálculo. Se suben una
+        vez y se pueden usar en las campañas que quieras. No tienen nada que
+        ver con los leads que encuentra la búsqueda: estos los aportas tú.
+      </p>
 
       {error && <p className="caja-error">{error}</p>}
 
