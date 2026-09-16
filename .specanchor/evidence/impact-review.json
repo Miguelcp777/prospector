@@ -1,34 +1,14 @@
 {
-  "revision": "0726632d741493b44f4f937cda0a8f76e0b03acc",
+  "revision": "da499e08e20395eba047d10f834e1cb89523488d",
   "task_spec": ".specanchor/tasks/TASK-014.spec.md",
   "files": [
-    {
-      "path": "frontend/src/estilos.css",
-      "kind": "contract",
-      "specs": [
-        ".specanchor/modules/app-web.spec.md"
-      ],
-      "rationale": "El lateral tenia dos columnas de iconos separadas 31 px: cabeceras de grupo y entradas sueltas en x=24, hijos de grupo en x=55, por el margen, el relleno y el borde de guia de .nav-grupo-hijos. El propio CSS ya pedia lo contrario dos reglas mas arriba -misma columna, el lateral entero se lee como una sola rejilla- y la sangria ganaba, asi que la rejilla unica nunca existio. Se resuelve el empate a favor de la columna unica. Se pierde la guia, que servia para que plegar un grupo se leyera como jerarquia; lo siguen diciendo la cabecera en versalitas y su flecha, y no se pueden tener las dos cosas porque la guia ocupa justo el sitio que rompe la columna.",
-      "evidence": [
-        ".specanchor/tasks/TASK-014.spec.md#ev-001"
-      ]
-    },
-    {
-      "path": ".specanchor/modules/app-web.spec.md",
-      "kind": "requirement",
-      "specs": [],
-      "rationale": "INV-WEB-014 fija la columna unica y deja escrito que la jerarquia la dice la cabecera del grupo, no una sangria. Sin eso, el proximo que anada un grupo vuelve a sangrarlo.",
-      "evidence": [
-        ".specanchor/tasks/TASK-014.spec.md#ev-001"
-      ]
-    },
     {
       "path": ".specanchor/tasks/TASK-014.spec.md",
       "kind": "requirement",
       "specs": [],
-      "rationale": "La tarea, con la medicion de las dos columnas antes y despues y con lo que se pierde dicho de frente. Incluye lo que se deja fuera: el texto del logotipo empieza 12 px a la derecha del de las entradas porque el isotipo mide 30 y los iconos 18.",
+      "rationale": "Cierre de TASK-014 con la medicion ya desplegada: catorce entradas del lateral -dos cabeceras de grupo, siete hijos y cinco sueltas- en una sola columna, con la hoja servida comprobada antes para no medir sobre la version anterior.",
       "evidence": [
-        ".specanchor/tasks/TASK-014.spec.md#ev-001"
+        ".specanchor/tasks/TASK-014.spec.md#ev-003"
       ]
     }
   ],
@@ -36,9 +16,9 @@
     {
       "requirement": "TASK-014/AC-001",
       "acceptance": "TASK-014/AC-001",
-      "verification": "Recuento de columnas distintas de iconos sobre la pantalla real: dos antes [24, 55], una despues [24]",
+      "verification": "En produccion, con la hoja index-UY_FJqqE.css servida: 14 entradas y una sola columna de iconos, [24]",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-014.spec.md#ev-001"
+      "evidence": ".specanchor/tasks/TASK-014.spec.md#ev-003"
     }
   ]
 }

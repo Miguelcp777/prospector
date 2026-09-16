@@ -1,7 +1,7 @@
 ---
 type: task-lite
 id: TASK-014
-status: in_progress
+status: verified
 created: 2026-09-16
 modules: [app-web]
 behavior_preserving: false
@@ -75,13 +75,22 @@ borde del lateral, que es peor que no tenerla.
 
 - **EV-002** · `npx tsc -b --force` → 0. `npm run build` → correcto. Pruebas
   del studio sin fallos nuevos. `test:importacion` **34 de 34**.
-- **EV-003** · _(pendiente: la pantalla, después del despliegue)_
+- **EV-003** · **En producción**, con la hoja servida comprobada antes
+  (`index-UY_FJqqE.css`, el mismo hash del build local):
+
+  ```
+  entradas del lateral: 14 · columnas distintas: [24] · 1
+  ```
+
+  Las catorce —dos cabeceras de grupo, siete hijos y cinco sueltas— en el
+  mismo borde izquierdo.
 
 ## Trazabilidad
 
 | Aceptación | Verificación | Resultado | Evidencia |
 |---|---|---|---|
 | AC-001 | Recuento de columnas distintas sobre la pantalla real | **pass** | EV-001 |
+| AC-001 | Lo mismo ya desplegado, sobre las 14 entradas | **pass** · VERIFIED | EV-003 |
 
 ## Lo que queda fuera, y se dice
 
@@ -93,4 +102,9 @@ día molesta.
 
 ## Revisión final
 
-_(pendiente de EV-003)_
+- Cobertura documental: **PASS**.
+- Spec → Código: **ALIGNED** — `INV-WEB-014` dice lo que la pantalla hace, y
+  dice también qué se sacrificó para conseguirlo.
+- Código → Spec: **ALIGNED**. El comentario de `.nav-grupo-hijos` ya no
+  promete una sangría que no existe, y el de `.nav-grupo-icono` ya no promete
+  una rejilla única que no se cumplía.
