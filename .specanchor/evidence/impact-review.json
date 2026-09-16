@@ -1,6 +1,6 @@
 {
-  "revision": "d8b3116",
-  "task_spec": ".specanchor/tasks/TASK-011.spec.md",
+  "revision": "42f1097b0212bbb1097365d387c923179b06387c",
+  "task_spec": ".specanchor/tasks/TASK-012.spec.md",
   "files": [
     {
       "path": ".specanchor/tasks/TASK-011.spec.md",
@@ -12,10 +12,19 @@
       ]
     },
     {
+      "path": ".specanchor/tasks/TASK-012.spec.md",
+      "kind": "requirement",
+      "specs": [],
+      "rationale": "Cierre de lo que TASK-012 dejaba pendiente: la barra horizontal por debajo de 860 px. Medido replicando la estructura del lateral dentro de la propia pagina de produccion en un navegador de 627 px, y con las dos hojas, la anterior y la corregida, para que el antes y el despues sean el mismo ensayo. Queda anotado que la unica propiedad que discrimina es flex-direction: margin-top sale 0px en los dos casos porque getComputedStyle devuelve el valor usado y un auto sin hueco libre es cero.",
+      "evidence": [
+        ".specanchor/tasks/TASK-012.spec.md#ev-006"
+      ]
+    },
+    {
       "path": ".specanchor/findings/0002-el-buscador-no-ignora-los-acentos.md",
       "kind": "clarification",
       "specs": [],
-      "rationale": "Hallazgo fuera de alcance encontrado al verificar: el buscador de Mensajes compara con toLowerCase e includes, que no descomponen diacriticos, asi que peluqueria no encuentra peluqueria con tilde y lo dice como 0 de 200, que se lee como no hay. Es anterior a la tarea y el patron esta en cuatro pantallas, asi que se anota en vez de arreglarse suelto dentro de otro cambio.",
+      "rationale": "Hallazgo fuera de alcance encontrado al verificar TASK-011: el buscador de Mensajes compara con toLowerCase e includes, que no descomponen diacriticos, asi que peluqueria no encuentra peluqueria con tilde y lo dice como 0 de 200, que se lee como no hay. El patron esta en cuatro pantallas, asi que se anota en vez de arreglarse suelto dentro de otro cambio.",
       "evidence": [
         ".specanchor/tasks/TASK-011.spec.md#ev-006"
       ]
@@ -37,11 +46,11 @@
       "evidence": ".specanchor/tasks/TASK-011.spec.md#ev-006"
     },
     {
-      "requirement": "TASK-011/REQ-002",
-      "acceptance": "TASK-011/AC-002",
-      "verification": "En produccion: las 200 tarjetas del filtro de prospeccion llevan su insignia PROSPECCION",
+      "requirement": "TASK-012/AC-002",
+      "acceptance": "TASK-012/AC-002",
+      "verification": "A 627 px de ancho y contra el CSS desplegado: .lateral-pie en row con margin-left auto y .sesion sin margen inferior. Con la hoja anterior el mismo ensayo daba column, que es el fallo reproducido",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-011.spec.md#ev-006"
+      "evidence": ".specanchor/tasks/TASK-012.spec.md#ev-006"
     }
   ]
 }
