@@ -86,6 +86,27 @@ Lo que consume el resto del sistema:
   `tenant_id`, el de la lista y el de la campaña. Comprobar solo el de la
   campaña deja volcar la lista de otro tenant en la propia, que es la fuga
   entera. VERIFIED 2026-09-16 · `No autorizado`.
+- **INV-DAT-011** · Borrar una lista **no borra los leads que salieron de
+  ella**, y no puede romper su registro de origen. Medido contra la base en
+  una transacción deshecha: el lead sobrevive con `contacto_id` a nulo —por el
+  `on delete set null` de la 054— pero su `email_origen` seguía apuntando a
+  una lista inexistente, y `docs/compliance.md` pide poder responder de dónde
+  salió cada dirección.
+
+  De ahí las dos ramas de `borrar_lista`: una lista **nunca volcada**
+  desaparece entera, porque no hay nada a lo que responder; una **ya volcada**
+  pierde los contactos y conserva la ficha como lápida —archivo, fecha,
+  mapeo, declaración y cifras— marcada con `contactos_borrados_en`. En los dos
+  casos lo que se borra son las direcciones, que es el derecho que se ejerce.
+
+- **INV-DAT-012** · `authenticated` solo puede escribir `nombre` en
+  `listas_de_contactos`. La 054 le concedía UPDATE sobre las **veinte**
+  columnas, y ahí dentro están `consentimiento_texto` y `consentimiento_en`:
+  un cliente podía reescribir a posteriori la declaración que afirmó al subir
+  la lista, que es justo lo que convierte un supuesto en un acto registrado
+  con autor. `volcados_de_lista` no se escribe ni se borra a mano: es el
+  registro de qué se mandó a qué campaña y cuándo.
+
 - **INV-DAT-006** · Un job alcanza siempre un estado terminal. Lo sostienen
   `cerrar_job_si_completo` y el cron `reponer_tareas_colgadas` (031).
 

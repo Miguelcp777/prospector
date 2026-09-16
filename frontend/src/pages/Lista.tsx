@@ -27,6 +27,7 @@ type Lista = {
   filas_descartadas: number;
   subido_por_email: string | null;
   consentimiento_texto: string | null;
+  contactos_borrados_en: string | null;
   creado_en: string;
 };
 
@@ -73,6 +74,18 @@ export function Lista({ id, alVolver }: { id: string; alVolver: () => void }) {
   const [resultado, setResultado] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Renombrar. `nombreEditado` a null significa «no se está editando»: con
+  // una cadena vacía no se distinguiría de haber borrado el nombre.
+  const [nombreEditado, setNombreEditado] = useState<string | null>(null);
+  const [guardandoNombre, setGuardandoNombre] = useState(false);
+  // Borrar la lista, en dos tiempos. Un botón que borra 23 direcciones al
+  // primer clic es un botón mal puesto.
+  const [confirmando, setConfirmando] = useState(false);
+  const [borrando, setBorrando] = useState(false);
+  // Qué contacto se está editando, y con qué valores.
+  const [editando, setEditando] = useState<string | null>(null);
+  const [borrador, setBorrador] = useState<Partial<Contacto>>({});
+
   const cargar = useCallback(async () => {
     const [l, c, v, ca] = await Promise.all([
       supabase.from("listas_de_contactos").select("*").eq("id", id).single(),
@@ -89,6 +102,76 @@ export function Lista({ id, alVolver }: { id: string; alVolver: () => void }) {
   }, [id, elegida]);
 
   useEffect(() => { void cargar(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /**
+   * Renombrar. Es un UPDATE directo y no una función: la RLS ya lo acota al
+   * tenant, y desde la 055 la concesión de UPDATE es **solo** sobre `nombre`
+   * —antes alcanzaba a las veinte columnas, incluida la declaración de origen
+   * con su fecha, que es lo que convierte un supuesto en un acto registrado—.
+   */
+  async function renombrar() {
+    const limpio = (nombreEditado ?? "").trim();
+    if (limpio === "" || !lista || limpio === lista.nombre) { setNombreEditado(null); return; }
+    setGuardandoNombre(true);
+    setError(null);
+    const { error: fallo } = await supabase
+      .from("listas_de_contactos").update({ nombre: limpio }).eq("id", id);
+    setGuardandoNombre(false);
+    if (fallo) { setError(fallo.message); return; }
+    setNombreEditado(null);
+    void cargar();
+  }
+
+  /**
+   * Borrar la lista. Va por función porque la decisión no es del navegador:
+   * una lista que nunca se volcó desaparece entera, y una que sí se volcó
+   * deja su ficha como lápida —archivo, fecha, mapeo, declaración y cifras—
+   * para no romper el registro de origen de los leads que salieron de ella.
+   * Lo que se borra en los dos casos son las direcciones.
+   */
+  async function borrarLista() {
+    setBorrando(true);
+    setError(null);
+    const { data, error: fallo } = await supabase.rpc("borrar_lista", { p_lista: id });
+    setBorrando(false);
+    if (fallo) { setError(fallo.message); setConfirmando(false); return; }
+    const r = Array.isArray(data) ? data[0] : data;
+    // Si quedó lápida seguimos aquí y hay que recargar; si se fue entera, no
+    // hay nada que enseñar y se vuelve al índice.
+    if (r?.borrada) alVolver(); else void cargar();
+  }
+
+  async function guardarContacto(contactoId: string) {
+    setError(null);
+    const limpio = (v: unknown) => {
+      const s = typeof v === "string" ? v.trim() : "";
+      return s === "" ? null : s;
+    };
+    const { error: fallo } = await supabase
+      .from("contactos_de_lista")
+      .update({
+        // El correo se normaliza aquí igual que lo hace `guardar_lista`, para
+        // que una dirección corregida a mano y otra importada no se
+        // comporten distinto al volcar.
+        email: limpio(borrador.email)?.toLowerCase() ?? null,
+        nombre: limpio(borrador.nombre),
+        empresa: limpio(borrador.empresa),
+        telefono: limpio(borrador.telefono),
+        web: limpio(borrador.web),
+      })
+      .eq("id", contactoId);
+    if (fallo) { setError(fallo.message); return; }
+    setEditando(null);
+    void cargar();
+  }
+
+  async function borrarContacto(contactoId: string) {
+    setError(null);
+    const { error: fallo } = await supabase
+      .from("contactos_de_lista").delete().eq("id", contactoId);
+    if (fallo) { setError(fallo.message); return; }
+    void cargar();
+  }
 
   async function volcar() {
     if (!elegida) return;
@@ -136,7 +219,34 @@ export function Lista({ id, alVolver }: { id: string; alVolver: () => void }) {
       <div className="cabecera">
         <div className="cabecera-texto">
           <span className="rotulo">Lista de contactos</span>
-          <h1>{lista.nombre}</h1>
+          {nombreEditado === null ? (
+            <h1>
+              {lista.nombre}{" "}
+              <button
+                className="fantasma menudo"
+                onClick={() => setNombreEditado(lista.nombre)}
+                title="Cambiar el nombre"
+              >
+                cambiar el nombre
+              </button>
+            </h1>
+          ) : (
+            <div className="acciones">
+              <input
+                value={nombreEditado}
+                autoFocus
+                onChange={(e) => setNombreEditado(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void renombrar();
+                  if (e.key === "Escape") setNombreEditado(null);
+                }}
+              />
+              <button className="primario" disabled={guardandoNombre} onClick={() => void renombrar()}>
+                {guardandoNombre ? "Guardando…" : "Guardar"}
+              </button>
+              <button className="fantasma" onClick={() => setNombreEditado(null)}>Cancelar</button>
+            </div>
+          )}
           <p className="sutil">
             {lista.filas_leidas} filas leídas · <strong>{utiles}</strong> se pueden usar
             {suprimidos > 0 && ` · ${suprimidos} en tu lista de supresión`}
@@ -146,6 +256,19 @@ export function Lista({ id, alVolver }: { id: string; alVolver: () => void }) {
         <button className="fantasma" onClick={alVolver}>Volver a las listas</button>
       </div>
 
+      {/* La lápida. Una lista que ya se volcó no desaparece al borrarla: se
+          van las direcciones y se queda la ficha, porque los leads que
+          salieron de ella siguen vivos y tienen que poder decir de dónde. */}
+      {lista.contactos_borrados_en && (
+        <p className="caja-aviso">
+          <strong>Los contactos de esta lista se borraron</strong> el{" "}
+          {new Date(lista.contactos_borrados_en).toLocaleString("es-ES")}. La ficha
+          se queda porque esta lista se usó en alguna campaña: los leads que
+          salieron de ella siguen ahí y esto es lo que permite decir de dónde
+          salió cada dirección. No quedan direcciones guardadas aquí.
+        </p>
+      )}
+
       {suprimidos > 0 && (
         <p className="caja-aviso">
           {suprimidos} de estos contactos pidieron la baja o rebotaron. No
@@ -154,23 +277,29 @@ export function Lista({ id, alVolver }: { id: string; alVolver: () => void }) {
         </p>
       )}
 
-      <h3>Usar en una campaña</h3>
-      <div className="acciones">
-        <label className="campo">
-          <span>Campaña</span>
-          <select value={elegida} onChange={(e) => setElegida(e.target.value)}>
-            {campanas.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-          </select>
-        </label>
-        <button className="primario" disabled={volcando || !elegida} onClick={() => void volcar()}>
-          {volcando ? "Añadiendo…" : "Añadir a la campaña"}
-        </button>
-      </div>
-      <p className="sutil menudo">
-        Se copian como leads. Volver a pulsarlo no duplica nada: los que ya
-        estén se saltan.
-      </p>
-      {resultado && <p className="caja-aviso">{resultado}</p>}
+      {/* Sin contactos no hay nada que volcar, y un botón que no puede hacer
+          nada es peor que no tenerlo. */}
+      {!lista.contactos_borrados_en && (
+        <>
+          <h3>Usar en una campaña</h3>
+          <div className="acciones">
+            <label className="campo">
+              <span>Campaña</span>
+              <select value={elegida} onChange={(e) => setElegida(e.target.value)}>
+                {campanas.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              </select>
+            </label>
+            <button className="primario" disabled={volcando || !elegida} onClick={() => void volcar()}>
+              {volcando ? "Añadiendo…" : "Añadir a la campaña"}
+            </button>
+          </div>
+          <p className="sutil menudo">
+            Se copian como leads. Volver a pulsarlo no duplica nada: los que ya
+            estén se saltan.
+          </p>
+          {resultado && <p className="caja-aviso">{resultado}</p>}
+        </>
+      )}
       {error && <p className="caja-error">{error}</p>}
 
       <h3>De dónde salió</h3>
@@ -226,7 +355,25 @@ export function Lista({ id, alVolver }: { id: string; alVolver: () => void }) {
         <table>
           <thead><tr><th>Fila</th><th>Correo</th><th>Nombre</th><th>Empresa</th><th>Teléfono</th><th></th></tr></thead>
           <tbody>
-            {visibles.map((c) => (
+            {visibles.map((c) => editando === c.id ? (
+              <tr key={c.id}>
+                <td className="sutil">{c.fila}</td>
+                <td><input value={borrador.email ?? ""} placeholder="correo"
+                           onChange={(e) => setBorrador({ ...borrador, email: e.target.value })} /></td>
+                <td><input value={borrador.nombre ?? ""} placeholder="nombre"
+                           onChange={(e) => setBorrador({ ...borrador, nombre: e.target.value })} /></td>
+                <td><input value={borrador.empresa ?? ""} placeholder="empresa"
+                           onChange={(e) => setBorrador({ ...borrador, empresa: e.target.value })} /></td>
+                <td><input value={borrador.telefono ?? ""} placeholder="teléfono"
+                           onChange={(e) => setBorrador({ ...borrador, telefono: e.target.value })} /></td>
+                <td>
+                  <div className="acciones">
+                    <button className="primario" onClick={() => void guardarContacto(c.id)}>Guardar</button>
+                    <button className="fantasma" onClick={() => setEditando(null)}>Cancelar</button>
+                  </div>
+                </td>
+              </tr>
+            ) : (
               <tr key={c.id}>
                 <td className="sutil">{c.fila}</td>
                 <td>{c.suprimido ? <s>{c.email}</s> : <strong>{c.email ?? "—"}</strong>}</td>
@@ -236,6 +383,14 @@ export function Lista({ id, alVolver }: { id: string; alVolver: () => void }) {
                 <td>
                   {c.suprimido && <span className="etiqueta error">baja</span>}
                   {ESTADOS[c.estado] && <span className="sutil"> {ESTADOS[c.estado]}</span>}
+                  <div className="acciones">
+                    <button className="fantasma menudo" onClick={() => { setEditando(c.id); setBorrador(c); }}>
+                      editar
+                    </button>
+                    <button className="fantasma menudo" onClick={() => void borrarContacto(c.id)}>
+                      quitar
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -246,6 +401,47 @@ export function Lista({ id, alVolver }: { id: string; alVolver: () => void }) {
         <div className="acciones">
           <button className="secundario" onClick={() => setTope((t) => t + 500)}>Ver más</button>
         </div>
+      )}
+
+      {/* Borrar, al final y en dos tiempos, y diciendo antes lo que va a
+          pasar. Lo que no dice ningún botón de borrar por defecto es lo
+          importante aquí: los leads que ya salieron de esta lista NO se van
+          con ella. */}
+      {!lista.contactos_borrados_en && (
+        <>
+          <h3>Borrar esta lista</h3>
+          {!confirmando ? (
+            <>
+              <p className="sutil menudo">
+                Se borran las {contactos.length} direcciones.{" "}
+                {volcados.length > 0
+                  ? "Como ya la has usado en una campaña, la ficha se queda —archivo, fecha, columnas usadas y tu declaración— para poder responder de dónde salió cada lead."
+                  : "Como no la has usado en ninguna campaña, desaparece entera."}
+              </p>
+              <div className="acciones">
+                <button className="secundario" onClick={() => setConfirmando(true)}>
+                  Borrar la lista
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="caja-error">
+                Se van a borrar <strong>{contactos.length} direcciones</strong>, y
+                no se pueden recuperar.
+                {volcados.length > 0
+                  ? " Los leads que ya salieron de esta lista siguen en sus campañas: esto no los toca."
+                  : ""}
+              </p>
+              <div className="acciones">
+                <button className="secundario" disabled={borrando} onClick={() => void borrarLista()}>
+                  {borrando ? "Borrando…" : "Sí, borrarla"}
+                </button>
+                <button className="fantasma" onClick={() => setConfirmando(false)}>Cancelar</button>
+              </div>
+            </>
+          )}
+        </>
       )}
     </section>
   );
