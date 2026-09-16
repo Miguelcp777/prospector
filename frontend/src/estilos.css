@@ -256,13 +256,10 @@ a:hover { text-decoration: underline; }
   .marca span { display: none; }
   .nav-item { width: auto; white-space: nowrap; }
   .nav-item.activa { box-shadow: none; }
-  /* Aquí el lateral es una barra horizontal, así que el pie no cae abajo:
-     se va a la derecha. Y lo hace el par entero, no el último botón. */
-  .lateral-pie { flex-direction: row; margin-top: 0; margin-left: auto; }
   .nav-fin { margin-top: 0; }
-  /* En columna la tarjeta de sesión se separa del menú por debajo; en fila
-     ese margen la descentra respecto a los botones de al lado. */
-  .sesion { margin-bottom: 0; }
+  /* Las adaptaciones de `.lateral-pie` y `.sesion` NO van aquí: sus reglas
+     base están mucho más abajo en este archivo y, a igual especificidad,
+     gana la última. Viven junto a ellas, al final. */
   /* El lateral es una barra horizontal aquí: el logotipo a ancho completo no
      cabe. Queda el isotipo de la izquierda, que ya lleva la marca. */
   .pie-marca { display: none; }
@@ -823,6 +820,21 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e1) 0; width: 
   display: flex; flex-direction: column; gap: 2px;
 }
 .lateral-pie .nav-fin { margin-top: 0; }
+
+/* La adaptación móvil de estas dos va AQUÍ, después de sus reglas base, y no
+   arriba con el resto del bloque de 860 px. Una media query no añade
+   especificidad: a igual selector gana la que aparece más tarde en el
+   archivo, así que puesta arriba la pisaban las de abajo y el pie salía en
+   columna dentro de una barra horizontal. No lo ve el build ni una prueba de
+   contrato — se ve leyendo el CSS ya empaquetado, que es donde se encontró. */
+@media (max-width: 860px) {
+  /* Aquí el lateral es una barra horizontal: el pie no cae abajo, se va a la
+     derecha. Y lo hace el par entero, no el último botón. */
+  .lateral-pie { flex-direction: row; margin-top: 0; margin-left: auto; }
+  /* En columna la tarjeta de sesión se separa del menú por debajo; en fila
+     ese margen la descentra respecto a los botones de al lado. */
+  .sesion { margin-bottom: 0; }
+}
 
 
 /* ---------------- interruptor de módulo ---------------- */
