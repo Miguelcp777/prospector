@@ -1,7 +1,7 @@
 ---
 type: task-lite
 id: TASK-015
-status: in_progress
+status: verified
 created: 2026-09-16
 modules: [app-web]
 behavior_preserving: false
@@ -89,7 +89,17 @@ brillo.
   Misma especificidad y después: el reinicio gana.
 - **EV-003** · `tsc -b --force` → 0. `npm run build` → correcto. Pruebas del
   studio sin fallos nuevos. `test:importacion` **34 de 34**.
-- **EV-004** · _(pendiente: la pantalla, después del despliegue)_
+- **EV-004** · **En producción**, con la hoja servida comprobada antes
+  (`index-C6C8QSpV.css`, el hash del build local):
+
+  | | tamaño | color | espaciado |
+  |---|---|---|---|
+  | `PROSPECTOR` | 17 px | pleno | 1,02 px · era 0,32 |
+  | `PROSPECCIÓN` | 11 px | **pleno** · era apagado | 1,1 px |
+  | `Listas` en reposo | 15 px | apagado | — |
+
+  Y el filete: `1px` de borde con `16px` de margen sobre él. La cabecera ya
+  no comparte color con sus hijos en reposo, que era el fondo del problema.
 
 ## Trazabilidad
 
@@ -97,7 +107,18 @@ brillo.
 |---|---|---|---|
 | AC-001 | Ensayo en caliente sobre producción, mirado | **pass** | EV-001 |
 | AC-003 | Orden y especificidad en el CSS construido | **pass** | EV-002 |
+| AC-001, AC-002 | Los tres niveles medidos ya desplegados | **pass** · VERIFIED | EV-004 |
 
 ## Revisión final
 
-_(pendiente de EV-004)_
+- Cobertura documental: **PASS**.
+- Spec → Código: **ALIGNED** — `INV-WEB-015` y sus dos corolarios.
+- Código → Spec: **ALIGNED**.
+
+## Lo que sigue sin verse
+
+La **barra horizontal** por debajo de 860 px. Lo que está demostrado es que el
+reinicio gana por especificidad y orden en el paquete; que la barra se vea
+bien con contenido real, no. Es la misma deuda que dejó TASK-012 y sigue
+abierta por el mismo motivo: hace falta una ventana estrecha **con sesión**, y
+el navegador donde la hay no se puede redimensionar desde aquí.
