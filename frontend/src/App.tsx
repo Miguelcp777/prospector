@@ -16,6 +16,7 @@ import { Acceso } from "./pages/Acceso";
 import { NuevaContrasena } from "./pages/NuevaContrasena";
 import { Campanas } from "./pages/Campanas";
 import { Leads } from "./pages/Leads";
+import { Listas } from "./pages/Listas";
 import { Mensajes } from "./pages/Mensajes";
 import { Historial } from "./pages/Historial";
 import { Supresiones } from "./pages/Supresiones";
@@ -121,7 +122,7 @@ function BotonTema() {
   );
 }
 
-type Vista = "campanas" | "leads" | "mensajes" | "historial" | "supresiones" | "incidencias" | "cuenta" | "panel" | "studio";
+type Vista = "campanas" | "listas" | "leads" | "mensajes" | "historial" | "supresiones" | "incidencias" | "cuenta" | "panel" | "studio";
 
 type Seccion = { id: Vista; nombre: string; icono: string; nota: string };
 type Grupo = { id: string; nombre: string; icono: string; secciones: Seccion[] };
@@ -144,6 +145,8 @@ const GRUPOS: Grupo[] = [
     secciones: [
       { id: "campanas", nombre: "Campañas", icono: "◈",
         nota: "Describir el negocio, inferir segmentos y buscar" },
+      { id: "listas", nombre: "Listas", icono: "▤",
+        nota: "Contactos que ya tienes, para usarlos en una campaña" },
       { id: "leads", nombre: "Leads", icono: "◉",
         nota: "Lo que ha encontrado la búsqueda" },
     ],
@@ -288,7 +291,7 @@ function Aplicacion() {
 
   // Un módulo se puede apagar con la pantalla abierta. Sin esto, el menú
   // deja de ofrecer la sección pero el contenido sigue puesto.
-  const DE_PROSPECCION: Vista[] = ["campanas", "leads"];
+  const DE_PROSPECCION: Vista[] = ["campanas", "listas", "leads"];
   const DE_EMAIL: Vista[] = ["studio", "mensajes", "historial", "supresiones"];
   const vistaValida =
     (DE_PROSPECCION.includes(vista) && !modulos.prospeccion) ||
@@ -379,6 +382,7 @@ function Aplicacion() {
         ) : (
         <div className="ancho">
           {vistaValida === "campanas"    && <Campanas />}
+          {vistaValida === "listas"      && <Listas />}
           {vistaValida === "leads"       && <Leads />}
           {vistaValida === "mensajes"    && <Mensajes alIrA={setVista} />}
           {vistaValida === "historial"   && <Historial />}

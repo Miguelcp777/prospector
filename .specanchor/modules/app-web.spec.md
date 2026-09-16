@@ -91,11 +91,25 @@ chunk aparte, cargado bajo demanda.
 
 ## Pruebas y verificación
 
-**No hay ninguna prueba automática de este módulo.** VERIFIED · las 75 pruebas
-de `npm run test:studio` son todas del studio. La verificación ha sido manual:
-abrir la pantalla y preguntarle al DOM.
+**Desde TASK-010 ya no son cero.** `frontend/pruebas/` trae **29 pruebas** de
+los dos módulos puros de la importación —el lector de tablas y la detección de
+columnas—, que viven en `lib/` y no dentro de un componente precisamente para
+poder probarse sin montar React.
 
-Esto es la deuda más grande del proyecto y está escrita aquí a propósito.
+```bash
+cd frontend && npm run test:importacion    # 29 · node --experimental-strip-types
+```
+
+Corren en el CI, en su propio paso y **llamadas a pelo**: son nuevas, no
+arrastran ningún fallo conocido, y el día que una falle tiene que romper sin
+excepciones que mantener.
+
+Una de ellas encontró un fallo real el día que se escribió: el criterio de
+ambigüedad estaba mal planteado —miraba si empataban los puntos en vez de si
+había otra columna también llena de correos—.
+
+Lo que sigue sin prueba automática: **las pantallas**. Son React y no hay
+banco para montarlas.
 
 ## Incertidumbres y deuda conocidas
 
@@ -104,6 +118,15 @@ Esto es la deuda más grande del proyecto y está escrita aquí a propósito.
   los dos siguen a la aplicación (`docs/decisiones/0005`, «Pendiente»).
 
 ## Historial de cambios
+
+- 2026-09-16 · TASK-010: sección **Listas**. Tres pantallas —índice, detalle y
+  asistente de importación—, tres módulos puros en `lib/`, y las primeras
+  pruebas automáticas del módulo. La detección de la columna de correo va por
+  **contenido y no por cabecera**, y **propone**: la pantalla enseña por qué,
+  previsualiza las filas *tal como van a quedar guardadas* y deja cambiarlo.
+  Dependencia nueva: `read-excel-file` con versión exacta e import dinámico —
+  no SheetJS, cuyo paquete de npm lleva congelado desde que el proyecto se
+  mudó a su CDN y arrastra CVE.
 
 - 2026-09-14 · Redactada durante la adopción de SDD. Sin cambio de código.
 

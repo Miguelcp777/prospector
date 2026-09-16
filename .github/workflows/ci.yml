@@ -60,6 +60,13 @@ jobs:
       - name: Pruebas del studio
         run: node scripts/pruebas-del-studio.mjs
 
+      # Estas si se llaman a pelo: son nuevas, no arrastran ningun fallo
+      # conocido, y el dia que una falle tiene que romper el CI sin
+      # excepciones que mantener.
+      - name: Pruebas de importacion
+        working-directory: frontend
+        run: npm run test:importacion
+
   contratos:
     name: Cobertura documental del cambio
     if: github.event_name == 'pull_request'
