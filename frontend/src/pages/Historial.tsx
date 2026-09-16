@@ -13,6 +13,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { coincide } from "../lib/busqueda";
 
 type Fila = {
   mensaje_id: string;
@@ -69,13 +70,9 @@ export function Historial() {
     await cargar();
   }
 
-  const visibles = filas.filter((f) => {
-    if (!busqueda) return true;
-    const t = busqueda.toLowerCase();
-    return f.lead.toLowerCase().includes(t)
-        || (f.email_destino ?? f.email_actual ?? "").toLowerCase().includes(t)
-        || f.campana.toLowerCase().includes(t);
-  });
+  const visibles = filas.filter((f) =>
+    coincide(busqueda, f.lead, f.email_destino ?? f.email_actual, f.campana),
+  );
 
   const enviados = filas.filter((f) => f.estado === "enviado").length;
 

@@ -15,6 +15,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { coincide } from "../lib/busqueda";
 import { aplicarPlantilla, type Resultado } from "../lib/aplicar-plantilla";
 import {
   ID_PLANTILLA_POR_DEFECTO,
@@ -191,13 +192,9 @@ export function Mensajes({ alIrA }: { alIrA?: (vista: "studio") => void }) {
     return true;
   }
 
-  const visibles = mensajes.filter((m) => {
-    if (!busqueda) return true;
-    const t = busqueda.toLowerCase();
-    return (m.asunto ?? "").toLowerCase().includes(t)
-        || (m.leads?.nombre ?? "").toLowerCase().includes(t)
-        || (m.leads?.email ?? "").toLowerCase().includes(t);
-  });
+  const visibles = mensajes.filter((m) =>
+    coincide(busqueda, m.asunto, m.leads?.nombre, m.leads?.email),
+  );
 
   return (
     <div className="panel">

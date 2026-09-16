@@ -1,6 +1,6 @@
 ---
 type: finding
-status: open
+status: resolved
 created: 2026-09-16
 visibility: cross-task
 ---
@@ -45,3 +45,13 @@ sitios donde se vuelve a olvidar.
 
 Esa tarea añade un filtro por procedencia. Arreglar el buscador aquí habría
 mezclado dos cosas en el mismo cambio y en la misma revisión.
+
+## Resuelto
+
+TASK-019, el 16 de septiembre de 2026. `frontend/src/lib/busqueda.ts` con
+`plegar()` y `coincide()`, y las **cuatro** pantallas pasando por ahí:
+Historial, Leads, Lista y Mensajes. Ocho pruebas nuevas, la primera es
+literalmente el caso de este hallazgo.
+
+Supresiones no estaba en la lista de verdad: **no tiene buscador**. Lo dije de
+memoria al anotar esto y no lo comprobé; eran cuatro pantallas, no cinco.
