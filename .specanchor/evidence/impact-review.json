@@ -1,67 +1,44 @@
 {
-  "revision": "67c33426f9f5e9ee098d1aab2c458d6822eafea1",
-  "task_spec": ".specanchor/tasks/TASK-013.spec.md",
+  "revision": "0726632d741493b44f4f937cda0a8f76e0b03acc",
+  "task_spec": ".specanchor/tasks/TASK-014.spec.md",
   "files": [
     {
-      "path": "frontend/src/pages/Listas.tsx",
-      "kind": "behavior_preserving",
+      "path": "frontend/src/estilos.css",
+      "kind": "contract",
       "specs": [
         ".specanchor/modules/app-web.spec.md"
       ],
-      "rationale": "Efecto secundario del arreglo de cabeceras, visto al abrir la pantalla: .cabecera reparte el ancho entre el texto y el boton, y el texto lo pide por su contenido. Un parrafo de cuatro lineas se llevaba los 960 px y tiraba el boton a la fila de abajo. La cabecera se queda con una linea y la explicacion larga baja, que es lo que hacen las otras nueve pantallas.",
+      "rationale": "El lateral tenia dos columnas de iconos separadas 31 px: cabeceras de grupo y entradas sueltas en x=24, hijos de grupo en x=55, por el margen, el relleno y el borde de guia de .nav-grupo-hijos. El propio CSS ya pedia lo contrario dos reglas mas arriba -misma columna, el lateral entero se lee como una sola rejilla- y la sangria ganaba, asi que la rejilla unica nunca existio. Se resuelve el empate a favor de la columna unica. Se pierde la guia, que servia para que plegar un grupo se leyera como jerarquia; lo siguen diciendo la cabecera en versalitas y su flecha, y no se pueden tener las dos cosas porque la guia ocupa justo el sitio que rompe la columna.",
       "evidence": [
-        ".specanchor/tasks/TASK-013.spec.md#ev-004"
+        ".specanchor/tasks/TASK-014.spec.md#ev-001"
       ]
     },
     {
-      "path": "frontend/src/pages/ImportarLista.tsx",
-      "kind": "behavior_preserving",
-      "specs": [
-        ".specanchor/modules/app-web.spec.md"
-      ],
-      "rationale": "Lo mismo en el paso 1 del asistente, que era el otro con parrafo largo. Los pasos 2 y 3 no lo tenian y no se bajaban, medido en los tres.",
-      "evidence": [
-        ".specanchor/tasks/TASK-013.spec.md#ev-004"
-      ]
-    },
-    {
-      "path": ".specanchor/tasks/TASK-013.spec.md",
+      "path": ".specanchor/modules/app-web.spec.md",
       "kind": "requirement",
       "specs": [],
-      "rationale": "Cierre con la evidencia de produccion: las tres pantallas abiertas, la declaracion medida sobre el elemento vivo -17 px de casilla, 14 px de texto, sin versalitas, color pleno- y la deteccion de Persona de contacto con el CSV subido de verdad. Y el efecto secundario, que solo se veia abriendo la pantalla.",
+      "rationale": "INV-WEB-014 fija la columna unica y deja escrito que la jerarquia la dice la cabecera del grupo, no una sangria. Sin eso, el proximo que anada un grupo vuelve a sangrarlo.",
       "evidence": [
-        ".specanchor/tasks/TASK-013.spec.md#ev-003"
+        ".specanchor/tasks/TASK-014.spec.md#ev-001"
+      ]
+    },
+    {
+      "path": ".specanchor/tasks/TASK-014.spec.md",
+      "kind": "requirement",
+      "specs": [],
+      "rationale": "La tarea, con la medicion de las dos columnas antes y despues y con lo que se pierde dicho de frente. Incluye lo que se deja fuera: el texto del logotipo empieza 12 px a la derecha del de las entradas porque el isotipo mide 30 y los iconos 18.",
+      "evidence": [
+        ".specanchor/tasks/TASK-014.spec.md#ev-001"
       ]
     }
   ],
   "traceability": [
     {
-      "requirement": "TASK-013/AC-001",
-      "acceptance": "TASK-013/AC-001",
-      "verification": "Las cinco cabeceras abiertas en produccion: rotulo de etiqueta y h1 de titulo en las tres pantallas, con el paquete servido comprobado antes",
+      "requirement": "TASK-014/AC-001",
+      "acceptance": "TASK-014/AC-001",
+      "verification": "Recuento de columnas distintas de iconos sobre la pantalla real: dos antes [24, 55], una despues [24]",
       "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-013.spec.md#ev-003"
-    },
-    {
-      "requirement": "TASK-013/AC-002",
-      "acceptance": "TASK-013/AC-002",
-      "verification": "Medido sobre el elemento vivo: 14 px, text-transform none, letter-spacing normal y color de texto pleno",
-      "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-013.spec.md#ev-003"
-    },
-    {
-      "requirement": "TASK-013/AC-003",
-      "acceptance": "TASK-013/AC-003",
-      "verification": "Medido sobre el elemento vivo: 17 por 17 px",
-      "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-013.spec.md#ev-003"
-    },
-    {
-      "requirement": "TASK-013/AC-004",
-      "acceptance": "TASK-013/AC-004",
-      "verification": "Con el CSV de muestra subido en produccion: Nombre se propone como Persona de contacto y la previsualizacion trae los nombres donde antes habia rayas. Y 34 pruebas en verde con las dos de no regresion",
-      "result": "pass",
-      "evidence": ".specanchor/tasks/TASK-013.spec.md#ev-003"
+      "evidence": ".specanchor/tasks/TASK-014.spec.md#ev-001"
     }
   ]
 }
